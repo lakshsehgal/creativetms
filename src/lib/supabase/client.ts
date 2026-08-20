@@ -11,11 +11,23 @@ let cached: ReturnType<typeof createBrowserClient> | null = null;
 
 export function supabaseBrowser() {
   if (!cached) {
-    cached = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { realtime: { params: { eventsPerSecond: 20 } } },
-    );
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // Say plainly what's missing — the raw client error ("supabaseUrl is
+    // required") sends people hunting in the wrong place.
+    if (!url || !key) {
+      throw new Error(
+        "Supabase isn't configured. Set NEXT_PUBLIC_SUPABASE_URL and " +
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY in your Vercel project, then redeploy " +
+          "— environment variables are baked in at build time, so an existing " +
+          "deployment won't pick them up on its own.",
+      );
+    }
+
+    cached = createBrowserClient(url, key, {
+      realtime: { params: { eventsPerSecond: 20 } },
+    });
   }
   return cached;
 }
