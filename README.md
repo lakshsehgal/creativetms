@@ -34,6 +34,19 @@ inaccurate. So there isn't one.
 
 ---
 
+## Where the files live
+
+Deliverables live in **Frame.io**, not in this tool. Each ticket carries a
+review link instead of the files themselves — the designer pastes it when they
+submit, and it's the first thing on the ticket for both sides. Submitting for
+review prompts for the link if it isn't set yet, so the strategist gets a
+ticket they can act on rather than one they have to chase.
+
+The small **Working files** panel further down is for the odd source file, font
+or reference that should sit with the ticket. It isn't where finished work goes.
+
+---
+
 ## Roles
 
 | | Admin | Strategist | Designer |
@@ -61,9 +74,12 @@ keys from **Project Settings → API**.
 ### 2. Run the migration
 
 Paste `supabase/migrations/0001_init.sql` into the **SQL Editor** and run it. It
-creates every table, the RLS policies, the time-tracking triggers, the reporting
-functions and the storage bucket. Optionally run `supabase/seed.sql` for a few
-starter brands.
+creates every table, the RLS policies, the time-tracking triggers and the
+reporting functions. Optionally run `supabase/seed.sql` for a few starter brands.
+
+`0002_review_links.sql` is only needed if you ran an earlier copy of `0001`
+before review links existed — a fresh project gets everything from `0001` alone.
+It's safe to run either way.
 
 ### 3. Point the first admin at your email
 

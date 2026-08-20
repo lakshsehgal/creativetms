@@ -37,6 +37,8 @@ export interface Ticket {
   title: string;
   brief: string;
   reference_urls: string[];
+  /** Frame.io review link — where the deliverable is actually watched. */
+  review_url: string | null;
   format: CreativeFormat;
   quantity: number;
   status: TicketStatus;

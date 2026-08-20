@@ -112,7 +112,7 @@ export function AttachmentsPanel({
     >
       <div className="flex items-center gap-2">
         <Paperclip size={13} className="text-[var(--color-ink-3)]" />
-        <h3 className="text-[12px] font-semibold tracking-tight">Deliverables</h3>
+        <h3 className="text-[12px] font-semibold tracking-tight">Working files</h3>
         <span className="ml-auto">
           <Button
             size="sm"
@@ -135,8 +135,9 @@ export function AttachmentsPanel({
 
       {attachments.length === 0 ? (
         <p className="mt-3 text-[12px] leading-relaxed text-[var(--color-ink-3)]">
-          Drop files here, or link them from the brief. Uploads are tagged with
-          the revision round they belong to.
+          Optional. Finished work goes to Frame.io via the review link above —
+          this is for the odd source file, font or reference that needs to sit
+          with the ticket.
         </p>
       ) : (
         <ul className="mt-3 space-y-1">

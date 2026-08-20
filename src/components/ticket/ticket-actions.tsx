@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Pause, Play, RotateCcw, Send, Truck } from "lucide-react";
+import { Check, Link2, Pause, Play, RotateCcw, Send, Truck } from "lucide-react";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
-import { Button, TextArea } from "@/components/ui/form";
+import { Button, TextArea, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 
 export function TicketActions({
@@ -22,6 +22,8 @@ export function TicketActions({
   const [busy, setBusy] = useState<string | null>(null);
   const [revising, setRevising] = useState(false);
   const [notes, setNotes] = useState("");
+  const [askingForLink, setAskingForLink] = useState(false);
+  const [reviewUrl, setReviewUrl] = useState("");
 
   const isOwner = ticket.assigned_to === profile.id;
   const isStaff = profile.role === "admin" || profile.role === "strategist";
@@ -43,6 +45,34 @@ export function TicketActions({
     queryClient.invalidateQueries({ queryKey: ["sessions", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
     toast.success(label);
+  }
+
+  /**
+   * Submitting is the handoff, and the handoff is the Frame.io link. Rather
+   * than block on it, ask for it here — the strategist gets a ticket they can
+   * act on instead of one they have to chase.
+   */
+  async function submitForReview(withUrl?: string) {
+    setBusy("submit");
+
+    const patch: Record<string, unknown> = { status: "in_review" };
+    if (withUrl !== undefined) patch.review_url = withUrl.trim() || null;
+    if (unclaimed && profile.role === "designer") patch.assigned_to = profile.id;
+
+    const { error } = await supabase.from("tickets").update(patch).eq("id", ticket.id);
+    setBusy(null);
+
+    if (error) {
+      toast.error(error.message.replace(/^.*?:\s*/, ""));
+      return;
+    }
+
+    setAskingForLink(false);
+    setReviewUrl("");
+    queryClient.invalidateQueries({ queryKey: queryKeys.ticket(ticket.id) });
+    queryClient.invalidateQueries({ queryKey: ["sessions", ticket.id] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
+    toast.success("Sent for review");
   }
 
   async function requestRevisions(event: React.FormEvent) {
@@ -116,7 +146,9 @@ export function TicketActions({
           variant="primary"
           size="sm"
           loading={busy === "submit"}
-          onClick={() => move("in_review", "Sent for review", "submit")}
+          onClick={() =>
+            ticket.review_url ? void submitForReview() : setAskingForLink(true)
+          }
         >
           <Send size={13} /> Submit for review
         </Button>,
@@ -175,6 +207,55 @@ export function TicketActions({
           </p>
         )}
       </div>
+
+      <Dialog
+        open={askingForLink}
+        onClose={() => setAskingForLink(false)}
+        title="Where's the review link?"
+        description="Paste the Frame.io share link so the strategist can watch it straight away."
+        width={460}
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitForReview(reviewUrl);
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-[var(--radius-md)]"
+              style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+            >
+              <Link2 size={15} />
+            </span>
+            <TextInput
+              autoFocus
+              value={reviewUrl}
+              onChange={(event) => setReviewUrl(event.target.value)}
+              placeholder="https://f.io/…"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void submitForReview("")}
+              loading={busy === "submit" && !reviewUrl}
+            >
+              Submit without one
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={busy === "submit" && Boolean(reviewUrl)}
+              disabled={!reviewUrl.trim()}
+            >
+              Save &amp; submit
+            </Button>
+          </DialogFooter>
+        </form>
+      </Dialog>
 
       <Dialog
         open={revising}

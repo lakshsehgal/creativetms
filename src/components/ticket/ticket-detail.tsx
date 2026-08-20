@@ -17,6 +17,7 @@ import { TicketActions } from "./ticket-actions";
 import { TimePanel } from "./time-panel";
 import { Activity } from "./activity";
 import { AttachmentsPanel } from "./attachments-panel";
+import { ReviewLink } from "./review-link";
 
 export function TicketDetail({
   profile,
@@ -119,6 +120,8 @@ export function TicketDetail({
                 {relativeTime(data.created_at)}
               </p>
             </div>
+
+            <ReviewLink ticket={data} profile={profile} />
 
             {showRevisionBanner && (
               <div

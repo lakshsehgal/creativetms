@@ -4,7 +4,7 @@ import { memo } from "react";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MessageSquare, Play, RotateCcw, Timer } from "lucide-react";
+import { Link2, Play, RotateCcw, Timer } from "lucide-react";
 import type { TicketWithRefs } from "@/lib/types";
 import { dueLabel, dueState, humanDuration } from "@/lib/format";
 import { Avatar, FormatBadge, PriorityFlag } from "@/components/ui/primitives";
@@ -104,6 +104,20 @@ function TicketCardInner({ ticket, draggable, canStart, onStart }: Props) {
             <RotateCcw size={10} />
             {ticket.revision_count}
           </span>
+        )}
+
+        {ticket.review_url && (
+          <a
+            href={ticket.review_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerDown={(event) => event.stopPropagation()}
+            title="Open the Frame.io review"
+            aria-label={`Open the review for ${ticket.title}`}
+            className="text-[var(--color-ink-3)] transition-colors hover:text-[var(--color-accent)]"
+          >
+            <Link2 size={11} />
+          </a>
         )}
 
         {(ticket.total_seconds ?? 0) > 0 && (

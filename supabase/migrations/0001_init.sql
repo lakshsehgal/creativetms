@@ -116,6 +116,10 @@ create table tickets (
   created_by      uuid not null references profiles (id) on delete restrict,
   assigned_to     uuid references profiles (id) on delete set null,
 
+  -- Where the work actually gets reviewed. Deliverables live in Frame.io, so
+  -- the ticket carries the review link rather than the files themselves.
+  review_url      text,
+
   due_at          timestamptz,
   -- Optional strategist estimate; benchmarks cover the rest.
   estimated_minutes int check (estimated_minutes > 0),
@@ -399,7 +403,12 @@ begin
   -- Designers drive their own lane and nothing else. Everything a strategist
   -- owns — the brief, the brand, the deadline, sign-off — stays put.
   if v_role = 'designer' then
-    if new.status not in ('assigned', 'in_progress', 'in_review') then
+    -- Only police the lane when the lane actually changes. Otherwise a
+    -- designer couldn't touch a ticket parked in revisions or approved at
+    -- all — including posting the new review link, which is the one thing
+    -- they need to do there.
+    if new.status is distinct from old.status
+       and new.status not in ('assigned', 'in_progress', 'in_review') then
       raise exception 'A designer can move a ticket to assigned, in progress or in review only';
     end if;
     if new.assigned_to is distinct from old.assigned_to
