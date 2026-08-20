@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Dark is the default surface — this is a tool people stare at all day. Light
+   mode is a deliberate second set of steps, not an inverted filter.
+   Chart series colors come from a CVD-validated categorical order and are
+   assigned to formats by fixed slot, never cycled.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --color-canvas: #0b0c0e;
+  --color-surface: #131519;
+  --color-surface-2: #191c21;
+  --color-surface-3: #21252c;
+  --color-line: #262b33;
+  --color-line-strong: #333a45;
+
+  --color-ink: #f2f4f7;
+  --color-ink-2: #a5adba;
+  --color-ink-3: #6f7885;
+
+  --color-accent: #5b8def;
+  --color-accent-hover: #6f9bf2;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #16233d;
+
+  /* Status — fixed roles, never reused as a series color. */
+  --color-good: #0ca30c;
+  --color-warning: #fab219;
+  --color-serious: #ec835a;
+  --color-critical: #d03b3b;
+
+  /* Categorical chart slots (dark steps). */
+  --color-series-1: #3987e5;
+  --color-series-2: #d95926;
+  --color-series-3: #199e70;
+  --color-series-4: #c98500;
+  --color-series-5: #d55181;
+  --color-series-6: #008300;
+
+  --color-grid: #2c2c2a;
+  --color-axis: #383835;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 13px;
+  --radius-xl: 18px;
+
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.55);
+  --shadow-drag: 0 18px 40px -12px rgb(0 0 0 / 0.7);
+
+  --ease-out-quick: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="light"] {
+  --color-canvas: #f7f8f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f5f7;
+  --color-surface-3: #e9ebef;
+  --color-line: #e2e5ea;
+  --color-line-strong: #ccd1d9;
+
+  --color-ink: #10131a;
+  --color-ink-2: #52596a;
+  --color-ink-3: #838b99;
+
+  --color-accent: #2a78d6;
+  --color-accent-hover: #1f66bd;
+  --color-accent-soft: #e8f0fd;
+
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+  --color-series-4: #eda100;
+  --color-series-5: #e87ba4;
+  --color-series-6: #008300;
+
+  --color-grid: #e1e0d9;
+  --color-axis: #c3c2b7;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  color-scheme: dark;
+  background: var(--color-canvas);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+/* Scrollbars that don't shove the layout around mid-drag. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-3);
+  background-clip: content-box;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeleton shimmer used while server data streams in. */
+@keyframes cx-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@utility skeleton {
+  background: var(--color-surface-3);
+  border-radius: var(--radius-sm);
+  animation: cx-pulse 1.4s var(--ease-out-quick) infinite;
+}
+
+@keyframes cx-rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@utility rise {
+  animation: cx-rise 0.18s var(--ease-out-quick) both;
+}
+
+/* The live-timer dot on tickets currently being worked on. */
+@keyframes cx-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.82); }
+}
+@utility breathe {
+  animation: cx-breathe 2.2s ease-in-out infinite;
+}
