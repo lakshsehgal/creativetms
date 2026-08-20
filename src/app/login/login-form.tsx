@@ -66,25 +66,35 @@ export function LoginForm() {
   async function verify(token: string) {
     setBusy(true);
     setError(null);
-    const { error } = await supabaseBrowser().auth.verifyOtp({
-      email: email.trim().toLowerCase(),
-      token,
-      type: "email",
-    });
-    if (error) {
-      setBusy(false);
-      setCode("");
-      setError(
-        error.message.toLowerCase().includes("expired")
-          ? "That code has expired. Send a fresh one."
-          : "That code didn't match. Check it and try again.",
-      );
-      codeRef.current?.focus();
-      return;
+
+    const supabase = supabaseBrowser();
+    const address = email.trim().toLowerCase();
+
+    // A brand-new account's very first code is a *signup* token; every code
+    // after that is an *email* token. Supabase rejects the wrong type with
+    // "Token has expired or is invalid", which reads like expiry but isn't —
+    // so try the ordinary case first and fall back to the first-time one.
+    let failure: { message: string; status?: number } | null = null;
+
+    for (const type of ["email", "signup"] as const) {
+      const { error } = await supabase.auth.verifyOtp({ email: address, token, type });
+
+      if (!error) {
+        // Full navigation so middleware and server components see the cookie.
+        router.replace(next);
+        router.refresh();
+        return;
+      }
+
+      failure = { message: error.message, status: error.status };
+      // Backing off matters more than guessing once we're being throttled.
+      if (error.status === 429) break;
     }
-    // Full navigation so middleware and server components see the new cookie.
-    router.replace(next);
-    router.refresh();
+
+    setBusy(false);
+    setCode("");
+    setError(describeFailure(failure));
+    codeRef.current?.focus();
   }
 
   function onCodeChange(value: string, submitWhenComplete = false) {
@@ -214,6 +224,25 @@ export function LoginForm() {
       </div>
     </div>
   );
+}
+
+/**
+ * Supabase says "Token has expired or is invalid" for a wrong code, a used
+ * code and a genuinely stale one alike, so the wording has to cover the case
+ * people actually hit: requesting a second code silently kills the first.
+ */
+function describeFailure(failure: { message: string; status?: number } | null): string {
+  if (!failure) return "That didn't work. Try again.";
+
+  const text = failure.message.toLowerCase();
+
+  if (failure.status === 429 || text.includes("rate limit") || text.includes("too many")) {
+    return "Too many tries. Wait a minute, then request a new code.";
+  }
+  if (text.includes("expired") || text.includes("invalid")) {
+    return "That code didn't work. If you asked for more than one, only the newest email works — request a fresh code and use that.";
+  }
+  return failure.message;
 }
 
 function Problem({ children }: { children: React.ReactNode }) {
