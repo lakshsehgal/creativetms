@@ -5,7 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-const CODE_LENGTH = 6;
+/**
+ * Supabase's OTP length is a project setting (6–10 digits), so the form can't
+ * assume one. It accepts anything in that range: a paste submits straight
+ * away because it arrives complete, and typing is confirmed with the button
+ * or Enter rather than guessing when the code is finished.
+ */
+const MIN_CODE_LENGTH = 6;
+const MAX_CODE_LENGTH = 10;
 
 export function LoginForm() {
   const router = useRouter();
@@ -80,11 +87,11 @@ export function LoginForm() {
     router.refresh();
   }
 
-  function onCodeChange(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, CODE_LENGTH);
+  function onCodeChange(value: string, submitWhenComplete = false) {
+    const digits = value.replace(/\D/g, "").slice(0, MAX_CODE_LENGTH);
     setCode(digits);
     setError(null);
-    if (digits.length === CODE_LENGTH) void verify(digits);
+    if (submitWhenComplete && digits.length >= MIN_CODE_LENGTH) void verify(digits);
   }
 
   if (step === "email") {
@@ -154,33 +161,46 @@ export function LoginForm() {
         for an hour.
       </p>
 
-      <label htmlFor="code" className="sr-only">
-        Six-digit code
-      </label>
-      <input
-        ref={codeRef}
-        id="code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        value={code}
-        disabled={busy}
-        onChange={(e) => onCodeChange(e.target.value)}
-        onPaste={(e) => {
-          e.preventDefault();
-          onCodeChange(e.clipboardData.getData("text"));
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (code.length >= MIN_CODE_LENGTH) void verify(code);
         }}
-        className="tabular mt-7 w-full rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] px-3.5 py-3 text-center text-[26px] font-semibold tracking-[0.42em] outline-none transition-colors placeholder:tracking-[0.42em] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)] disabled:opacity-60"
-        placeholder="······"
-      />
+      >
+        <label htmlFor="code" className="sr-only">
+          Sign-in code from your email
+        </label>
+        <input
+          ref={codeRef}
+          id="code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          value={code}
+          disabled={busy}
+          onChange={(e) => onCodeChange(e.target.value)}
+          onPaste={(e) => {
+            e.preventDefault();
+            // A paste arrives complete, so it's safe to submit immediately.
+            onCodeChange(e.clipboardData.getData("text"), true);
+          }}
+          className="tabular mt-7 w-full rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] px-3.5 py-3 text-center text-[26px] font-semibold tracking-[0.32em] outline-none transition-colors placeholder:text-[18px] placeholder:tracking-normal placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)] disabled:opacity-60"
+          placeholder="Paste your code"
+        />
 
-      {error && <Problem>{error}</Problem>}
+        {error && <Problem>{error}</Problem>}
 
-      <div className="mt-5 flex h-5 items-center justify-center text-[12px] text-[var(--color-ink-3)]">
-        {busy ? (
-          <span className="flex items-center gap-2 text-[var(--color-ink-2)]">
-            <Loader2 size={13} className="animate-spin" /> Verifying
-          </span>
-        ) : resendIn > 0 ? (
+        <button
+          type="submit"
+          disabled={busy || code.length < MIN_CODE_LENGTH}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+        >
+          {busy ? <Loader2 size={15} className="animate-spin" /> : null}
+          {busy ? "Verifying" : "Sign in"}
+        </button>
+      </form>
+
+      <div className="mt-4 flex h-5 items-center justify-center text-[12px] text-[var(--color-ink-3)]">
+        {resendIn > 0 ? (
           <span>Resend available in {resendIn}s</span>
         ) : (
           <button
