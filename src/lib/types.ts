@@ -1,15 +1,17 @@
 /** Domain vocabulary. Mirrors the enums in supabase/migrations/0001_init.sql. */
 
 export type UserRole = "admin" | "strategist" | "designer";
-export type CreativeFormat = "video" | "static" | "carousel" | "gif";
+export type CreativeFormat = "video" | "static" | "carousel" | "gif" | "ugc";
 export type TicketStatus =
-  | "backlog"
-  | "assigned"
+  | "new_request"
   | "in_progress"
-  | "in_review"
-  | "revisions"
+  | "size_changes"
+  | "ready_for_approval"
+  | "sent_to_client"
+  | "needs_edit"
   | "approved"
-  | "delivered";
+  | "awaiting_assets"
+  | "on_hold";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
 export interface Profile {
@@ -50,8 +52,11 @@ export interface Ticket {
   estimated_minutes: number | null;
   started_at: string | null;
   submitted_at: string | null;
+  sent_at: string | null;
   approved_at: string | null;
   delivered_at: string | null;
+  /** The designer's pledge that this is today's work. */
+  planned_for: string | null;
   revision_count: number;
   position: number;
   created_at: string;
@@ -162,66 +167,102 @@ export const FORMATS: Record<
   static: { label: "Static", short: "STA", series: "var(--color-series-2)", icon: "■" },
   carousel: { label: "Carousel", short: "CAR", series: "var(--color-series-3)", icon: "▤" },
   gif: { label: "GIF", short: "GIF", series: "var(--color-series-4)", icon: "◐" },
+  ugc: { label: "UGC", short: "UGC", series: "var(--color-series-5)", icon: "◉" },
 };
 
-export const FORMAT_ORDER: CreativeFormat[] = ["video", "static", "carousel", "gif"];
+export const FORMAT_ORDER: CreativeFormat[] = ["video", "static", "carousel", "gif", "ugc"];
 
 export const STATUSES: Record<
   TicketStatus,
-  { label: string; hint: string; tone: string; countsAsWip: boolean }
+  {
+    label: string;
+    hint: string;
+    /** Solid fill for the status cell — Monday-style, readable on white. */
+    fill: string;
+    /** Whether the clock runs here. Exactly one status says yes. */
+    clockRuns: boolean;
+    /** Counts as work still owed to the client. */
+    open: boolean;
+  }
 > = {
-  backlog: {
-    label: "Backlog",
-    hint: "Raised, waiting to be picked up",
-    tone: "var(--color-ink-3)",
-    countsAsWip: false,
-  },
-  assigned: {
-    label: "Assigned",
-    hint: "Claimed, clock not running",
-    tone: "var(--color-series-5)",
-    countsAsWip: true,
+  new_request: {
+    label: "New Request",
+    hint: "Raised, nobody has started",
+    fill: "#7b8794",
+    clockRuns: false,
+    open: true,
   },
   in_progress: {
     label: "In Progress",
-    hint: "Clock is running",
-    tone: "var(--color-accent)",
-    countsAsWip: true,
+    hint: "Being worked on — the clock is running",
+    fill: "#0f7fd4",
+    clockRuns: true,
+    open: true,
   },
-  in_review: {
-    label: "In Review",
-    hint: "With the strategist",
-    tone: "var(--color-warning)",
-    countsAsWip: true,
+  size_changes: {
+    label: "Size Changes",
+    hint: "Resizes requested, waiting to be picked up",
+    fill: "#a259d9",
+    clockRuns: false,
+    open: true,
   },
-  revisions: {
-    label: "Revisions",
-    hint: "Sent back with notes",
-    tone: "var(--color-serious)",
-    countsAsWip: true,
+  ready_for_approval: {
+    label: "Ready for Approval",
+    hint: "Submitted, with the strategist",
+    fill: "#f0a202",
+    clockRuns: false,
+    open: true,
+  },
+  sent_to_client: {
+    label: "Sent to Client",
+    hint: "Out for client review",
+    fill: "#0b9d78",
+    clockRuns: false,
+    open: true,
+  },
+  needs_edit: {
+    label: "Needs Edit",
+    hint: "Came back with notes",
+    fill: "#e8590c",
+    clockRuns: false,
+    open: true,
   },
   approved: {
     label: "Approved",
     hint: "Signed off",
-    tone: "var(--color-good)",
-    countsAsWip: false,
+    fill: "#2f9e44",
+    clockRuns: false,
+    open: false,
   },
-  delivered: {
-    label: "Delivered",
-    hint: "Out the door",
-    tone: "var(--color-series-6)",
-    countsAsWip: false,
+  awaiting_assets: {
+    label: "Awaiting Assets",
+    hint: "Blocked on someone else",
+    fill: "#c2255c",
+    clockRuns: false,
+    open: true,
+  },
+  on_hold: {
+    label: "On Hold",
+    hint: "Parked deliberately",
+    fill: "#5c6270",
+    clockRuns: false,
+    open: true,
   },
 };
 
-export const BOARD_COLUMNS: TicketStatus[] = [
-  "backlog",
-  "assigned",
+export const STATUS_ORDER: TicketStatus[] = [
+  "new_request",
   "in_progress",
-  "in_review",
-  "revisions",
+  "size_changes",
+  "ready_for_approval",
+  "sent_to_client",
+  "needs_edit",
   "approved",
+  "awaiting_assets",
+  "on_hold",
 ];
+
+export const BOARD_COLUMNS: TicketStatus[] = STATUS_ORDER;
 
 export const PRIORITIES: Record<TicketPriority, { label: string; tone: string; rank: number }> = {
   low: { label: "Low", tone: "var(--color-ink-3)", rank: 0 },
@@ -230,9 +271,22 @@ export const PRIORITIES: Record<TicketPriority, { label: string; tone: string; r
   urgent: { label: "Urgent", tone: "var(--color-critical)", rank: 3 },
 };
 
-/** Which lanes each role is allowed to drag a card into. */
+/**
+ * Which lanes each role may move work into. Designers drive their own side of
+ * the handoff; sign-off and anything client-facing stays with the strategist.
+ */
 export const ALLOWED_TARGETS: Record<UserRole, TicketStatus[]> = {
-  admin: ["backlog", "assigned", "in_progress", "in_review", "revisions", "approved", "delivered"],
-  strategist: ["backlog", "assigned", "in_progress", "in_review", "revisions", "approved", "delivered"],
-  designer: ["assigned", "in_progress", "in_review"],
+  admin: STATUS_ORDER,
+  strategist: STATUS_ORDER,
+  designer: ["in_progress", "ready_for_approval", "awaiting_assets", "on_hold"],
 };
+
+export interface SavedView {
+  id: string;
+  owner_id: string;
+  name: string;
+  filters: Record<string, string>;
+  layout: "board" | "list";
+  is_shared: boolean;
+  created_at: string;
+}

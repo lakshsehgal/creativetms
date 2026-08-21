@@ -37,7 +37,7 @@ export async function fetchBoardTickets(
   const { data, error } = await supabase
     .from("tickets")
     .select(TICKET_SELECT)
-    .neq("status", "delivered")
+    .neq("status", "approved")
     .order("position", { ascending: true })
     .limit(500);
 

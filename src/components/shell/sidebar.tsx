@@ -26,7 +26,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/board", label: "Board", icon: KanbanSquare, roles: ["admin", "strategist", "designer"] },
+  { href: "/board", label: "Work", icon: KanbanSquare, roles: ["admin", "strategist", "designer"] },
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
   { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "strategist"] },
   { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "designer"] },
@@ -43,11 +43,11 @@ const ROLE_LABEL: Record<UserRole, string> = {
 export function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("ctms-rail") === "1");
-    setTheme((localStorage.getItem("ctms-theme") as "dark" | "light") ?? "dark");
+    setTheme((localStorage.getItem("ctms-theme") as "dark" | "light") ?? "light");
   }, []);
 
   function toggleRail() {

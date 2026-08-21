@@ -98,17 +98,45 @@ export function FormatBadge({
   );
 }
 
-export function StatusPill({ status }: { status: TicketStatus }) {
+export function StatusPill({
+  status,
+  size = "sm",
+}: {
+  status: TicketStatus;
+  size?: "sm" | "md";
+}) {
   const meta = STATUSES[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
-      style={{
-        background: `color-mix(in srgb, ${meta.tone} 14%, transparent)`,
-        color: meta.tone,
-      }}
+      title={meta.hint}
+      className={`inline-flex items-center gap-1.5 rounded-full font-semibold text-white ${
+        size === "sm" ? "px-2.5 py-[3px] text-[11px]" : "px-3 py-1 text-[12.5px]"
+      }`}
+      style={{ background: meta.fill }}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.tone }} />
+      {meta.clockRuns && (
+        <span className="breathe h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
+      )}
+      {meta.label}
+    </span>
+  );
+}
+
+/**
+ * The full-bleed coloured cell the list view uses — the thing that makes a
+ * Monday-style table readable at a glance.
+ */
+export function StatusCell({ status }: { status: TicketStatus }) {
+  const meta = STATUSES[status];
+  return (
+    <span
+      title={meta.hint}
+      className="flex h-full min-h-[30px] w-full items-center justify-center gap-1.5 px-2 text-[11.5px] font-semibold text-white"
+      style={{ background: meta.fill }}
+    >
+      {meta.clockRuns && (
+        <span className="breathe h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
+      )}
       {meta.label}
     </span>
   );

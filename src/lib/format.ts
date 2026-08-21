@@ -66,7 +66,7 @@ export type DueState = "none" | "ok" | "soon" | "today" | "overdue";
 
 export function dueState(ticket: Pick<Ticket, "due_at" | "status">): DueState {
   if (!ticket.due_at) return "none";
-  if (ticket.status === "approved" || ticket.status === "delivered") return "ok";
+  if (ticket.status === "approved" || ticket.status === "sent_to_client") return "ok";
   const ms = new Date(ticket.due_at).getTime() - Date.now();
   if (ms < 0) return "overdue";
   if (ms < 12 * 3600_000) return "today";

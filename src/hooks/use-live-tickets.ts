@@ -60,7 +60,7 @@ export function useLiveTickets(initial: TicketWithRefs[]) {
           queryClient.setQueryData<TicketWithRefs[]>(queryKeys.tickets, (rows) => {
             const list = rows ?? [];
             const at = list.findIndex((row) => row.id === fresh.id);
-            if (fresh.status === "delivered") return list.filter((row) => row.id !== fresh.id);
+            if (fresh.status === "approved") return list.filter((row) => row.id !== fresh.id);
             if (at === -1) return [...list, fresh];
             const copy = list.slice();
             copy[at] = fresh;

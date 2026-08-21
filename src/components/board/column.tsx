@@ -28,10 +28,19 @@ export function Column({
 
   return (
     <section className="flex h-full w-[286px] shrink-0 flex-col">
-      <header className="mb-2 flex items-center gap-2 px-1">
-        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: meta.tone }} />
-        <h2 className="text-[12.5px] font-semibold tracking-tight">{meta.label}</h2>
-        <span className="tabular rounded-full bg-[var(--color-surface-3)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--color-ink-2)]">
+      <header
+        className="mb-2 flex items-center gap-2 rounded-[var(--radius-md)] px-2.5 py-1.5"
+        style={{ background: `color-mix(in srgb, ${meta.fill} 12%, transparent)` }}
+        title={meta.hint}
+      >
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: meta.fill }} />
+        <h2 className="text-[12.5px] font-semibold tracking-tight" style={{ color: meta.fill }}>
+          {meta.label}
+        </h2>
+        <span
+          className="tabular rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold text-white"
+          style={{ background: meta.fill }}
+        >
           {tickets.length}
         </span>
         {units > tickets.length && (

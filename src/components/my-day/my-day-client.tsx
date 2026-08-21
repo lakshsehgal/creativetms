@@ -33,14 +33,22 @@ export function MyDayClient({
   const mine = tickets.filter((ticket) => ticket.assigned_to === profile.id);
   const running = mine.find((ticket) => ticket.status === "in_progress");
   const upNext = mine
-    .filter((ticket) => ["assigned", "revisions"].includes(ticket.status))
+    .filter((ticket) =>
+      ["new_request", "size_changes", "needs_edit", "on_hold", "awaiting_assets"].includes(
+        ticket.status,
+      ),
+    )
     .sort(
       (a, b) =>
         PRIORITIES[b.priority].rank - PRIORITIES[a.priority].rank ||
         (a.due_at ?? "9999").localeCompare(b.due_at ?? "9999"),
     );
-  const waiting = mine.filter((ticket) => ticket.status === "in_review");
-  const free = tickets.filter((ticket) => ticket.status === "backlog" && !ticket.assigned_to);
+  const waiting = mine.filter((ticket) =>
+    ["ready_for_approval", "sent_to_client"].includes(ticket.status),
+  );
+  const free = tickets.filter(
+    (ticket) => ticket.status === "new_request" && !ticket.assigned_to,
+  );
 
   useHeartbeat(running?.id ?? null, Boolean(running));
   useTicking(Boolean(running));
@@ -288,7 +296,7 @@ function QueueRow({
           {ticket.brand.name}
         </span>
       )}
-      {ticket.status === "revisions" && (
+      {ticket.status === "needs_edit" && (
         <span className="shrink-0 text-[11px]" style={{ color: "var(--color-serious)" }}>
           round {ticket.revision_count}
         </span>

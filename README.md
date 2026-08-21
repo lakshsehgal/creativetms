@@ -77,6 +77,9 @@ Paste `supabase/migrations/0001_init.sql` into the **SQL Editor** and run it. It
 creates every table, the RLS policies, the time-tracking triggers and the
 reporting functions. Optionally run `supabase/seed.sql` for a few starter brands.
 
+Then run `0003_workflow_v2.sql`, which brings in the nine-status workflow, the
+UGC format, saved views and the daily plan.
+
 `0002_review_links.sql` is only needed if you ran an earlier copy of `0001`
 before review links existed — a fresh project gets everything from `0001` alone.
 It's safe to run either way.
@@ -179,11 +182,37 @@ supabase/migrations/  the whole schema, RLS and triggers in one file
 ## Ticket lifecycle
 
 ```
-backlog → assigned → in_progress → in_review → approved → delivered
-                         ↑              ↓
-                         └─ revisions ──┘
+New Request → In Progress → Ready for Approval → Sent to Client → Approved
+                   ↑                 │                  │
+                   └── Needs Edit ───┴──────────────────┘
+                   └── Size Changes ─┘
+
+Side states, none of which run the clock:
+   Awaiting Assets · On Hold
 ```
 
-`in_progress` is the only state where the clock runs. `revisions` increments the
-round counter and clears any prior sign-off, which is what makes first-pass
-approval rate a number worth reading.
+**In Progress is the only status where the clock runs.** Ready for Approval
+stops it; Needs Edit sends the work back, and the next In Progress adds to the
+same running total rather than starting a fresh one.
+
+Needs Edit increments the revision counter and clears any sign-off — that's
+what makes the first-pass approval rate worth reading. **Size Changes
+deliberately does not**: a resize request isn't the designer missing the brief,
+and folding it in would make that number meaningless.
+
+A designer may hold several tickets In Progress at once — that's what a day's
+plan looks like. Only one of them has a running clock; starting a second stops
+the first's timer and leaves its status alone.
+
+## Views
+
+| View | What it's for |
+|---|---|
+| **Board** | Kanban across all nine statuses, drag to move |
+| **List** | Monday-style grouped table with coloured status cells, edit status and assignee inline |
+| **Today** | Who has picked up what today, grouped by designer — the answer to "what are you working on?" without asking |
+
+Filters (search, status, brand, format, designer, who raised it, and a date
+period over raised/due/approved) live in the URL, so a filtered screen can be
+pasted to a colleague and open the same way. Save any combination as a named
+view, private or shared with the team.

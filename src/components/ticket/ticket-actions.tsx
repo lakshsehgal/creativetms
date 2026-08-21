@@ -55,7 +55,7 @@ export function TicketActions({
   async function submitForReview(withUrl?: string) {
     setBusy("submit");
 
-    const patch: Record<string, unknown> = { status: "in_review" };
+    const patch: Record<string, unknown> = { status: "ready_for_approval" };
     if (withUrl !== undefined) patch.review_url = withUrl.trim() || null;
     if (unclaimed && profile.role === "designer") patch.assigned_to = profile.id;
 
@@ -81,7 +81,7 @@ export function TicketActions({
 
     const { error } = await supabase
       .from("tickets")
-      .update({ status: "revisions" })
+      .update({ status: "needs_edit" })
       .eq("id", ticket.id);
 
     if (error) {
@@ -114,8 +114,20 @@ export function TicketActions({
 
   const actions: React.ReactNode[] = [];
 
+  /* ---------------------------------------------------------------- designer
+   * Their side of the handoff. Starting work is the only thing that starts
+   * the clock, and submitting is the only thing that hands it back.
+   * -------------------------------------------------------------------- */
   if (profile.role === "designer" && (isOwner || unclaimed)) {
-    if (["backlog", "assigned", "revisions"].includes(ticket.status)) {
+    const pickUpFrom: TicketStatus[] = [
+      "new_request",
+      "size_changes",
+      "needs_edit",
+      "on_hold",
+      "awaiting_assets",
+    ];
+
+    if (pickUpFrom.includes(ticket.status)) {
       actions.push(
         <Button
           key="start"
@@ -125,7 +137,7 @@ export function TicketActions({
           onClick={() => move("in_progress", "Clock started", "start")}
         >
           <Play size={13} fill="currentColor" />
-          {ticket.status === "revisions" ? "Resume" : "Start working"}
+          {ticket.status === "new_request" ? "Start working" : "Pick back up"}
         </Button>,
       );
     }
@@ -133,13 +145,22 @@ export function TicketActions({
     if (ticket.status === "in_progress") {
       actions.push(
         <Button
-          key="pause"
+          key="hold"
           size="sm"
-          loading={busy === "pause"}
-          onClick={() => move("assigned", "Paused — clock stopped", "pause")}
+          loading={busy === "hold"}
+          onClick={() => move("on_hold", "Paused — clock stopped", "hold")}
           title="Stops the clock and keeps the ticket yours"
         >
           <Pause size={13} /> Pause
+        </Button>,
+        <Button
+          key="blocked"
+          size="sm"
+          loading={busy === "blocked"}
+          onClick={() => move("awaiting_assets", "Flagged as waiting on assets", "blocked")}
+          title="Stops the clock — you're blocked on someone else"
+        >
+          Awaiting assets
         </Button>,
         <Button
           key="submit"
@@ -150,21 +171,48 @@ export function TicketActions({
             ticket.review_url ? void submitForReview() : setAskingForLink(true)
           }
         >
-          <Send size={13} /> Submit for review
+          <Send size={13} /> Ready for approval
         </Button>,
       );
     }
   }
 
+  /* -------------------------------------------------------------- strategist
+   * Everything client-facing, plus the two ways work comes back.
+   * -------------------------------------------------------------------- */
   if (isStaff) {
-    if (ticket.status === "in_review" || ticket.status === "revisions") {
+    if (ticket.status === "ready_for_approval" || ticket.status === "sent_to_client") {
       actions.push(
         <Button key="revise" size="sm" onClick={() => setRevising(true)}>
-          <RotateCcw size={13} /> Request revisions
+          <RotateCcw size={13} /> Needs edit
+        </Button>,
+        <Button
+          key="sizes"
+          size="sm"
+          loading={busy === "sizes"}
+          onClick={() => move("size_changes", "Sent back for size changes", "sizes")}
+          title="A resize ask — deliberately not counted as a revision round"
+        >
+          Size changes
         </Button>,
       );
     }
-    if (ticket.status === "in_review") {
+
+    if (ticket.status === "ready_for_approval") {
+      actions.push(
+        <Button
+          key="send"
+          variant="primary"
+          size="sm"
+          loading={busy === "send"}
+          onClick={() => move("sent_to_client", "Sent to client", "send")}
+        >
+          <Truck size={13} /> Send to client
+        </Button>,
+      );
+    }
+
+    if (ticket.status === "sent_to_client" || ticket.status === "ready_for_approval") {
       actions.push(
         <Button
           key="approve"
@@ -177,19 +225,6 @@ export function TicketActions({
         </Button>,
       );
     }
-    if (ticket.status === "approved") {
-      actions.push(
-        <Button
-          key="deliver"
-          variant="primary"
-          size="sm"
-          loading={busy === "deliver"}
-          onClick={() => move("delivered", "Marked delivered", "deliver")}
-        >
-          <Truck size={13} /> Mark delivered
-        </Button>,
-      );
-    }
   }
 
   return (
@@ -199,11 +234,13 @@ export function TicketActions({
           actions
         ) : (
           <p className="text-[12px] text-[var(--color-ink-3)]">
-            {ticket.status === "in_review"
+            {ticket.status === "ready_for_approval"
               ? "With the strategist for review."
-              : ticket.status === "delivered"
-                ? "Delivered."
-                : "Nothing for you to do here right now."}
+              : ticket.status === "sent_to_client"
+                ? "With the client."
+                : ticket.status === "approved"
+                  ? "Approved and done."
+                  : "Nothing for you to do here right now."}
           </p>
         )}
       </div>

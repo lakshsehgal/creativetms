@@ -61,7 +61,7 @@ export function NewTicketDialog({
       brand_id: brandId || null,
       created_by: authorId,
       assigned_to: assignee || null,
-      status: assignee ? "assigned" : "backlog",
+      status: "new_request",
       due_at: dueAt ? new Date(dueAt).toISOString() : null,
       reference_urls: references
         .split(/[\n,]/)

@@ -64,7 +64,7 @@ export function TicketDetail({
   }
 
   const latestRevision = revisions.data?.[0];
-  const showRevisionBanner = data.status === "revisions" && latestRevision?.notes;
+  const showRevisionBanner = data.status === "needs_edit" && latestRevision?.notes;
 
   return (
     <>
@@ -240,9 +240,8 @@ export function TicketDetail({
                         void patch(
                           {
                             assigned_to: event.target.value || null,
-                            ...(event.target.value && data.status === "backlog"
-                              ? { status: "assigned" }
-                              : {}),
+                            // Assigning alone doesn't start anything; the
+                            // designer still has to pick it up.
                           },
                           "Reassigned",
                         )
@@ -355,7 +354,7 @@ export function TicketDetail({
                 </Row>
 
                 <Row label="Stage">
-                  <span style={{ color: STATUSES[data.status].tone }}>
+                  <span style={{ color: STATUSES[data.status].fill }}>
                     {STATUSES[data.status].hint}
                   </span>
                 </Row>
