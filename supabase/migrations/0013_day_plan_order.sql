@@ -89,28 +89,47 @@ update tickets t
 -- ---------------------------------------------------------------------------
 -- The floor view follows the same order, so what a strategist sees on the
 -- Today screen is the order the designer actually intends to work in.
+--
+-- The signature below is byte-for-byte the one from 0003. An earlier draft of
+-- this migration retyped it from memory, quietly losing `ticket_number` and
+-- renaming `brand_name`, and Postgres refused it: CREATE OR REPLACE cannot
+-- change a function's return type (42P13). Only the ORDER BY and the
+-- deleted-ticket filter actually change here.
+--
+-- It is dropped first rather than replaced, so this runs cleanly whatever
+-- shape the function is currently in — including on a database where that
+-- broken draft did land. Nothing calls it from the app, and the grant is
+-- reinstated below.
 -- ---------------------------------------------------------------------------
-create or replace function todays_plan(p_day date default null)
+drop function if exists todays_plan(date);
+
+create function todays_plan(p_day date default null)
 returns table (
   designer_id   uuid,
   designer_name text,
   ticket_id     uuid,
+  ticket_number int,
   title         text,
   format        creative_format,
   quantity      int,
   status        ticket_status,
-  brand         text,
+  brand_name    text,
   due_at        timestamptz,
   is_running    boolean
 ) language plpgsql stable security definer set search_path = public as $$
 declare
   v_day date := coalesce(p_day, (now() at time zone 'Asia/Kolkata')::date);
 begin
+  if not (is_staff() or auth_role() = 'designer') then
+    raise exception 'Not permitted';
+  end if;
+
   return query
   select
     p.id,
     coalesce(nullif(p.full_name, ''), p.email),
     t.id,
+    t.number,
     t.title,
     t.format,
     t.quantity,
@@ -128,6 +147,7 @@ begin
     and t.deleted_at is null
     -- A designer sees their own row; staff see the whole floor.
     and (is_staff() or t.assigned_to = auth.uid())
+  -- The designer's own running order, not the studio's opinion of it.
   order by p.full_name, t.plan_position nulls last, t.due_at nulls last;
 end;
 $$;
