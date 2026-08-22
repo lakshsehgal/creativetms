@@ -9,6 +9,12 @@
 --     operators see the live picture.
 -- ===========================================================================
 
+-- NOTE: Postgres will not let a newly added enum value be USED in the same
+-- transaction that adds it, and the Supabase SQL editor runs a script as one
+-- transaction. Every comparison against these new values below is therefore
+-- written against ::text, which the planner treats as an ordinary string
+-- rather than a not-yet-committed enum literal. That keeps this file runnable
+-- in a single pass.
 alter type user_role add value if not exists 'operator';
 alter type session_end_reason add value if not exists 'break';
 
@@ -28,7 +34,7 @@ create or replace function is_analyst()
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from profiles
-    where id = auth.uid() and role in ('admin', 'operator') and is_active
+    where id = auth.uid() and role::text in ('admin', 'operator') and is_active
   )
 $$;
 
@@ -39,7 +45,7 @@ create or replace function is_staff()
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from profiles
-    where id = auth.uid() and role in ('admin', 'strategist') and is_active
+    where id = auth.uid() and role::text in ('admin', 'strategist') and is_active
   )
 $$;
 
@@ -85,7 +91,7 @@ begin
   limit 1;
 
   update work_sessions
-     set ended_at = now(), end_reason = 'break'
+     set ended_at = now(), end_reason = 'break'::session_end_reason
    where designer_id = v_user and ended_at is null;
 
   update profiles
