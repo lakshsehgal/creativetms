@@ -5,9 +5,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
 import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
-import { FORMATS, PRIORITIES, STATUSES, canSeeAllTime, canSeeOwnTime } from "@/lib/types";
+import { formatMeta, PRIORITIES, STATUSES, canSeeAllTime, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, dueState, relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { withRetry, reportWriteFailure } from "@/lib/write";
 import { fetchTeam, queryKeys } from "@/lib/queries";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
@@ -58,9 +59,11 @@ export function TicketDetail({
   });
 
   async function patch(fields: Record<string, unknown>, label: string) {
-    const { error } = await supabase.from("tickets").update(fields).eq("id", data.id);
+    const { error } = await withRetry(() =>
+      supabase.from("tickets").update(fields).eq("id", data.id),
+    );
     if (error) {
-      toast.error(error.message.replace(/^.*?:\s*/, ""));
+      reportWriteFailure(error.message, "that change", () => void patch(fields, label));
       return;
     }
     queryClient.invalidateQueries({ queryKey: queryKeys.ticket(data.id) });
@@ -391,7 +394,7 @@ export function TicketDetail({
 
                 <Row label="Format">
                   <span>
-                    {FORMATS[data.format].label}
+                    {formatMeta(data.format).label}
                     {data.quantity > 1 && ` ×${data.quantity}`}
                   </span>
                 </Row>

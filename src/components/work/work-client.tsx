@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { CalendarCheck, GanttChart, KanbanSquare, Plus, Rows3, Scale } from "lucide-react";
 import type {
   Brand,
@@ -17,6 +16,7 @@ import { benchmarkMap } from "@/lib/planning";
 import { positionBetween, queryKeys } from "@/lib/queries";
 import { applyFilters, filtersFromParams, filtersToParams, type TicketFilters } from "@/lib/filters";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { withRetry, reportWriteFailure } from "@/lib/write";
 import { useLiveTickets } from "@/hooks/use-live-tickets";
 import { PageHeader } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
@@ -124,11 +124,17 @@ export function WorkClient({
         payload.assigned_to = profile.id;
       }
 
-      const { error } = await supabase.from("tickets").update(payload).eq("id", ticket.id);
+      const { error } = await withRetry(() =>
+        supabase.from("tickets").update(payload).eq("id", ticket.id),
+      );
 
       if (error) {
+        // Put the board back the way it was, and make the failure something
+        // you have to acknowledge rather than a toast that fades.
         queryClient.setQueryData(queryKeys.tickets, previous);
-        toast.error(error.message.replace(/^.*?:\s*/, ""));
+        reportWriteFailure(error.message, `“${ticket.title}”`, () => {
+          void patch(ticket, fields);
+        });
         return;
       }
 

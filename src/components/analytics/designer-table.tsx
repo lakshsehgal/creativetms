@@ -128,7 +128,7 @@ export function DesignerTable({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse text-[12.5px]">
+          <table className="w-full min-w-[980px] border-collapse text-[12.5px]">
             <thead>
               <tr className="border-b border-[var(--color-line)] text-[11px] uppercase tracking-[0.06em] text-[var(--color-ink-3)]">
                 <Th onClick={() => setSort("name")} active={sort === "name"} align="left">

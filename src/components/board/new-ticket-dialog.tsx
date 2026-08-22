@@ -6,9 +6,36 @@ import { toast } from "sonner";
 import type { Brand, CreativeFormat, Profile, TicketPriority } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS, PRIORITIES } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { useDraft } from "@/hooks/use-draft";
+import { withRetry, reportWriteFailure } from "@/lib/write";
 import { queryKeys } from "@/lib/queries";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/ui/form";
+
+/** Everything the form holds, so it can be stored and restored as one thing. */
+interface DraftTicket {
+  title: string;
+  brief: string;
+  format: CreativeFormat;
+  quantity: number;
+  priority: TicketPriority;
+  brandId: string;
+  assignee: string;
+  dueAt: string;
+  references: string;
+}
+
+const EMPTY: DraftTicket = {
+  title: "",
+  brief: "",
+  format: "static",
+  quantity: 1,
+  priority: "normal",
+  brandId: "",
+  assignee: "",
+  dueAt: "",
+  references: "",
+};
 
 export function NewTicketDialog({
   open,
@@ -26,15 +53,39 @@ export function NewTicketDialog({
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
 
-  const [title, setTitle] = useState("");
-  const [brief, setBrief] = useState("");
-  const [format, setFormat] = useState<CreativeFormat>("static");
-  const [quantity, setQuantity] = useState(1);
-  const [priority, setPriority] = useState<TicketPriority>("normal");
-  const [brandId, setBrandId] = useState("");
-  const [assignee, setAssignee] = useState("");
-  const [dueAt, setDueAt] = useState("");
-  const [references, setReferences] = useState("");
+  /**
+   * The whole form is one draft.
+   *
+   * A brief is the longest thing anybody types in this tool, and the dialog
+   * closes on Escape and on a backdrop click — both one keystroke away from
+   * losing twenty minutes of writing. It's kept until the ticket is actually
+   * raised.
+   */
+  const draft = useDraft<DraftTicket>(
+    `new-ticket:${authorId}`,
+    EMPTY,
+    (value) =>
+      value.title.trim().length > 0 ||
+      value.brief.trim().length > 0 ||
+      value.references.trim().length > 0,
+  );
+  const form = draft.value;
+  const field = <K extends keyof DraftTicket>(key: K, value: DraftTicket[K]) =>
+    draft.set((previous) => ({ ...previous, [key]: value }));
+
+  const { title, brief, format, quantity, priority, brandId, assignee, dueAt, references } =
+    form;
+
+  const setTitle = (value: string) => field("title", value);
+  const setBrief = (value: string) => field("brief", value);
+  const setFormat = (value: CreativeFormat) => field("format", value);
+  const setQuantity = (value: number) => field("quantity", value);
+  const setPriority = (value: TicketPriority) => field("priority", value);
+  const setBrandId = (value: string) => field("brandId", value);
+  const setAssignee = (value: string) => field("assignee", value);
+  const setDueAt = (value: string) => field("dueAt", value);
+  const setReferences = (value: string) => field("references", value);
+
   const [saving, setSaving] = useState(false);
 
   // Mirrors the database rule in enforce_due_date_rule().
@@ -47,43 +98,36 @@ export function NewTicketDialog({
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T00:00`;
   })();
 
-  function reset() {
-    setTitle("");
-    setBrief("");
-    setQuantity(1);
-    setPriority("normal");
-    setAssignee("");
-    setDueAt("");
-    setReferences("");
-  }
-
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
 
-    const { error } = await supabase.from("tickets").insert({
-      title: title.trim(),
-      brief: brief.trim(),
-      format,
-      quantity,
-      priority,
-      brand_id: brandId || null,
-      created_by: authorId,
-      assigned_to: assignee || null,
-      status: "new_request",
-      due_at: dueAt ? new Date(dueAt).toISOString() : null,
-      reference_urls: references
-        .split(/[\n,]/)
-        .map((url) => url.trim())
-        .filter(Boolean),
-      position: Date.now(),
-    });
+    const { error } = await withRetry(() =>
+      supabase.from("tickets").insert({
+        title: title.trim(),
+        brief: brief.trim(),
+        format,
+        quantity,
+        priority,
+        brand_id: brandId || null,
+        created_by: authorId,
+        assigned_to: assignee || null,
+        status: "new_request",
+        due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        reference_urls: references
+          .split(/[\n,]/)
+          .map((url) => url.trim())
+          .filter(Boolean),
+        position: Date.now(),
+      }),
+    );
 
     setSaving(false);
 
     if (error) {
-      toast.error(error.message);
+      // Everything typed stays on screen and in the stored draft.
+      reportWriteFailure(error.message, "that brief", () => void submit(event));
       return;
     }
 
@@ -91,7 +135,8 @@ export function NewTicketDialog({
     // assignee correct even if the socket is slow to arrive.
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
     toast.success(assignee ? "Ticket raised and assigned" : "Ticket raised to the backlog");
-    reset();
+    // Saved for real — the stored copy can go.
+    draft.clear();
     onClose();
   }
 
@@ -104,6 +149,19 @@ export function NewTicketDialog({
       width={580}
     >
       <form onSubmit={submit}>
+        {draft.restored && (
+          <p className="mb-3 flex items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent-soft)] px-2.5 py-1.5 text-[11.5px]">
+            Picked up where you left off.
+            <button
+              type="button"
+              onClick={draft.discard}
+              className="ml-auto font-medium underline underline-offset-2"
+            >
+              Start fresh
+            </button>
+          </p>
+        )}
+
         <Field label="Title" htmlFor="title">
           <TextInput
             id="title"

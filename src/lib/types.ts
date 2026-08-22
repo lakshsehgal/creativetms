@@ -1,7 +1,14 @@
 /** Domain vocabulary. Mirrors the enums in supabase/migrations/0001_init.sql. */
 
 export type UserRole = "admin" | "operator" | "strategist" | "designer";
-export type CreativeFormat = "video" | "static" | "carousel" | "gif" | "ugc";
+export type CreativeFormat =
+  | "video"
+  | "static"
+  | "carousel"
+  | "gif"
+  /** The one-minute UGC cut. The stored value stays "ugc" — see migration 0009. */
+  | "ugc"
+  | "ugc_30s";
 export type TicketStatus =
   | "new_request"
   | "in_progress"
@@ -148,7 +155,12 @@ export interface Attachment {
   id: string;
   ticket_id: string;
   uploaded_by: string;
-  storage_path: string;
+  /** Set only on files uploaded before working files became links. */
+  storage_path: string | null;
+  /** Where the working file actually lives. Set on everything added since. */
+  url: string | null;
+  /** What the person called it; falls back to the host, then the file name. */
+  label: string;
   file_name: string;
   mime_type: string;
   size_bytes: number;
@@ -208,10 +220,18 @@ export const FORMATS: Record<
   static: { label: "Static", short: "STA", series: "var(--color-series-2)", icon: "■" },
   carousel: { label: "Carousel", short: "CAR", series: "var(--color-series-3)", icon: "▤" },
   gif: { label: "GIF", short: "GIF", series: "var(--color-series-4)", icon: "◐" },
-  ugc: { label: "UGC", short: "UGC", series: "var(--color-series-5)", icon: "◉" },
+  ugc: { label: "UGC — 1 min", short: "UGC60", series: "var(--color-series-5)", icon: "◉" },
+  ugc_30s: { label: "UGC — 30s", short: "UGC30", series: "var(--color-series-6)", icon: "◎" },
 };
 
-export const FORMAT_ORDER: CreativeFormat[] = ["video", "static", "carousel", "gif", "ugc"];
+export const FORMAT_ORDER: CreativeFormat[] = [
+  "video",
+  "static",
+  "carousel",
+  "gif",
+  "ugc",
+  "ugc_30s",
+];
 
 export const STATUSES: Record<
   TicketStatus,

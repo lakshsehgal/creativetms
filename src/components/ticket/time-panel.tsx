@@ -8,7 +8,7 @@ import type {
   WorkPhase,
   WorkSession,
 } from "@/lib/types";
-import { FORMATS, PHASE_ORDER, canSeeLiveTimer, phaseMeta } from "@/lib/types";
+import { formatMeta, PHASE_ORDER, canSeeLiveTimer, phaseMeta } from "@/lib/types";
 import { humanDuration, minutesToHuman, relativeTime, stopwatch } from "@/lib/format";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
 
@@ -69,7 +69,7 @@ export function TimePanel({
   // Formats nobody has measured yet (UGC, to begin with) simply show the time.
   const ratio = targetSeconds > 0 ? perUnit / targetSeconds : null;
 
-  const meta = FORMATS[ticket.format];
+  const meta = formatMeta(ticket.format);
 
   return (
     <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)]">

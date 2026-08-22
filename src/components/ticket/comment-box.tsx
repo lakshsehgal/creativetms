@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { AtSign, Send } from "lucide-react";
 import type { Profile } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { useDraft } from "@/hooks/use-draft";
+import { withRetry, reportWriteFailure } from "@/lib/write";
 import { queryKeys } from "@/lib/queries";
 import { Avatar } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
@@ -30,7 +32,16 @@ export function CommentBox({
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const [body, setBody] = useState("");
+  // Per ticket, so a half-written note on one brief isn't clobbered by
+  // opening another.
+  const draft = useDraft<string>(
+    `comment:${ticketId}`,
+    "",
+    (text) => text.trim().length > 0,
+  );
+  const body = draft.value;
+  const setBody = draft.set;
+
   const [sending, setSending] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(0);
@@ -91,15 +102,18 @@ export function CommentBox({
     if (!text) return;
 
     setSending(true);
-    const { data, error } = await supabase
-      .from("comments")
-      .insert({ ticket_id: ticketId, author_id: profile.id, body: text })
-      .select("id")
-      .single();
+    const { data, error } = await withRetry<{ id: string }>(() =>
+      supabase
+        .from("comments")
+        .insert({ ticket_id: ticketId, author_id: profile.id, body: text })
+        .select("id")
+        .single(),
+    );
 
     if (error) {
       setSending(false);
-      toast.error(error.message);
+      // The text stays exactly where it is, and the draft copy with it.
+      reportWriteFailure(error.message, "that comment", () => void send());
       return;
     }
 
@@ -115,7 +129,8 @@ export function CommentBox({
     }
 
     setSending(false);
-    setBody("");
+    // Only now is the stored copy safe to throw away.
+    draft.clear();
     setMentionQuery(null);
     queryClient.invalidateQueries({ queryKey: queryKeys.comments(ticketId) });
   }
@@ -131,6 +146,18 @@ export function CommentBox({
       />
 
       <div className="min-w-0 flex-1">
+        {draft.restored && (
+          <p className="mb-1.5 text-[11px] text-[var(--color-ink-3)]">
+            Unsent draft restored.{" "}
+            <button
+              type="button"
+              onClick={draft.discard}
+              className="underline underline-offset-2 hover:text-[var(--color-ink)]"
+            >
+              Clear it
+            </button>
+          </p>
+        )}
         <div className="rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] transition-[border-color,box-shadow] focus-within:border-[var(--color-accent)] focus-within:shadow-[0_0_0_3px_var(--color-accent-soft)]">
           <textarea
             ref={inputRef}
