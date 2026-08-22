@@ -388,7 +388,7 @@ export interface SavedView {
   owner_id: string;
   name: string;
   filters: Record<string, string>;
-  layout: "board" | "list";
+  layout: "board" | "list" | "workload" | "timeline";
   is_shared: boolean;
   created_at: string;
 }

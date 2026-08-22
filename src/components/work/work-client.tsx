@@ -4,8 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarCheck, KanbanSquare, Plus, Rows3 } from "lucide-react";
-import type { Brand, Profile, SavedView, TicketStatus, TicketWithRefs } from "@/lib/types";
+import { CalendarCheck, GanttChart, KanbanSquare, Plus, Rows3, Scale } from "lucide-react";
+import type {
+  Brand,
+  FormatBenchmark,
+  Profile,
+  SavedView,
+  TicketStatus,
+  TicketWithRefs,
+} from "@/lib/types";
+import { benchmarkMap } from "@/lib/planning";
 import { positionBetween, queryKeys } from "@/lib/queries";
 import { applyFilters, filtersFromParams, filtersToParams, type TicketFilters } from "@/lib/filters";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -19,8 +27,10 @@ import { SavedViews } from "./saved-views";
 import { BoardView } from "./board-view";
 import { ListView } from "./list-view";
 import { TodayView } from "./today-view";
+import { WorkloadView } from "./workload-view";
+import { TimelineView } from "./timeline-view";
 
-type Layout = "board" | "list" | "today";
+type Layout = "board" | "list" | "today" | "workload" | "timeline";
 
 // List first: it's the view that answers "what's the state of everything"
 // fastest, which is the question most people open the tool with.
@@ -28,7 +38,12 @@ const LAYOUTS: { key: Layout; label: string; icon: typeof Rows3 }[] = [
   { key: "list", label: "List", icon: Rows3 },
   { key: "board", label: "Board", icon: KanbanSquare },
   { key: "today", label: "Today", icon: CalendarCheck },
+  { key: "workload", label: "Workload", icon: Scale },
+  { key: "timeline", label: "Timeline", icon: GanttChart },
 ];
+
+/** Views that answer a question about the whole studio, not a filtered slice. */
+const UNFILTERED: Layout[] = ["today"];
 
 export function WorkClient({
   profile,
@@ -36,12 +51,14 @@ export function WorkClient({
   brands,
   designers,
   strategists,
+  benchmarks,
 }: {
   profile: Profile;
   initialTickets: TicketWithRefs[];
   brands: Brand[];
   designers: Profile[];
   strategists: Profile[];
+  benchmarks: FormatBenchmark[];
 }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
@@ -85,6 +102,8 @@ export function WorkClient({
     () => applyFilters(tickets, filters, profile),
     [tickets, filters, profile],
   );
+
+  const benchmarkLookup = useMemo(() => benchmarkMap(benchmarks), [benchmarks]);
 
   /**
    * Optimistic write: patch the cache first, reconcile after. This is what
@@ -194,7 +213,7 @@ export function WorkClient({
         )}
       </PageHeader>
 
-      {layout !== "today" && (
+      {!UNFILTERED.includes(layout) && (
         <FilterBar
           filters={filters}
           onChange={(next) => setFilters(next)}
@@ -231,6 +250,19 @@ export function WorkClient({
             designers={designers}
             onPatch={(ticket, fields) => void patch(ticket, fields)}
           />
+        )}
+        {layout === "workload" && (
+          <WorkloadView
+            tickets={visible}
+            viewer={profile}
+            designers={designers}
+            benchmarks={benchmarkLookup}
+            onPatch={(ticket, fields) => void patch(ticket, fields)}
+            onOpen={setOpenTicketId}
+          />
+        )}
+        {layout === "timeline" && (
+          <TimelineView tickets={visible} viewer={profile} onOpen={setOpenTicketId} />
         )}
       </div>
 

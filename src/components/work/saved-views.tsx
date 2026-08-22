@@ -19,7 +19,7 @@ export function SavedViews({
 }: {
   viewer: Profile;
   filters: TicketFilters;
-  layout: "board" | "list" | "today";
+  layout: "board" | "list" | "today" | "workload" | "timeline";
   onApply: (view: SavedView) => void;
 }) {
   const supabase = supabaseBrowser();
@@ -52,8 +52,9 @@ export function SavedViews({
         owner_id: viewer.id,
         name: name.trim(),
         filters,
-        // "today" isn't a saved layout — it's a live view of the day.
-        layout: layout === "list" ? "list" : "board",
+        // "today" isn't a saved layout — it's a live view of the day, with
+        // no filters to remember, so it falls back to the list.
+        layout: layout === "today" ? "list" : layout,
         is_shared: shared,
       },
       { onConflict: "owner_id,name" },
