@@ -204,12 +204,59 @@ A designer may hold several tickets In Progress at once — that's what a day's
 plan looks like. Only one of them has a running clock; starting a second stops
 the first's timer and leaves its status alone.
 
+## Time, split by kind of work
+
+Every work session is stamped with what kind of work it was, so a ticket's
+total breaks down rather than sitting as one opaque number:
+
+| Phase | When it applies |
+|---|---|
+| **Original build** | From New Request through the first submission |
+| **Revisions** | Everything after a Needs Edit |
+| **Size changes** | Everything after a Size Changes request |
+
+The phase lives on the ticket rather than being inferred from the previous
+status, so a designer who pauses mid-revision and resumes tomorrow is still
+doing revision work.
+
+This is what makes "how long does a static take us" answerable: the original
+build is the number to benchmark, and revisions and resizes are separate
+costs worth seeing on their own.
+
+## Deliverables
+
+Every submission creates a new version — V1, V2, V3 — rather than overwriting
+one link. Marking a ticket Ready for Approval always asks for the Frame.io
+link and records it against the round it belongs to, so a strategist can open
+V1 next to V3 and see whether the notes landed.
+
+## Notifications
+
+Written by database triggers, not by the browser, so a ping can't be lost to a
+dropped request or a tab closed at the wrong moment. Delivered live to the
+bell in the sidebar.
+
+| Event | Who hears |
+|---|---|
+| Ready for Approval | Whoever raised the brief |
+| Needs Edit | The designer |
+| Size Changes | The designer |
+| Approved / Sent to Client | The designer |
+| Assigned | The new assignee |
+
+## The noon rule
+
+A brief raised after midday can't be given the same day's due date. The
+designer's day is planned in the morning, so a same-day deadline set at 3pm is
+a promise the floor can't keep. The date picker won't offer today, and the
+database refuses it as well.
+
 ## Views
 
 | View | What it's for |
 |---|---|
+| **List** (default) | Grouped table with coloured status cells, edit status and assignee inline |
 | **Board** | Kanban across all nine statuses, drag to move |
-| **List** | Monday-style grouped table with coloured status cells, edit status and assignee inline |
 | **Today** | Who has picked up what today, grouped by designer — the answer to "what are you working on?" without asking |
 
 Filters (search, status, brand, format, designer, who raised it, and a date

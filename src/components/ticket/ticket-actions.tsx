@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Link2, Pause, Play, RotateCcw, Send, Truck } from "lucide-react";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
@@ -24,6 +24,20 @@ export function TicketActions({
   const [notes, setNotes] = useState("");
   const [askingForLink, setAskingForLink] = useState(false);
   const [reviewUrl, setReviewUrl] = useState("");
+
+  // Version number this submission will take.
+  const deliverables = useQuery({
+    queryKey: ["deliverables", ticket.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deliverables")
+        .select("version")
+        .eq("ticket_id", ticket.id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const nextVersion = (deliverables.data?.length ?? 0) + 1;
 
   const isOwner = ticket.assigned_to === profile.id;
   const isStaff = profile.role === "admin" || profile.role === "strategist";
@@ -55,8 +69,32 @@ export function TicketActions({
   async function submitForReview(withUrl?: string) {
     setBusy("submit");
 
+    const url = withUrl?.trim() ?? "";
+
+    // Each submission is its own version. V1 stays readable after V2 lands,
+    // so a strategist can see what changed between rounds rather than
+    // discovering the link has silently been replaced.
+    if (url) {
+      const { data: last } = await supabase
+        .from("deliverables")
+        .select("version")
+        .eq("ticket_id", ticket.id)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      await supabase.from("deliverables").insert({
+        ticket_id: ticket.id,
+        version: (last?.version ?? 0) + 1,
+        url,
+        phase: ticket.work_phase,
+        submitted_by: profile.id,
+      });
+    }
+
     const patch: Record<string, unknown> = { status: "ready_for_approval" };
-    if (withUrl !== undefined) patch.review_url = withUrl.trim() || null;
+    // review_url stays as the newest link so the board and list can link out.
+    if (url) patch.review_url = url;
     if (unclaimed && profile.role === "designer") patch.assigned_to = profile.id;
 
     const { error } = await supabase.from("tickets").update(patch).eq("id", ticket.id);
@@ -69,6 +107,7 @@ export function TicketActions({
 
     setAskingForLink(false);
     setReviewUrl("");
+    queryClient.invalidateQueries({ queryKey: ["deliverables", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.ticket(ticket.id) });
     queryClient.invalidateQueries({ queryKey: ["sessions", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
@@ -167,9 +206,7 @@ export function TicketActions({
           variant="primary"
           size="sm"
           loading={busy === "submit"}
-          onClick={() =>
-            ticket.review_url ? void submitForReview() : setAskingForLink(true)
-          }
+          onClick={() => setAskingForLink(true)}
         >
           <Send size={13} /> Ready for approval
         </Button>,
@@ -248,8 +285,14 @@ export function TicketActions({
       <Dialog
         open={askingForLink}
         onClose={() => setAskingForLink(false)}
-        title="Where's the review link?"
-        description="Paste the Frame.io share link so the strategist can watch it straight away."
+        title={`Frame.io link for V${nextVersion}`}
+        description={
+          ticket.work_phase === "revision"
+            ? "This round's cut. The strategist gets a notification the moment you submit."
+            : ticket.work_phase === "size_change"
+              ? "The resized set. The strategist gets a notification the moment you submit."
+              : "Paste the share link so the strategist can watch it straight away."
+        }
         width={460}
       >
         <form

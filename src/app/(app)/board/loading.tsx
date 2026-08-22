@@ -1,5 +1,5 @@
-import { BoardSkeleton } from "@/components/ui/page-skeleton";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function Loading() {
-  return <BoardSkeleton />;
+  return <PageSkeleton rows={8} />;
 }

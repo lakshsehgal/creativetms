@@ -21,9 +21,11 @@ import { TodayView } from "./today-view";
 
 type Layout = "board" | "list" | "today";
 
+// List first: it's the view that answers "what's the state of everything"
+// fastest, which is the question most people open the tool with.
 const LAYOUTS: { key: Layout; label: string; icon: typeof Rows3 }[] = [
-  { key: "board", label: "Board", icon: KanbanSquare },
   { key: "list", label: "List", icon: Rows3 },
+  { key: "board", label: "Board", icon: KanbanSquare },
   { key: "today", label: "Today", icon: CalendarCheck },
 ];
 
@@ -58,7 +60,7 @@ export function WorkClient({
    * Next to navigate anywhere.
    */
   const [filters, setLocalFilters] = useState<TicketFilters>(() => filtersFromParams(params));
-  const [layout, setLayout] = useState<Layout>(() => (params.get("view") as Layout) || "board");
+  const [layout, setLayout] = useState<Layout>(() => (params.get("view") as Layout) || "list");
 
   const setFilters = useCallback((next: TicketFilters, nextLayout: Layout = layout) => {
     setLocalFilters(next);
@@ -70,7 +72,7 @@ export function WorkClient({
   useEffect(() => {
     const id = setTimeout(() => {
       const search = filtersToParams(filters);
-      if (layout !== "board") search.set("view", layout);
+      if (layout !== "list") search.set("view", layout);
       const url = search.toString() ? `/board?${search}` : "/board";
       window.history.replaceState(null, "", url);
     }, 250);

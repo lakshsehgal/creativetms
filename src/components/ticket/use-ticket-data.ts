@@ -6,6 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys, TICKET_SELECT } from "@/lib/queries";
 import type {
   Attachment,
+  Deliverable,
   TicketComment,
   TicketEvent,
   TicketRevision,
@@ -92,6 +93,19 @@ export function useTicketData(id: string, initial: TicketWithRefs) {
     },
   });
 
+  const deliverables = useQuery({
+    queryKey: ["deliverables", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deliverables")
+        .select("*")
+        .eq("ticket_id", id)
+        .order("version", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Deliverable[];
+    },
+  });
+
   /** Sessions this viewer is allowed to see: their own, or all if admin. */
   const sessions = useQuery({
     queryKey: ["sessions", id],
@@ -131,5 +145,5 @@ export function useTicketData(id: string, initial: TicketWithRefs) {
     };
   }, [id, queryClient, supabase]);
 
-  return { ticket, comments, events, revisions, attachments, sessions };
+  return { ticket, comments, events, revisions, attachments, sessions, deliverables };
 }

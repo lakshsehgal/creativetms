@@ -17,6 +17,7 @@ import {
 import type { Profile, UserRole } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
 import { SignOutButton } from "./sign-out-button";
+import { NotificationBell } from "./notification-bell";
 
 interface NavItem {
   href: string;
@@ -135,6 +136,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
         </div>
 
         <div className={`flex gap-1 ${collapsed ? "flex-col" : ""}`}>
+          <NotificationBell collapsed={collapsed} />
           <button
             onClick={toggleTheme}
             title="Switch theme"

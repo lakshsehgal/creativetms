@@ -1,8 +1,8 @@
 "use client";
 
 import { Timer } from "lucide-react";
-import type { FormatBenchmark, TicketWithRefs, WorkSession } from "@/lib/types";
-import { FORMATS } from "@/lib/types";
+import type { FormatBenchmark, TicketWithRefs, WorkPhase, WorkSession } from "@/lib/types";
+import { FORMATS, PHASES, PHASE_ORDER } from "@/lib/types";
 import { humanDuration, minutesToHuman, relativeTime, stopwatch } from "@/lib/format";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
 
@@ -33,6 +33,19 @@ export function TimePanel({
 
   const liveSeconds = open ? secondsSince(open.started_at) : 0;
   const total = closedSeconds + liveSeconds;
+
+  // Group the sessions by what kind of work they were.
+  const byPhase = new Map<WorkPhase, number>();
+  sessions.forEach((session) => {
+    const seconds =
+      session.duration_seconds ??
+      (session.ended_at ? 0 : secondsSince(session.started_at));
+    byPhase.set(session.phase, (byPhase.get(session.phase) ?? 0) + seconds);
+  });
+  const phaseTotals = PHASE_ORDER.filter((phase) => (byPhase.get(phase) ?? 0) > 0).map(
+    (phase) => [phase, byPhase.get(phase)!] as const,
+  );
+  const phaseSum = phaseTotals.reduce((sum, [, seconds]) => sum + seconds, 0) || 1;
 
   const perUnit = ticket.quantity > 0 ? Math.round(total / ticket.quantity) : total;
   const benchmark = benchmarks.find((row) => row.format === ticket.format);
@@ -113,6 +126,43 @@ export function TimePanel({
           </div>
         )}
       </div>
+
+      {/* Where the time went. Original build vs revisions vs resizes — three
+          different conversations, and only the first is "how long does this
+          format take us". */}
+      {phaseTotals.length > 1 && (
+        <div className="border-t border-[var(--color-line)] px-4 py-3">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-[var(--color-ink-3)]">
+            Where it went
+          </p>
+
+          <div className="flex h-2 overflow-hidden rounded-full" style={{ gap: 2 }}>
+            {phaseTotals.map(([phase, seconds]) => (
+              <span
+                key={phase}
+                title={`${PHASES[phase].label}: ${humanDuration(seconds)}`}
+                style={{
+                  width: `${(seconds / phaseSum) * 100}%`,
+                  background: PHASES[phase].tone,
+                }}
+              />
+            ))}
+          </div>
+
+          <ul className="mt-2.5 space-y-1">
+            {phaseTotals.map(([phase, seconds]) => (
+              <li key={phase} className="flex items-baseline gap-2 text-[11.5px]">
+                <span
+                  className="h-2 w-2 shrink-0 rounded-[2px]"
+                  style={{ background: PHASES[phase].tone }}
+                />
+                <span className="text-[var(--color-ink-2)]">{PHASES[phase].label}</span>
+                <span className="tabular ml-auto font-medium">{humanDuration(seconds)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {canSeeDetail && sessions.length > 0 && (
         <details className="border-t border-[var(--color-line)]">

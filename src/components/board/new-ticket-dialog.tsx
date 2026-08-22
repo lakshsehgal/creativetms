@@ -37,6 +37,16 @@ export function NewTicketDialog({
   const [references, setReferences] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Mirrors the database rule in enforce_due_date_rule().
+  const pastNoon = new Date().getHours() >= 12;
+  const earliestDue = (() => {
+    const date = new Date();
+    if (pastNoon) date.setDate(date.getDate() + 1);
+    date.setHours(0, 0, 0, 0);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T00:00`;
+  })();
+
   function reset() {
     setTitle("");
     setBrief("");
@@ -185,10 +195,18 @@ export function NewTicketDialog({
             </Select>
           </Field>
 
-          <Field label="Due" htmlFor="due">
+          <Field
+            label="Due"
+            htmlFor="due"
+            hint={pastNoon ? "After midday — earliest is tomorrow" : undefined}
+          >
             <TextInput
               id="due"
               type="datetime-local"
+              // Past midday the picker won't offer today at all. A brief
+              // raised this afternoon can't realistically ship tonight — the
+              // designer's day was planned this morning.
+              min={earliestDue}
               value={dueAt}
               onChange={(event) => setDueAt(event.target.value)}
             />

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, ExternalLink, Link2, Pencil } from "lucide-react";
-import type { Profile, TicketWithRefs } from "@/lib/types";
+import type { Deliverable, Profile, TicketWithRefs } from "@/lib/types";
+import { PHASES } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Button, TextInput } from "@/components/ui/form";
@@ -17,9 +18,11 @@ import { Button, TextInput } from "@/components/ui/form";
 export function ReviewLink({
   ticket,
   profile,
+  versions = [],
 }: {
   ticket: TicketWithRefs;
   profile: Profile;
+  versions?: Deliverable[];
 }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
@@ -93,6 +96,33 @@ export function ReviewLink({
           >
             <Pencil size={13} />
           </button>
+        )}
+
+        {/* Earlier cuts stay reachable — seeing V1 next to V3 is how you tell
+            whether the notes actually landed. */}
+        {versions.length > 1 && (
+          <ul className="flex w-full flex-wrap items-center gap-1.5 border-t border-[var(--color-line)] pt-2.5">
+            <span className="text-[11px] text-[var(--color-ink-3)]">Earlier</span>
+            {versions.slice(1).map((version) => (
+              <li key={version.id}>
+                <a
+                  href={version.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`${PHASES[version.phase].label} · ${new Date(
+                    version.created_at,
+                  ).toLocaleDateString()}`}
+                  className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-line)] px-1.5 py-0.5 text-[11px] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                >
+                  V{version.version}
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ background: PHASES[version.phase].tone }}
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     );

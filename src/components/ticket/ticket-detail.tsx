@@ -34,7 +34,7 @@ export function TicketDetail({
 }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
-  const { ticket, comments, events, revisions, attachments, sessions } = useTicketData(
+  const { ticket, comments, events, revisions, attachments, sessions, deliverables } = useTicketData(
     initialTicket.id,
     initialTicket,
   );
@@ -121,7 +121,7 @@ export function TicketDetail({
               </p>
             </div>
 
-            <ReviewLink ticket={data} profile={profile} />
+            <ReviewLink ticket={data} profile={profile} versions={deliverables.data ?? []} />
 
             {showRevisionBanner && (
               <div

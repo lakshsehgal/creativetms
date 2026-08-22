@@ -14,6 +14,12 @@ export type TicketStatus =
   | "on_hold";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
+/**
+ * What kind of work a session was. Original build, a revision round, or a
+ * resize — three different questions that used to share one number.
+ */
+export type WorkPhase = "initial" | "revision" | "size_change";
+
 export interface Profile {
   id: string;
   email: string;
@@ -57,6 +63,8 @@ export interface Ticket {
   delivered_at: string | null;
   /** The designer's pledge that this is today's work. */
   planned_for: string | null;
+  /** Which kind of work the ticket is currently in. */
+  work_phase: WorkPhase;
   revision_count: number;
   position: number;
   created_at: string;
@@ -74,6 +82,34 @@ export interface TicketWithRefs extends Ticket {
   is_running?: boolean;
 }
 
+export interface Deliverable {
+  id: string;
+  ticket_id: string;
+  version: number;
+  url: string;
+  phase: WorkPhase;
+  submitted_by: string | null;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  ticket_id: string | null;
+  kind: string;
+  title: string;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface PhaseTime {
+  ticket_id: string;
+  phase: WorkPhase;
+  total_seconds: number;
+  sessions: number;
+}
+
 export interface WorkSession {
   id: string;
   ticket_id: string;
@@ -83,6 +119,7 @@ export interface WorkSession {
   ended_at: string | null;
   end_reason: string | null;
   duration_seconds: number | null;
+  phase: WorkPhase;
 }
 
 export interface TicketComment {
@@ -281,6 +318,14 @@ export const ALLOWED_TARGETS: Record<UserRole, TicketStatus[]> = {
   strategist: STATUS_ORDER,
   designer: ["in_progress", "ready_for_approval", "awaiting_assets", "on_hold"],
 };
+
+export const PHASES: Record<WorkPhase, { label: string; tone: string }> = {
+  initial: { label: "Original build", tone: "var(--color-accent)" },
+  revision: { label: "Revisions", tone: "var(--color-serious)" },
+  size_change: { label: "Size changes", tone: "#a259d9" },
+};
+
+export const PHASE_ORDER: WorkPhase[] = ["initial", "revision", "size_change"];
 
 export interface SavedView {
   id: string;
