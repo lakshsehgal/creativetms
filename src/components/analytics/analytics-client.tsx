@@ -111,7 +111,10 @@ export function AnalyticsClient({
       label: FORMATS[format].label,
       value: row?.seconds_per_unit ?? 0,
       color: FORMATS[format].series,
-      benchmark: benchmark ? benchmark.target_minutes_per_unit * 60 : null,
+      // An unmeasured format shows its real time with no target line.
+      benchmark: benchmark?.target_minutes_per_unit
+        ? benchmark.target_minutes_per_unit * 60
+        : null,
       note: row ? `${row.units} unit${row.units === 1 ? "" : "s"}` : "—",
     };
   });
@@ -249,12 +252,13 @@ export function AnalyticsClient({
               </p>
               <p className="mt-2 text-[12px] text-[var(--color-ink-3)]">
                 Current benchmarks:{" "}
-                {FORMAT_ORDER.map(
-                  (format) =>
-                    `${FORMATS[format].label} ${minutesToHuman(
-                      benchmarks.find((item) => item.format === format)?.target_minutes_per_unit,
-                    )}`,
-                ).join(" · ")}
+                {FORMAT_ORDER.map((format) => {
+                  const target = benchmarks.find((item) => item.format === format)
+                    ?.target_minutes_per_unit;
+                  return `${FORMATS[format].label} ${
+                    target ? minutesToHuman(target) : "not set"
+                  }`;
+                }).join(" · ")}
               </p>
             </Card>
           )}

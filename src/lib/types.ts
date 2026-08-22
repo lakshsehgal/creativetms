@@ -129,7 +129,8 @@ export interface TicketEvent {
 
 export interface FormatBenchmark {
   format: CreativeFormat;
-  target_minutes_per_unit: number;
+  /** null = not measured yet. Pace comparisons sit out until it's set. */
+  target_minutes_per_unit: number | null;
   updated_at: string;
 }
 

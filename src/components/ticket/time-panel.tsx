@@ -37,6 +37,7 @@ export function TimePanel({
   const perUnit = ticket.quantity > 0 ? Math.round(total / ticket.quantity) : total;
   const benchmark = benchmarks.find((row) => row.format === ticket.format);
   const targetSeconds = (benchmark?.target_minutes_per_unit ?? 0) * 60;
+  // Formats nobody has measured yet (UGC, to begin with) simply show the time.
   const ratio = targetSeconds > 0 ? perUnit / targetSeconds : null;
 
   const meta = FORMATS[ticket.format];
@@ -84,7 +85,7 @@ export function TimePanel({
           <div className="mt-3.5">
             <div className="mb-1.5 flex items-baseline justify-between text-[11px]">
               <span className="text-[var(--color-ink-3)]">
-                Benchmark {minutesToHuman(benchmark!.target_minutes_per_unit)} / unit
+                Benchmark {minutesToHuman(benchmark?.target_minutes_per_unit)} / unit
               </span>
               <span
                 className="tabular font-medium"

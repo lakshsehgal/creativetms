@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ShieldCheck, UserPlus } from "lucide-react";
 import type { FormatBenchmark, Profile, UserRole } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
-import { minutesToHuman } from "@/lib/format";
+import { humanDuration, isoDay, minutesToHuman } from "@/lib/format";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { Avatar, Card, PageHeader } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
@@ -37,6 +39,31 @@ export function TeamClient({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [inviting, setInviting] = useState(false);
+
+  /**
+   * What each format has actually cost over the last 90 days. Shown beside the
+   * benchmark input so a target gets set from evidence rather than a guess —
+   * which matters most for a format like UGC, where the work is grade,
+   * line-up and hand-placed clips and the spread is wide.
+   */
+  const actuals = useQuery({
+    queryKey: ["format-actuals"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+      const { data, error } = await supabaseBrowser().rpc("team_format_stats", {
+        p_from: isoDay(since),
+        p_to: isoDay(),
+      });
+      if (error) throw error;
+      return (data ?? []) as {
+        format: string;
+        units: number;
+        seconds_per_unit: number | null;
+      }[];
+    },
+  });
 
   /** Every action returns the same shape, so one handler covers all of them. */
   function run(action: () => Promise<ActionResult>) {
@@ -170,9 +197,10 @@ export function TeamClient({
               </div>
             </div>
 
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {FORMAT_ORDER.map((format) => {
                 const row = benchmarks.find((item) => item.format === format);
+                const measured = actuals.data?.find((item) => item.format === format);
                 return (
                   <li
                     key={format}
@@ -192,20 +220,38 @@ export function TeamClient({
                         type="number"
                         min={1}
                         max={2000}
-                        defaultValue={row?.target_minutes_per_unit ?? 60}
+                        placeholder="not set"
+                        defaultValue={row?.target_minutes_per_unit ?? ""}
                         disabled={pending}
                         onBlur={(event) => {
-                          const minutes = Number(event.target.value);
-                          if (!minutes || minutes === row?.target_minutes_per_unit) return;
+                          const raw = event.target.value.trim();
+                          const minutes = raw === "" ? null : Number(raw);
+                          if (minutes === (row?.target_minutes_per_unit ?? null)) return;
+                          if (minutes !== null && !minutes) return;
                           run(() => setBenchmark(format, minutes));
                         }}
                         aria-label={`Benchmark minutes for ${FORMATS[format].label}`}
-                        className="!w-20 !px-2 !py-1 !text-[13px]"
+                        className="!w-24 !px-2 !py-1 !text-[13px]"
                       />
                       <span className="text-[11.5px] text-[var(--color-ink-3)]">min / unit</span>
                     </div>
+
+                    {/* What the team has actually taken. This is the number to
+                        set the benchmark from once there's enough of it. */}
                     <p className="mt-1.5 text-[11px] text-[var(--color-ink-3)]">
-                      {minutesToHuman(row?.target_minutes_per_unit)} per {FORMATS[format].label.toLowerCase()}
+                      {measured ? (
+                        <>
+                          Measured{" "}
+                          <span className="tabular font-medium text-[var(--color-ink-2)]">
+                            {humanDuration(measured.seconds_per_unit)}
+                          </span>{" "}
+                          / unit over {measured.units} unit{measured.units === 1 ? "" : "s"}
+                        </>
+                      ) : row?.target_minutes_per_unit ? (
+                        `${minutesToHuman(row.target_minutes_per_unit)} per unit`
+                      ) : (
+                        "No target, no data yet"
+                      )}
                     </p>
                   </li>
                 );

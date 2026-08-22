@@ -143,10 +143,16 @@ export async function setCapacity(userId: string, minutes: number): Promise<Acti
   }
 }
 
-export async function setBenchmark(format: string, minutes: number): Promise<ActionResult> {
+export async function setBenchmark(
+  format: string,
+  minutes: number | null,
+): Promise<ActionResult> {
   try {
     const admin = await requireAdmin();
-    if (!Number.isFinite(minutes) || minutes < 1) {
+
+    // null clears it. A format nobody has measured yet is better left blank
+    // than pinned to a guess — the scorecard just sits the pace figure out.
+    if (minutes !== null && (!Number.isFinite(minutes) || minutes < 1)) {
       return { ok: false, error: "Benchmark has to be at least a minute" };
     }
 
@@ -154,7 +160,7 @@ export async function setBenchmark(format: string, minutes: number): Promise<Act
     const { error } = await supabase
       .from("format_benchmarks")
       .update({
-        target_minutes_per_unit: Math.round(minutes),
+        target_minutes_per_unit: minutes === null ? null : Math.round(minutes),
         updated_by: admin.id,
         updated_at: new Date().toISOString(),
       })
@@ -164,7 +170,7 @@ export async function setBenchmark(format: string, minutes: number): Promise<Act
 
     revalidatePath("/team");
     revalidatePath("/analytics");
-    return { ok: true, message: "Benchmark updated" };
+    return { ok: true, message: minutes === null ? "Benchmark cleared" : "Benchmark updated" };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
   }

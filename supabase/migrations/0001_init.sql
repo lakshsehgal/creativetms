@@ -232,7 +232,9 @@ create index ticket_events_ticket_idx on ticket_events (ticket_id, created_at de
 -- ---------------------------------------------------------------------------
 create table format_benchmarks (
   format               creative_format primary key,
-  target_minutes_per_unit int not null check (target_minutes_per_unit > 0),
+  -- Nullable on purpose: a format nobody has measured yet still needs a row,
+  -- and a guessed target is worse than no target.
+  target_minutes_per_unit int check (target_minutes_per_unit > 0),
   updated_by           uuid references profiles (id) on delete set null,
   updated_at           timestamptz not null default now()
 );
@@ -663,13 +665,13 @@ begin
            sum(t.revision_count)::int as rounds,
            count(*) filter (where t.due_at is not null and t.approved_at <= t.due_at)::int as on_time,
            count(*) filter (where t.due_at is not null and t.approved_at >  t.due_at)::int as late,
-           sum(t.quantity * fb.target_minutes_per_unit)::int as earned_minutes
+           sum(t.quantity * coalesce(fb.target_minutes_per_unit, 0))::int as earned_minutes
     from days d
     join tickets t
       on t.assigned_to = d.designer_id
      and t.approved_at is not null
      and (t.approved_at at time zone d.timezone)::date = d.day
-    join format_benchmarks fb on fb.format = t.format
+    left join format_benchmarks fb on fb.format = t.format
     group by d.designer_id, d.day, t.format
   ),
   finished_total as (
