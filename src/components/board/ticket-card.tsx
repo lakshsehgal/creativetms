@@ -22,9 +22,10 @@ interface Props {
   draggable: boolean;
   canStart: boolean;
   onStart: (ticket: TicketWithRefs) => void;
+  onOpen?: (ticketId: string) => void;
 }
 
-function TicketCardInner({ ticket, draggable, canStart, onStart }: Props) {
+function TicketCardInner({ ticket, draggable, canStart, onStart, onOpen }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
     disabled: !draggable,
@@ -65,6 +66,11 @@ function TicketCardInner({ ticket, draggable, canStart, onStart }: Props) {
         href={`/tickets/${ticket.id}`}
         // The card is a drag handle, so the link opts out of the pointer sensor.
         onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          if (!onOpen || event.metaKey || event.ctrlKey || event.shiftKey) return;
+          event.preventDefault();
+          onOpen(ticket.id);
+        }}
         className="mt-2 block text-[13px] font-medium leading-snug tracking-tight hover:text-[var(--color-accent)]"
       >
         {ticket.title}
@@ -86,6 +92,7 @@ function TicketCardInner({ ticket, draggable, canStart, onStart }: Props) {
             id={ticket.assignee.id}
             name={ticket.assignee.full_name}
             email={ticket.assignee.email}
+            src={ticket.assignee.avatar_url}
             size={20}
             title={ticket.assignee.full_name}
           />

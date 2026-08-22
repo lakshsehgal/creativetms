@@ -2,7 +2,7 @@
 
 import { Timer } from "lucide-react";
 import type { FormatBenchmark, TicketWithRefs, WorkPhase, WorkSession } from "@/lib/types";
-import { FORMATS, PHASES, PHASE_ORDER } from "@/lib/types";
+import { FORMATS, PHASE_ORDER, phaseMeta } from "@/lib/types";
 import { humanDuration, minutesToHuman, relativeTime, stopwatch } from "@/lib/format";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
 
@@ -140,10 +140,10 @@ export function TimePanel({
             {phaseTotals.map(([phase, seconds]) => (
               <span
                 key={phase}
-                title={`${PHASES[phase].label}: ${humanDuration(seconds)}`}
+                title={`${phaseMeta(phase).label}: ${humanDuration(seconds)}`}
                 style={{
                   width: `${(seconds / phaseSum) * 100}%`,
-                  background: PHASES[phase].tone,
+                  background: phaseMeta(phase).tone,
                 }}
               />
             ))}
@@ -154,9 +154,9 @@ export function TimePanel({
               <li key={phase} className="flex items-baseline gap-2 text-[11.5px]">
                 <span
                   className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{ background: PHASES[phase].tone }}
+                  style={{ background: phaseMeta(phase).tone }}
                 />
-                <span className="text-[var(--color-ink-2)]">{PHASES[phase].label}</span>
+                <span className="text-[var(--color-ink-2)]">{phaseMeta(phase).label}</span>
                 <span className="tabular ml-auto font-medium">{humanDuration(seconds)}</span>
               </li>
             ))}

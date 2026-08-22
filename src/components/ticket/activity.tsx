@@ -1,16 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Send } from "lucide-react";
+import { useMemo } from "react";
 import type { Profile, TicketComment, TicketEvent, TicketStatus } from "@/lib/types";
 import { STATUSES } from "@/lib/types";
 import { relativeTime } from "@/lib/format";
-import { supabaseBrowser } from "@/lib/supabase/client";
-import { queryKeys } from "@/lib/queries";
 import { Avatar } from "@/components/ui/primitives";
-import { Button, TextArea } from "@/components/ui/form";
+import { CommentBox } from "./comment-box";
 
 type Entry =
   | { kind: "comment"; at: string; data: TicketComment }
@@ -29,11 +24,6 @@ export function Activity({
   events: TicketEvent[];
   team: Profile[];
 }) {
-  const supabase = supabaseBrowser();
-  const queryClient = useQueryClient();
-  const [body, setBody] = useState("");
-  const [sending, setSending] = useState(false);
-
   const nameById = useMemo(
     () => new Map(team.map((person) => [person.id, person.full_name || person.email])),
     [team],
@@ -50,25 +40,6 @@ export function Activity({
     return entries.sort((a, b) => a.at.localeCompare(b.at));
   }, [comments, events]);
 
-  async function send(event: React.FormEvent) {
-    event.preventDefault();
-    const text = body.trim();
-    if (!text) return;
-
-    setSending(true);
-    const { error } = await supabase
-      .from("comments")
-      .insert({ ticket_id: ticketId, author_id: profile.id, body: text });
-    setSending(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setBody("");
-    queryClient.invalidateQueries({ queryKey: queryKeys.comments(ticketId) });
-  }
-
   return (
     <section>
       <h3 className="mb-3 text-[12px] font-semibold uppercase tracking-[0.07em] text-[var(--color-ink-3)]">
@@ -83,7 +54,8 @@ export function Activity({
                 id={entry.data.author_id}
                 name={entry.data.author?.full_name ?? ""}
                 email={entry.data.author?.email}
-                size={26}
+                src={entry.data.author?.avatar_url}
+                size={28}
               />
               <div className="min-w-0 flex-1">
                 <p className="flex items-baseline gap-2">
@@ -94,9 +66,9 @@ export function Activity({
                     {relativeTime(entry.at)}
                   </span>
                 </p>
-                <p className="mt-1 whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 py-2 text-[13px] leading-relaxed">
-                  {entry.data.body}
-                </p>
+                <div className="mt-1 whitespace-pre-wrap rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2 text-[13px] leading-relaxed">
+                  {renderMentions(entry.data.body, team)}
+                </div>
               </div>
             </li>
           ) : (
@@ -117,27 +89,45 @@ export function Activity({
         )}
       </ol>
 
-      <form onSubmit={send} className="mt-4 flex items-end gap-2">
-        <TextArea
-          rows={2}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          onKeyDown={(event) => {
-            // Enter sends; Shift+Enter is a newline. Faster for the common case.
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void send(event);
-            }
-          }}
-          placeholder="Add a note…"
-          className="!py-2 !text-[13px]"
-        />
-        <Button type="submit" variant="primary" size="sm" loading={sending} disabled={!body.trim()}>
-          <Send size={13} />
-        </Button>
-      </form>
+      <CommentBox ticketId={ticketId} profile={profile} team={team} />
+
     </section>
   );
+}
+
+/**
+ * Highlight anything matching a real teammate's name after an @. Longest
+ * names first so "@Ananya Jain" wins over "@Ananya".
+ */
+function renderMentions(body: string, team: Profile[]): React.ReactNode {
+  const handles = team
+    .map((person) => (person.full_name || person.email.split("@")[0]).trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map((handle) => handle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+
+  if (handles.length === 0) return body;
+
+  const pattern = new RegExp(`@(${handles.join("|")})`, "gi");
+  const pieces: React.ReactNode[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(body)) !== null) {
+    if (match.index > cursor) pieces.push(body.slice(cursor, match.index));
+    pieces.push(
+      <span
+        key={`${match.index}-${match[0]}`}
+        className="rounded-[3px] px-1 font-medium"
+        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+      >
+        {match[0]}
+      </span>,
+    );
+    cursor = match.index + match[0].length;
+  }
+  if (cursor < body.length) pieces.push(body.slice(cursor));
+  return pieces;
 }
 
 function describe(event: TicketEvent, names: Map<string, string>): string {

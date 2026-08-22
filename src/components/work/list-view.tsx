@@ -28,11 +28,13 @@ export function ListView({
   viewer,
   designers,
   onPatch,
+  onOpen,
 }: {
   tickets: TicketWithRefs[];
   viewer: Profile;
   designers: Profile[];
   onPatch: (ticket: TicketWithRefs, fields: Record<string, unknown>) => void;
+  onOpen: (ticketId: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortKey>("due");
@@ -142,6 +144,7 @@ export function ListView({
                         viewer={viewer}
                         designers={designers}
                         onPatch={onPatch}
+                        onOpen={onOpen}
                       />
                     ))}
                   </tbody>
@@ -160,11 +163,13 @@ const Row = memo(function Row({
   viewer,
   designers,
   onPatch,
+  onOpen,
 }: {
   ticket: TicketWithRefs;
   viewer: Profile;
   designers: Profile[];
   onPatch: (ticket: TicketWithRefs, fields: Record<string, unknown>) => void;
+  onOpen: (ticketId: string) => void;
 }) {
   const due = dueState(ticket);
   const isStaff = viewer.role !== "designer";
@@ -181,6 +186,12 @@ const Row = memo(function Row({
           </span>
           <Link
             href={`/tickets/${ticket.id}`}
+            onClick={(event) => {
+              // Plain click opens the panel; cmd/ctrl still opens a new tab.
+              if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+              event.preventDefault();
+              onOpen(ticket.id);
+            }}
             className="truncate font-medium hover:text-[var(--color-accent)]"
           >
             {ticket.title}
@@ -278,6 +289,7 @@ const Row = memo(function Row({
               id={ticket.assignee.id}
               name={ticket.assignee.full_name}
               email={ticket.assignee.email}
+              src={ticket.assignee.avatar_url}
               size={18}
             />
             <span className="truncate">{ticket.assignee.full_name}</span>

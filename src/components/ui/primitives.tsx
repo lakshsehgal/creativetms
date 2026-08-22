@@ -1,5 +1,5 @@
 import type { CreativeFormat, TicketPriority, TicketStatus } from "@/lib/types";
-import { FORMATS, PRIORITIES, STATUSES } from "@/lib/types";
+import { FORMATS, PRIORITIES, STATUSES, formatMeta, statusMeta } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
 
 /* ---------------------------------------------------------------- Avatar */
@@ -10,13 +10,30 @@ export function Avatar({
   email,
   size = 24,
   title,
+  src,
 }: {
   id: string;
   name: string;
   email?: string;
   size?: number;
   title?: string;
+  src?: string | null;
 }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        title={title ?? name ?? email}
+        width={size}
+        height={size}
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <span
       title={title ?? name ?? email}
@@ -78,7 +95,7 @@ export function FormatBadge({
   quantity?: number;
   size?: "sm" | "md";
 }) {
-  const meta = FORMATS[format];
+  const meta = formatMeta(format);
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] font-medium ${
@@ -105,7 +122,7 @@ export function StatusPill({
   status: TicketStatus;
   size?: "sm" | "md";
 }) {
-  const meta = STATUSES[status];
+  const meta = statusMeta(status);
   return (
     <span
       title={meta.hint}

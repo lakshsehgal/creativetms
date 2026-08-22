@@ -13,6 +13,7 @@ import { useLiveTickets } from "@/hooks/use-live-tickets";
 import { PageHeader } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
 import { NewTicketDialog } from "@/components/board/new-ticket-dialog";
+import { TicketModal } from "@/components/ticket/ticket-modal";
 import { FilterBar } from "./filter-bar";
 import { SavedViews } from "./saved-views";
 import { BoardView } from "./board-view";
@@ -48,6 +49,7 @@ export function WorkClient({
 
   const { tickets } = useLiveTickets(initialTickets);
   const [composing, setComposing] = useState(false);
+  const [openTicketId, setOpenTicketId] = useState<string | null>(null);
 
   /**
    * Filters are LOCAL state, mirrored into the address bar afterwards.
@@ -205,7 +207,13 @@ export function WorkClient({
 
       <div className="flex flex-1 flex-col overflow-auto">
         {layout === "board" && (
-          <BoardView profile={profile} tickets={visible} onMove={move} onStart={start} />
+          <BoardView
+            profile={profile}
+            tickets={visible}
+            onMove={move}
+            onStart={start}
+            onOpen={setOpenTicketId}
+          />
         )}
         {layout === "list" && (
           <ListView
@@ -213,6 +221,7 @@ export function WorkClient({
             viewer={profile}
             designers={designers}
             onPatch={(ticket, fields) => void patch(ticket, fields)}
+            onOpen={setOpenTicketId}
           />
         )}
         {layout === "today" && (
@@ -224,6 +233,16 @@ export function WorkClient({
           />
         )}
       </div>
+
+      {openTicketId && (
+        <TicketModal
+          ticketId={openTicketId}
+          profile={profile}
+          brands={brands}
+          designers={designers}
+          onClose={() => setOpenTicketId(null)}
+        />
+      )}
 
       <NewTicketDialog
         open={composing}

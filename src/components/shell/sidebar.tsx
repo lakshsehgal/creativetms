@@ -115,13 +115,26 @@ export function Sidebar({ profile }: { profile: Profile }) {
       </ul>
 
       <div className="space-y-2 border-t border-[var(--color-line)] p-2.5">
-        <div className="flex items-center gap-2 rounded-[var(--radius-md)] px-1.5 py-1.5">
-          <span
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white"
-            style={{ background: avatarTint(profile.id) }}
-          >
-            {initials(profile.full_name, profile.email)}
-          </span>
+        <Link
+          href="/profile"
+          title="Your profile"
+          className="flex items-center gap-2 rounded-[var(--radius-md)] px-1.5 py-1.5 transition-colors hover:bg-[var(--color-surface-2)]"
+        >
+          {profile.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.avatar_url}
+              alt=""
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <span
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white"
+              style={{ background: avatarTint(profile.id) }}
+            >
+              {initials(profile.full_name, profile.email)}
+            </span>
+          )}
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-[12.5px] font-medium leading-tight">
@@ -132,8 +145,13 @@ export function Sidebar({ profile }: { profile: Profile }) {
               </p>
             </div>
           )}
-          {!collapsed && <SignOutButton />}
-        </div>
+        </Link>
+
+        {!collapsed && (
+          <div className="flex justify-end px-1.5">
+            <SignOutButton />
+          </div>
+        )}
 
         <div className={`flex gap-1 ${collapsed ? "flex-col" : ""}`}>
           <NotificationBell collapsed={collapsed} />

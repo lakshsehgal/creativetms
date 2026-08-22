@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, ExternalLink, RotateCcw } from "lucide-react";
+import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
 import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
 import { FORMATS, PRIORITIES, STATUSES } from "@/lib/types";
 import { dueLabel, dueState, relativeTime } from "@/lib/format";
@@ -25,12 +25,17 @@ export function TicketDetail({
   benchmarks,
   designers,
   brands,
+  variant = "page",
+  onClose,
 }: {
   profile: Profile;
   initialTicket: TicketWithRefs;
   benchmarks: FormatBenchmark[];
   designers: Profile[];
   brands: Brand[];
+  /** "modal" drops the page chrome and offers expand/close instead. */
+  variant?: "page" | "modal";
+  onClose?: () => void;
 }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
@@ -68,20 +73,53 @@ export function TicketDetail({
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--color-line)] px-5">
-        <Link
-          href="/board"
-          className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
-          aria-label="Back to board"
-        >
-          <ArrowLeft size={15} />
-        </Link>
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-5">
+        {variant === "modal" ? (
+          <button
+            onClick={onClose}
+            className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+            aria-label="Back"
+            title="Back"
+          >
+            <ArrowLeft size={15} />
+          </button>
+        ) : (
+          <Link
+            href="/board"
+            className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+            aria-label="Back to the list"
+          >
+            <ArrowLeft size={15} />
+          </Link>
+        )}
         <span className="tabular text-[12px] font-medium text-[var(--color-ink-3)]">
           #{data.number}
         </span>
         <StatusPill status={data.status} />
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           <TicketActions ticket={data} profile={profile} />
+
+          {variant === "modal" && (
+            <>
+              <span className="h-5 w-px bg-[var(--color-line)]" />
+              <Link
+                href={`/tickets/${data.id}`}
+                title="Open full screen"
+                aria-label="Open full screen"
+                className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+              >
+                <Maximize2 size={14} />
+              </Link>
+              <button
+                onClick={onClose}
+                title="Close"
+                aria-label="Close"
+                className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+              >
+                <X size={15} />
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -261,6 +299,7 @@ export function TicketDetail({
                         id={data.assignee.id}
                         name={data.assignee.full_name}
                         email={data.assignee.email}
+                        src={data.assignee.avatar_url}
                         size={18}
                       />
                       {data.assignee.full_name || data.assignee.email}

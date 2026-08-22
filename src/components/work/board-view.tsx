@@ -25,11 +25,13 @@ export function BoardView({
   tickets,
   onMove,
   onStart,
+  onOpen,
 }: {
   profile: Profile;
   tickets: TicketWithRefs[];
   onMove: (ticket: TicketWithRefs, status: TicketStatus, position: number) => void;
   onStart: (ticket: TicketWithRefs) => void;
+  onOpen: (ticketId: string) => void;
 }) {
   const [dragging, setDragging] = useState<TicketWithRefs | null>(null);
 
@@ -126,6 +128,7 @@ export function BoardView({
             canDrop={allowedTargets.includes(status)}
             canStart={canStart}
             onStart={onStart}
+            onOpen={onOpen}
             draggableIds={draggableIds}
           />
         ))}

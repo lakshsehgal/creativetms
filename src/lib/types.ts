@@ -327,6 +327,38 @@ export const PHASES: Record<WorkPhase, { label: string; tone: string }> = {
 
 export const PHASE_ORDER: WorkPhase[] = ["initial", "revision", "size_change"];
 
+/**
+ * Never index these maps directly with a value that came from the database.
+ * An enum added in SQL but not yet in this file would otherwise take the
+ * whole screen down instead of rendering one odd-looking chip.
+ */
+export function phaseMeta(phase: string | null | undefined) {
+  return PHASES[phase as WorkPhase] ?? { label: phase ?? "Unknown", tone: "var(--color-ink-3)" };
+}
+
+export function statusMeta(status: string | null | undefined) {
+  return (
+    STATUSES[status as TicketStatus] ?? {
+      label: status ?? "Unknown",
+      hint: "",
+      fill: "#7b8794",
+      clockRuns: false,
+      open: true,
+    }
+  );
+}
+
+export function formatMeta(format: string | null | undefined) {
+  return (
+    FORMATS[format as CreativeFormat] ?? {
+      label: format ?? "Unknown",
+      short: "—",
+      series: "var(--color-ink-3)",
+      icon: "●",
+    }
+  );
+}
+
 export interface SavedView {
   id: string;
   owner_id: string;

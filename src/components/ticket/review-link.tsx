@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, ExternalLink, Link2, Pencil } from "lucide-react";
 import type { Deliverable, Profile, TicketWithRefs } from "@/lib/types";
-import { PHASES } from "@/lib/types";
+import { phaseMeta } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Button, TextInput } from "@/components/ui/form";
@@ -37,7 +37,10 @@ export function ReviewLink({
   }, [ticket.review_url, editing]);
 
   const isOwner = ticket.assigned_to === profile.id;
-  const canEdit = isOwner || profile.role === "admin" || profile.role === "strategist";
+  // Only the designer doing the work posts the link — a strategist supplying
+  // it would break the one signal that says the work is actually ready.
+  // Admins keep the ability to fix a bad paste.
+  const canEdit = isOwner || profile.role === "admin";
 
   async function save() {
     const trimmed = value.trim();
@@ -109,7 +112,7 @@ export function ReviewLink({
                   href={version.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title={`${PHASES[version.phase].label} · ${new Date(
+                  title={`${phaseMeta(version.phase).label} · ${new Date(
                     version.created_at,
                   ).toLocaleDateString()}`}
                   className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-line)] px-1.5 py-0.5 text-[11px] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
@@ -117,7 +120,7 @@ export function ReviewLink({
                   V{version.version}
                   <span
                     className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: PHASES[version.phase].tone }}
+                    style={{ background: phaseMeta(version.phase).tone }}
                   />
                 </a>
               </li>
@@ -132,7 +135,8 @@ export function ReviewLink({
     return (
       <section className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line-strong)] px-4 py-3">
         <p className="text-[12.5px] text-[var(--color-ink-3)]">
-          No Frame.io review link on this ticket yet.
+          No Frame.io link yet — it arrives when the designer marks this Ready
+          for Approval.
         </p>
       </section>
     );

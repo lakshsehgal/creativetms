@@ -12,6 +12,7 @@ export function Column({
   canDrop,
   canStart,
   onStart,
+  onOpen,
   draggableIds,
 }: {
   status: TicketStatus;
@@ -19,6 +20,7 @@ export function Column({
   canDrop: boolean;
   canStart: (ticket: TicketWithRefs) => boolean;
   onStart: (ticket: TicketWithRefs) => void;
+  onOpen: (ticketId: string) => void;
   draggableIds: Set<string>;
 }) {
   const meta = STATUSES[status];
@@ -69,6 +71,7 @@ export function Column({
               draggable={draggableIds.has(ticket.id)}
               canStart={canStart(ticket)}
               onStart={onStart}
+              onOpen={onOpen}
             />
           ))}
         </SortableContext>
