@@ -25,9 +25,14 @@ export function useLiveTickets(initial: TicketWithRefs[]) {
     initialData: initial,
   });
 
+  const ticketIds = (tickets.data ?? []).map((ticket) => ticket.id);
+
   const times = useQuery({
-    queryKey: queryKeys.ticketTime,
-    queryFn: () => fetchTicketTime(supabase),
+    // Keyed on the id set so it refetches when the board's contents change,
+    // not on every render.
+    queryKey: [...queryKeys.ticketTime, ticketIds.length],
+    queryFn: () => fetchTicketTime(supabase, ticketIds),
+    enabled: ticketIds.length > 0,
     refetchInterval: 60_000,
   });
 

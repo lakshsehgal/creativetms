@@ -44,7 +44,7 @@ function TicketCardInner({ ticket, draggable, canStart, onStart }: Props) {
       }}
       {...attributes}
       {...listeners}
-      className={`group relative rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3 transition-[border-color,background-color] hover:border-[var(--color-line-strong)] ${
+      className={`group relative rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] p-3 shadow-[0_1px_2px_rgb(16_24_40/0.04)] transition-[box-shadow,transform,border-color] duration-150 hover:-translate-y-px hover:border-[var(--color-line-strong)] hover:shadow-[0_4px_12px_-2px_rgb(16_24_40/0.10)] ${
         draggable ? "cursor-grab active:cursor-grabbing" : ""
       }`}
     >

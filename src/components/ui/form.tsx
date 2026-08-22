@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 
 const inputBase =
-  "w-full rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface-2)] px-3 py-2 text-[13.5px] outline-none transition-colors placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)] disabled:opacity-60";
+  "w-full rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] px-3 py-2 text-[13.5px] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)] focus:shadow-[0_0_0_3px_var(--color-accent-soft)] disabled:opacity-60";
 
 export function Field({
   label,
@@ -71,9 +71,9 @@ export function Button({
 }: ButtonProps) {
   const variants: Record<string, string> = {
     primary:
-      "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] border border-transparent",
+      "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] border border-transparent shadow-[0_1px_2px_rgb(16_24_40/0.10)]",
     secondary:
-      "bg-[var(--color-surface-2)] text-[var(--color-ink)] border border-[var(--color-line-strong)] hover:bg-[var(--color-surface-3)]",
+      "bg-[var(--color-surface)] text-[var(--color-ink)] border border-[var(--color-line-strong)] hover:bg-[var(--color-surface-2)] shadow-[0_1px_2px_rgb(16_24_40/0.04)]",
     ghost:
       "bg-transparent text-[var(--color-ink-2)] border border-transparent hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]",
     danger:

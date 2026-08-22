@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CalendarCheck, KanbanSquare, Plus, Rows3 } from "lucide-react";
@@ -42,25 +42,40 @@ export function WorkClient({
 }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
-  const router = useRouter();
   const params = useSearchParams();
 
   const { tickets } = useLiveTickets(initialTickets);
   const [composing, setComposing] = useState(false);
 
-  // Filters and layout live in the URL, so a filtered screen can be shared
-  // and the back button behaves the way people expect.
-  const filters = useMemo(() => filtersFromParams(params), [params]);
-  const layout = (params.get("view") as Layout) || "board";
+  /**
+   * Filters are LOCAL state, mirrored into the address bar afterwards.
+   *
+   * They used to live in the URL via router.replace, which on a dynamic page
+   * meant every keystroke in the search box fetched a fresh RSC payload and
+   * re-rendered the board. Typing "diwali" cost six server round trips. Now
+   * filtering is pure client work — instant — and the URL is updated with
+   * history.replaceState, which keeps the screen shareable without asking
+   * Next to navigate anywhere.
+   */
+  const [filters, setLocalFilters] = useState<TicketFilters>(() => filtersFromParams(params));
+  const [layout, setLayout] = useState<Layout>(() => (params.get("view") as Layout) || "board");
 
-  const setFilters = useCallback(
-    (next: TicketFilters, nextLayout: Layout = layout) => {
-      const search = filtersToParams(next);
-      if (nextLayout !== "board") search.set("view", nextLayout);
-      router.replace(search.toString() ? `/board?${search}` : "/board", { scroll: false });
-    },
-    [router, layout],
-  );
+  const setFilters = useCallback((next: TicketFilters, nextLayout: Layout = layout) => {
+    setLocalFilters(next);
+    setLayout(nextLayout);
+  }, [layout]);
+
+  // Mirror to the address bar one frame later, so a fast typist isn't
+  // rewriting history on every character.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const search = filtersToParams(filters);
+      if (layout !== "board") search.set("view", layout);
+      const url = search.toString() ? `/board?${search}` : "/board";
+      window.history.replaceState(null, "", url);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [filters, layout]);
 
   const visible = useMemo(
     () => applyFilters(tickets, filters, profile),

@@ -10,8 +10,8 @@
 --------------------------------------------------------------------------- */
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
   /* Light is the default: this is a board people scan all day next to
@@ -109,8 +109,21 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overscroll-behavior: none;
+  /* DM Sans sets wide by default; pulling it in keeps the dense views dense. */
+  letter-spacing: -0.006em;
+}
+
+/* Headings tighten further — DM Sans has the range for it. */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+/* Numbers line up in every table and clock without opting in each time. */
+.tabular, table, input[type="number"] {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Scrollbars that don't shove the layout around mid-drag. */

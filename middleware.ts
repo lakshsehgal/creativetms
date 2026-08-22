@@ -23,15 +23,26 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // A blip talking to the auth service shouldn't 500 every route in the app —
-  // treat it as "not signed in" and let the login page handle it.
-  let user = null;
+  /**
+   * getSession() reads (and refreshes) the cookie locally. getUser() would
+   * make a network call to the auth server on EVERY request — including each
+   * link prefetch, so hovering the sidebar fired six of them and every
+   * navigation carried that latency.
+   *
+   * This is only deciding "bounce to /login or not". It is deliberately NOT
+   * the security boundary: the app layout re-checks with getUser(), and
+   * row-level security guards the data itself. A forged cookie gets past this
+   * redirect and no further.
+   */
+  let session = null;
   try {
-    const { data } = await supabase.auth.getUser();
-    user = data.user;
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
   } catch {
-    user = null;
+    // An auth blip shouldn't 500 every route — treat it as signed out.
+    session = null;
   }
+  const user = session?.user ?? null;
 
   const { pathname } = request.nextUrl;
   const isPublic = pathname.startsWith("/login") || pathname.startsWith("/auth");

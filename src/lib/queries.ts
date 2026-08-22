@@ -45,11 +45,17 @@ export async function fetchBoardTickets(
   return (data ?? []) as unknown as TicketWithRefs[];
 }
 
-/** Elapsed time per ticket. Separate query so the board renders before it lands. */
-export async function fetchTicketTime(supabase: SupabaseClient) {
+/**
+ * Elapsed time per ticket. Separate query so the board renders before it
+ * lands, and scoped to the tickets on screen — unscoped it returned a row for
+ * every ticket ever created, which only gets slower every week.
+ */
+export async function fetchTicketTime(supabase: SupabaseClient, ticketIds: string[]) {
+  if (ticketIds.length === 0) return [];
   const { data, error } = await supabase
     .from("ticket_time")
-    .select("ticket_id, total_seconds, is_running");
+    .select("ticket_id, total_seconds, is_running")
+    .in("ticket_id", ticketIds);
   if (error) throw error;
   return (data ?? []) as { ticket_id: string; total_seconds: number; is_running: boolean }[];
 }

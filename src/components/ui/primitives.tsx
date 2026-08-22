@@ -167,9 +167,9 @@ export function PageHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[var(--color-line)] px-5">
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-5">
       <div className="min-w-0">
-        <h1 className="truncate text-[15px] font-semibold tracking-tight">{title}</h1>
+        <h1 className="truncate text-[15.5px] font-semibold">{title}</h1>
         {subtitle && (
           <p className="truncate text-[11.5px] leading-tight text-[var(--color-ink-3)]">{subtitle}</p>
         )}

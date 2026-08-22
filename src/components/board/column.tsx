@@ -55,7 +55,7 @@ export function Column({
         className={`flex-1 space-y-2 overflow-y-auto rounded-[var(--radius-lg)] border p-2 transition-colors ${
           isOver && canDrop
             ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
-            : "border-transparent bg-[var(--color-surface)]/60"
+            : "border-[var(--color-line)] bg-[var(--color-surface-2)]/70"
         }`}
       >
         <SortableContext
