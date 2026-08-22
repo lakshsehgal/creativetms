@@ -107,9 +107,9 @@ export function LoginForm() {
   if (step === "email") {
     return (
       <form onSubmit={onEmailSubmit} className="rise">
-        <h2 className="text-[22px] font-semibold tracking-tight">Sign in</h2>
+        <h2 className="text-[24px] font-semibold tracking-[-0.02em]">Welcome back</h2>
         <p className="mt-1.5 text-[13px] text-[var(--color-ink-2)]">
-          We&apos;ll email you a six-digit code. No password to remember.
+          We&apos;ll email you a code. No password to remember.
         </p>
 
         <label htmlFor="email" className="mt-8 block text-[12px] font-medium text-[var(--color-ink-2)]">
@@ -134,7 +134,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2.5 text-[14px] font-semibold text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--color-brand-hover)] disabled:opacity-60"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : null}
           {busy ? "Sending" : "Send code"}
@@ -160,12 +160,12 @@ export function LoginForm() {
 
       <div
         className="grid h-9 w-9 place-items-center rounded-[var(--radius-md)]"
-        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+        style={{ background: "var(--color-brand)", color: "var(--color-brand-ink)" }}
       >
         <MailCheck size={17} />
       </div>
 
-      <h2 className="mt-4 text-[22px] font-semibold tracking-tight">Check your inbox</h2>
+      <h2 className="mt-4 text-[24px] font-semibold tracking-[-0.02em]">Check your inbox</h2>
       <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-ink-2)]">
         Code sent to <span className="text-[var(--color-ink)]">{email}</span>. It&apos;s good
         for an hour.
@@ -202,7 +202,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={busy || code.length < MIN_CODE_LENGTH}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 py-2.5 text-[14px] font-semibold text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : null}
           {busy ? "Verifying" : "Sign in"}

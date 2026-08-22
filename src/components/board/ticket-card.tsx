@@ -23,9 +23,17 @@ interface Props {
   canStart: boolean;
   onStart: (ticket: TicketWithRefs) => void;
   onOpen?: (ticketId: string) => void;
+  showTime?: boolean;
 }
 
-function TicketCardInner({ ticket, draggable, canStart, onStart, onOpen }: Props) {
+function TicketCardInner({
+  ticket,
+  draggable,
+  canStart,
+  onStart,
+  onOpen,
+  showTime = false,
+}: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
     disabled: !draggable,
@@ -127,7 +135,7 @@ function TicketCardInner({ ticket, draggable, canStart, onStart, onOpen }: Props
           </a>
         )}
 
-        {(ticket.total_seconds ?? 0) > 0 && (
+        {showTime && (ticket.total_seconds ?? 0) > 0 && (
           <span
             className="tabular inline-flex items-center gap-1 text-[10.5px] text-[var(--color-ink-3)]"
             title="Time tracked on this ticket"

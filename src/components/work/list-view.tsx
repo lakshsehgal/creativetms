@@ -4,7 +4,7 @@ import { memo, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Link2, RotateCcw } from "lucide-react";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
-import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER } from "@/lib/types";
+import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, dueState, humanDuration } from "@/lib/format";
 import { Avatar, FormatBadge } from "@/components/ui/primitives";
 
@@ -39,6 +39,9 @@ export function ListView({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortKey>("due");
 
+  // Strategists never see timing; designers see their own finished totals.
+  const showTime = canSeeOwnTime(viewer.role);
+
   const groups = useMemo(() => {
     const byStatus = new Map<TicketStatus, TicketWithRefs[]>();
     STATUS_ORDER.forEach((status) => byStatus.set(status, []));
@@ -71,7 +74,10 @@ export function ListView({
     <div className="min-w-[900px] px-5 py-4">
       <div className="mb-2 flex items-center gap-2 pl-1 text-[11px] text-[var(--color-ink-3)]">
         Sort
-        {(["due", "number", "title", "time"] as SortKey[]).map((key) => (
+        {(showTime
+          ? (["due", "number", "title", "time"] as SortKey[])
+          : (["due", "number", "title"] as SortKey[])
+        ).map((key) => (
           <button
             key={key}
             onClick={() => setSort(key)}
@@ -133,7 +139,9 @@ export function ListView({
                       <th className="w-[130px] px-0 py-1.5 text-center font-medium">Status</th>
                       <th className="px-2 py-1.5 text-left font-medium">Designer</th>
                       <th className="px-2 py-1.5 text-left font-medium">Due</th>
-                      <th className="px-3 py-1.5 text-right font-medium">Time</th>
+                      {showTime && (
+                        <th className="px-3 py-1.5 text-right font-medium">Time</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -145,6 +153,7 @@ export function ListView({
                         designers={designers}
                         onPatch={onPatch}
                         onOpen={onOpen}
+                        showTime={showTime}
                       />
                     ))}
                   </tbody>
@@ -164,12 +173,14 @@ const Row = memo(function Row({
   designers,
   onPatch,
   onOpen,
+  showTime,
 }: {
   ticket: TicketWithRefs;
   viewer: Profile;
   designers: Profile[];
   onPatch: (ticket: TicketWithRefs, fields: Record<string, unknown>) => void;
   onOpen: (ticketId: string) => void;
+  showTime: boolean;
 }) {
   const due = dueState(ticket);
   const isStaff = viewer.role !== "designer";
@@ -309,9 +320,11 @@ const Row = memo(function Row({
         </span>
       </td>
 
-      <td className="tabular px-3 py-1.5 text-right text-[11.5px] text-[var(--color-ink-2)]">
-        {(ticket.total_seconds ?? 0) > 0 ? humanDuration(ticket.total_seconds) : "—"}
-      </td>
+      {showTime && (
+        <td className="tabular px-3 py-1.5 text-right text-[11.5px] text-[var(--color-ink-2)]">
+          {(ticket.total_seconds ?? 0) > 0 ? humanDuration(ticket.total_seconds) : "—"}
+        </td>
+      )}
     </tr>
   );
 });

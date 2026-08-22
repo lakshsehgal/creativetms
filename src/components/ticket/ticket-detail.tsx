@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
 import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
-import { FORMATS, PRIORITIES, STATUSES } from "@/lib/types";
+import { FORMATS, PRIORITIES, STATUSES, canSeeAllTime, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, dueState, relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { fetchTeam, queryKeys } from "@/lib/queries";
@@ -261,12 +261,16 @@ export function TicketDetail({
 
           {/* ----------------------------------------------------- sidebar */}
           <aside className="space-y-4">
-            <TimePanel
-              ticket={data}
-              sessions={sessions.data ?? []}
-              benchmarks={benchmarks}
-              canSeeDetail={isOwner || profile.role === "admin"}
-            />
+            {/* A strategist gets delivery status, never the clock. */}
+            {canSeeOwnTime(profile.role) && (
+              <TimePanel
+                ticket={data}
+                sessions={sessions.data ?? []}
+                benchmarks={benchmarks}
+                canSeeDetail={isOwner || canSeeAllTime(profile.role)}
+                viewerRole={profile.role}
+              />
+            )}
 
             <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3.5">
               <dl className="space-y-3">

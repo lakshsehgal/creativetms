@@ -1,8 +1,14 @@
 "use client";
 
 import { Timer } from "lucide-react";
-import type { FormatBenchmark, TicketWithRefs, WorkPhase, WorkSession } from "@/lib/types";
-import { FORMATS, PHASE_ORDER, phaseMeta } from "@/lib/types";
+import type {
+  FormatBenchmark,
+  TicketWithRefs,
+  UserRole,
+  WorkPhase,
+  WorkSession,
+} from "@/lib/types";
+import { FORMATS, PHASE_ORDER, canSeeLiveTimer, phaseMeta } from "@/lib/types";
 import { humanDuration, minutesToHuman, relativeTime, stopwatch } from "@/lib/format";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
 
@@ -18,20 +24,30 @@ export function TimePanel({
   sessions,
   benchmarks,
   canSeeDetail,
+  viewerRole,
 }: {
   ticket: TicketWithRefs;
   sessions: WorkSession[];
   benchmarks: FormatBenchmark[];
   canSeeDetail: boolean;
+  viewerRole: UserRole;
 }) {
   const open = sessions.find((session) => session.ended_at === null);
-  useTicking(Boolean(open));
+
+  /**
+   * A designer sees what a piece of work took, not a stopwatch running while
+   * they do it. Watching your own seconds tick is pressure, not information —
+   * and the number is identical either way. Admins and operators, who are
+   * actually managing throughput, do see it live.
+   */
+  const liveClock = canSeeLiveTimer(viewerRole);
+  useTicking(Boolean(open) && liveClock);
 
   const closedSeconds = sessions
     .filter((session) => session.ended_at)
     .reduce((sum, session) => sum + (session.duration_seconds ?? 0), 0);
 
-  const liveSeconds = open ? secondsSince(open.started_at) : 0;
+  const liveSeconds = open && liveClock ? secondsSince(open.started_at) : 0;
   const total = closedSeconds + liveSeconds;
 
   // Group the sessions by what kind of work they were.
@@ -60,10 +76,10 @@ export function TimePanel({
       <div className="flex items-center gap-2 border-b border-[var(--color-line)] px-4 py-2.5">
         <Timer size={13} className="text-[var(--color-ink-3)]" />
         <h3 className="text-[12px] font-semibold tracking-tight">Time</h3>
-        {open && (
+        {open && liveClock && (
           <span
             className="ml-auto flex items-center gap-1.5 text-[11px] font-medium"
-            style={{ color: "var(--color-accent)" }}
+            style={{ color: "var(--color-ink-2)" }}
           >
             <span
               className="breathe h-1.5 w-1.5 rounded-full"
@@ -76,12 +92,14 @@ export function TimePanel({
 
       <div className="px-4 py-3.5">
         <p className="tabular text-[30px] font-semibold leading-none tracking-tight">
-          {open ? stopwatch(total) : humanDuration(total)}
+          {open && liveClock ? stopwatch(total) : humanDuration(closedSeconds)}
         </p>
         <p className="mt-1.5 text-[11.5px] text-[var(--color-ink-3)]">
           {sessions.length === 0
             ? "Not started yet"
-            : `Across ${sessions.length} work session${sessions.length === 1 ? "" : "s"}`}
+            : open && !liveClock
+              ? "Currently being worked on — total updates when you pause or submit"
+              : `Across ${sessions.length} work session${sessions.length === 1 ? "" : "s"}`}
         </p>
 
         {ticket.quantity > 1 && total > 0 && (
@@ -187,7 +205,9 @@ export function TimePanel({
                 <span className="tabular shrink-0 font-medium">
                   {session.ended_at
                     ? humanDuration(session.duration_seconds)
-                    : stopwatch(secondsSince(session.started_at))}
+                    : liveClock
+                      ? stopwatch(secondsSince(session.started_at))
+                      : "running"}
                 </span>
               </li>
             ))}

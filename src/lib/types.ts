@@ -1,6 +1,6 @@
 /** Domain vocabulary. Mirrors the enums in supabase/migrations/0001_init.sql. */
 
-export type UserRole = "admin" | "strategist" | "designer";
+export type UserRole = "admin" | "operator" | "strategist" | "designer";
 export type CreativeFormat = "video" | "static" | "carousel" | "gif" | "ugc";
 export type TicketStatus =
   | "new_request"
@@ -30,6 +30,9 @@ export interface Profile {
   daily_capacity_minutes: number;
   timezone: string;
   created_at: string;
+  /** Set while this person is on a break; the clock is stopped. */
+  break_started_at: string | null;
+  break_ticket_id: string | null;
 }
 
 export interface Brand {
@@ -315,6 +318,8 @@ export const PRIORITIES: Record<TicketPriority, { label: string; tone: string; r
  */
 export const ALLOWED_TARGETS: Record<UserRole, TicketStatus[]> = {
   admin: STATUS_ORDER,
+  // Operators read the numbers; they don't move work through the pipeline.
+  operator: [],
   strategist: STATUS_ORDER,
   designer: ["in_progress", "ready_for_approval", "awaiting_assets", "on_hold"],
 };
@@ -357,6 +362,25 @@ export function formatMeta(format: string | null | undefined) {
       icon: "●",
     }
   );
+}
+
+/**
+ * Timing data is management information, not a scoreboard.
+ *   - admin & operator: everything, including live clocks
+ *   - designer: their own finished totals, never a ticking timer
+ *   - strategist: nothing — they get delivery status
+ */
+export function canSeeAllTime(role: UserRole): boolean {
+  return role === "admin" || role === "operator";
+}
+
+export function canSeeOwnTime(role: UserRole): boolean {
+  return role === "designer" || canSeeAllTime(role);
+}
+
+/** Only admins and operators watch a clock move. */
+export function canSeeLiveTimer(role: UserRole): boolean {
+  return canSeeAllTime(role);
 }
 
 export interface SavedView {

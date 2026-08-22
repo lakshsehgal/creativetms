@@ -15,7 +15,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
-import { ALLOWED_TARGETS, BOARD_COLUMNS, STATUSES } from "@/lib/types";
+import { ALLOWED_TARGETS, BOARD_COLUMNS, STATUSES, canSeeOwnTime } from "@/lib/types";
 import { positionBetween } from "@/lib/queries";
 import { Column } from "@/components/board/column";
 import { TicketCard } from "@/components/board/ticket-card";
@@ -129,6 +129,7 @@ export function BoardView({
             canStart={canStart}
             onStart={onStart}
             onOpen={onOpen}
+            showTime={canSeeOwnTime(profile.role)}
             draggableIds={draggableIds}
           />
         ))}

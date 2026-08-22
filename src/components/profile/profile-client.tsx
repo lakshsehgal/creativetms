@@ -12,6 +12,7 @@ import { Button, Field, TextInput } from "@/components/ui/form";
 
 const ROLE_LABEL: Record<Profile["role"], string> = {
   admin: "Admin",
+  operator: "Operator",
   strategist: "Creative Strategist",
   designer: "Designer",
 };

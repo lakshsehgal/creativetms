@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import type { Profile, UserRole } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
+import { Logo } from "@/components/ui/logo";
+import { BreakMode } from "./break-mode";
 import { SignOutButton } from "./sign-out-button";
 import { NotificationBell } from "./notification-bell";
 
@@ -27,16 +29,17 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/board", label: "Work", icon: KanbanSquare, roles: ["admin", "strategist", "designer"] },
+  { href: "/board", label: "Work", icon: KanbanSquare, roles: ["admin", "operator", "strategist", "designer"] },
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
-  { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "strategist"] },
-  { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "designer"] },
+  { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator", "strategist"] },
+  { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator", "designer"] },
   { href: "/brands", label: "Brands", icon: Building2, roles: ["admin", "strategist"] },
   { href: "/team", label: "Team", icon: Users, roles: ["admin"] },
 ];
 
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: "Admin",
+  operator: "Operator",
   strategist: "Strategist",
   designer: "Designer",
 };
@@ -76,15 +79,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
       style={{ width: collapsed ? 60 : 224 }}
     >
       <div className="flex h-14 items-center gap-2.5 px-4">
-        <span
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-[var(--radius-sm)] text-[13px] font-bold text-white"
-          style={{ background: "var(--color-accent)" }}
-        >
-          C
-        </span>
-        {!collapsed && (
-          <span className="truncate text-[14px] font-semibold tracking-tight">Creative TMS</span>
-        )}
+        <Logo size={28} showWord={!collapsed} />
       </div>
 
       <ul className="mt-2 flex-1 space-y-0.5 px-2.5">
@@ -98,13 +93,20 @@ export function Sidebar({ profile }: { profile: Profile }) {
                 prefetch
                 title={collapsed ? item.label : undefined}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] transition-colors ${
+                className={`relative flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] transition-colors ${
                   active
-                    ? "bg-[var(--color-surface-3)] font-medium text-[var(--color-ink)]"
+                    ? "bg-[var(--color-surface-3)] font-semibold text-[var(--color-ink)]"
                     : "text-[var(--color-ink-2)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                 }`}
               >
-                <span className="shrink-0" style={{ color: active ? "var(--color-accent)" : undefined }}>
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute left-0 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full"
+                    style={{ background: "var(--color-brand)" }}
+                  />
+                )}
+                <span className="shrink-0">
                   <Icon size={16} />
                 </span>
                 {!collapsed && <span className="truncate">{item.label}</span>}
@@ -115,6 +117,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
       </ul>
 
       <div className="space-y-2 border-t border-[var(--color-line)] p-2.5">
+        {profile.role === "designer" && !collapsed && <BreakMode profile={profile} />}
         <Link
           href="/profile"
           title="Your profile"

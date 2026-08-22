@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
+   Neuroid display face. Used for headline moments only — the login hero, big
+   empty states — never for UI labels, where an italic serif hurts scanning.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: "PP Editorial New";
+  src: url("/fonts/PPEditorialNew-Italic.otf") format("opentype");
+  font-weight: 200 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
    Design tokens.
 
    Dark is the default surface — this is a tool people stare at all day. Light
@@ -12,6 +24,7 @@
 @theme {
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "PP Editorial New", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
   /* Light is the default: this is a board people scan all day next to
@@ -27,10 +40,17 @@
   --color-ink-2: #4d5563;
   --color-ink-3: #8892a2;
 
-  --color-accent: #0073ea;
-  --color-accent-hover: #0060c4;
+  /* Neuroid brand. Yellow is a surface, never a text colour on white. */
+  --color-brand: #fcef24;
+  --color-brand-hover: #f2e400;
+  --color-brand-ink: #111111;
+
+  /* Interactive ink stays near-black — the white/black half of the identity,
+     and the only thing that reads cleanly as a link on a light ground. */
+  --color-accent: #111111;
+  --color-accent-hover: #000000;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #e6f1fd;
+  --color-accent-soft: #fdf9c9;
 
   /* Status — fixed roles, never reused as a series color. */
   --color-good: #2f9e44;
@@ -73,9 +93,15 @@
   --color-ink-2: #a5adba;
   --color-ink-3: #6f7885;
 
-  --color-accent: #5b8def;
-  --color-accent-hover: #6f9bf2;
-  --color-accent-soft: #16233d;
+  --color-brand: #fcef24;
+  --color-brand-hover: #ffff5a;
+  --color-brand-ink: #111111;
+
+  /* On dark, the brand yellow can carry interaction directly. */
+  --color-accent: #fcef24;
+  --color-accent-hover: #ffff5a;
+  --color-accent-ink: #111111;
+  --color-accent-soft: #2b2708;
 
   --color-series-1: #3987e5;
   --color-series-2: #d95926;
@@ -187,6 +213,13 @@ h1, h2, h3 {
 }
 @utility rise {
   animation: cx-rise 0.18s var(--ease-out-quick) both;
+}
+
+@utility display {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: -0.015em;
 }
 
 /* The live-timer dot on tickets currently being worked on. */

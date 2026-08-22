@@ -70,8 +70,10 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const variants: Record<string, string> = {
+    // Black text on brand yellow: 17.5:1. Yellow text on white is 1.2:1 and
+    // would be invisible, so the brand colour only ever appears as a surface.
     primary:
-      "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] border border-transparent shadow-[0_1px_2px_rgb(16_24_40/0.10)]",
+      "bg-[var(--color-brand)] text-[var(--color-brand-ink)] hover:bg-[var(--color-brand-hover)] border border-transparent shadow-[0_1px_2px_rgb(16_24_40/0.10)] font-semibold",
     secondary:
       "bg-[var(--color-surface)] text-[var(--color-ink)] border border-[var(--color-line-strong)] hover:bg-[var(--color-surface-2)] shadow-[0_1px_2px_rgb(16_24_40/0.04)]",
     ghost:

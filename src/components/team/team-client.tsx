@@ -23,6 +23,7 @@ import {
 
 const ROLE_BLURB: Record<UserRole, string> = {
   admin: "Everything, including timing data and this page",
+  operator: "Reads all analytics, scorecards and timing — doesn't run the board",
   strategist: "Raises tickets, reviews work, sees team analytics",
   designer: "Works tickets, sees their own scorecard",
 };
@@ -80,6 +81,7 @@ export function TeamClient({
 
   const grouped: Record<UserRole, Profile[]> = {
     admin: team.filter((person) => person.role === "admin"),
+    operator: team.filter((person) => person.role === "operator"),
     strategist: team.filter((person) => person.role === "strategist"),
     designer: team.filter((person) => person.role === "designer"),
   };
@@ -164,6 +166,7 @@ export function TeamClient({
                       >
                         <option value="designer">Designer</option>
                         <option value="strategist">Strategist</option>
+                        <option value="operator">Operator</option>
                         <option value="admin">Admin</option>
                       </Select>
 
@@ -317,6 +320,7 @@ function InviteDialog({
           <Select id="invite-role" name="role" defaultValue="designer">
             <option value="designer">Designer — works tickets, sees own scorecard</option>
             <option value="strategist">Strategist — raises and reviews tickets</option>
+            <option value="operator">Operator — reads all analytics and scorecards</option>
             <option value="admin">Admin — full access including timing data</option>
           </Select>
         </Field>

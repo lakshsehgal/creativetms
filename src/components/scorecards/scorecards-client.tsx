@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import type { DailyScorecard, FormatBenchmark, Profile, Ticket, WorkSession } from "@/lib/types";
+import { canSeeAllTime } from "@/lib/types";
 import { dayLabel, isoDay } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { EmptyState, PageHeader } from "@/components/ui/primitives";
@@ -23,7 +24,7 @@ export function ScorecardsClient({
   const supabase = supabaseBrowser();
   const [day, setDay] = useState(() => isoDay());
   const isToday = day === isoDay();
-  const isAdmin = profile.role === "admin";
+  const isAdmin = canSeeAllTime(profile.role);
 
   // A designer only ever sees their own card, enforced by RLS as well as here.
   const scope = useMemo(

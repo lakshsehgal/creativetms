@@ -1,86 +1,94 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { Logo } from "@/components/ui/logo";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
+/**
+ * The first thing the team sees, so the framing matters.
+ *
+ * An earlier draft led with "every minute tracked", which reads as
+ * surveillance and puts a designer on the defensive before they've even
+ * signed in. The tool's actual value is that the studio stops running on
+ * memory and Slack pings — briefs in one place, a clear queue, no chasing.
+ * The timing is a by-product of work already happening on the board, so the
+ * copy says that plainly rather than making it the headline.
+ */
 export default function LoginPage() {
   return (
-    <main className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
-      {/* Left: the pitch. Hidden on small screens where it would just be scroll. */}
-      <section className="relative hidden overflow-hidden border-r border-[var(--color-line)] bg-[var(--color-surface)] p-12 lg:flex lg:flex-col lg:justify-between">
+    <main className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
+      <section className="relative hidden overflow-hidden bg-[#111111] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full opacity-25 blur-3xl"
-          style={{
-            background:
-              "radial-gradient(circle at center, var(--color-accent), transparent 65%)",
-          }}
+          className="pointer-events-none absolute -right-32 -top-32 h-[30rem] w-[30rem] rounded-full opacity-[0.18] blur-3xl"
+          style={{ background: "var(--color-brand)" }}
         />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-40 -left-24 h-[26rem] w-[26rem] rounded-full opacity-[0.10] blur-3xl"
+          style={{ background: "var(--color-brand)" }}
+        />
+
         <div className="relative">
-          <div className="flex items-center gap-2.5">
-            <Mark />
-            <span className="text-[15px] font-semibold tracking-tight">Creative TMS</span>
-          </div>
+          <Logo size={32} />
         </div>
 
-        <div className="relative max-w-md">
-          <h1 className="text-[2.1rem] font-semibold leading-[1.15] tracking-tight">
-            Every brief, every designer, every minute — in one board.
-          </h1>
-          <p className="mt-4 text-[15px] leading-relaxed text-[var(--color-ink-2)]">
-            Strategists raise tickets. Designers pick them up. The clock runs on
-            its own, so nobody has to remember a stopwatch and nobody has to
-            chase a status update.
+        <div className="relative max-w-lg">
+          <p
+            className="text-[12px] font-medium uppercase tracking-[0.2em]"
+            style={{ color: "var(--color-brand)" }}
+          >
+            Creative Operations
           </p>
 
-          <dl className="mt-10 grid grid-cols-2 gap-x-8 gap-y-6">
+          <h1 className="display mt-5 text-[2.7rem] leading-[1.08] text-white">
+            Great work shouldn&apos;t wait on a status update.
+          </h1>
+
+          <p className="mt-6 text-[15px] leading-relaxed text-white/70">
+            One place for every brief, every brand and every round. Strategists
+            stop chasing, designers stop guessing what&apos;s next, and the
+            studio can take on more without adding chaos.
+          </p>
+
+          <ul className="mt-10 space-y-3.5">
             {[
-              ["Formats tracked", "Video · Static · Carousel · GIF"],
-              ["Timing", "Automatic, from the board"],
-              ["Scorecards", "Every designer, every evening"],
-              ["Access", "Admin · Strategist · Designer"],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt className="text-[11px] font-medium uppercase tracking-[0.09em] text-[var(--color-ink-3)]">
-                  {label}
-                </dt>
-                <dd className="mt-1 text-[13px] text-[var(--color-ink)]">{value}</dd>
-              </div>
+              ["Briefs land with everything attached", "No more half a brief in Slack and the rest in a DM."],
+              ["Your day, decided by you", "Pick what you're taking on. Priorities are visible, not shouted."],
+              ["Rounds that don't get lost", "V1, V2, V3 all stay put, with the notes that went with them."],
+            ].map(([title, detail]) => (
+              <li key={title} className="flex gap-3">
+                <span
+                  aria-hidden
+                  className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ background: "var(--color-brand)" }}
+                />
+                <span>
+                  <span className="block text-[14px] font-medium text-white">{title}</span>
+                  <span className="block text-[13px] leading-relaxed text-white/55">{detail}</span>
+                </span>
+              </li>
             ))}
-          </dl>
+          </ul>
         </div>
 
-        <p className="relative text-[12px] text-[var(--color-ink-3)]">
-          Time is measured from work that already happens on the board — not
-          from anything a designer has to fill in.
+        <p className="relative max-w-md text-[12.5px] leading-relaxed text-white/40">
+          Built so the studio scales on structure rather than on people
+          remembering things.
         </p>
       </section>
 
-      {/* Right: the actual door. */}
       <section className="flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-[22rem]">
-          <div className="mb-9 flex items-center gap-2.5 lg:hidden">
-            <Mark />
-            <span className="text-[15px] font-semibold tracking-tight">Creative TMS</span>
+          <div className="mb-10 lg:hidden">
+            <Logo size={30} />
           </div>
-          {/* useSearchParams needs a boundary so this page can prerender. */}
           <Suspense fallback={<div className="skeleton h-52" />}>
             <LoginForm />
           </Suspense>
         </div>
       </section>
     </main>
-  );
-}
-
-function Mark() {
-  return (
-    <span
-      className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[13px] font-bold text-white"
-      style={{ background: "var(--color-accent)" }}
-    >
-      C
-    </span>
   );
 }

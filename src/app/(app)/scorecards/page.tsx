@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function ScorecardsPage() {
   const profile = await currentProfile();
   if (!profile) redirect("/login");
+  // Strategists get delivery status, never timing data.
   if (profile.role === "strategist") redirect("/analytics");
 
   const supabase = await supabaseServer();

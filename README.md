@@ -49,14 +49,44 @@ or reference that should sit with the ticket. It isn't where finished work goes.
 
 ## Roles
 
-| | Admin | Strategist | Designer |
-|---|---|---|---|
-| Raise / edit tickets | ✅ | ✅ | — |
-| Approve, request revisions, deliver | ✅ | ✅ | — |
-| Work tickets, submit for review | ✅ | ✅ | ✅ |
-| Team analytics (volume, on-time, first-pass) | ✅ | ✅ | — |
-| Per-designer timing and scorecards | ✅ | — | own only |
-| Invite people, set roles and benchmarks | ✅ | — | — |
+| | Admin | Operator | Strategist | Designer |
+|---|---|---|---|---|
+| Raise / edit tickets | ✅ | — | ✅ | — |
+| Approve, request revisions, send to client | ✅ | — | ✅ | — |
+| Work tickets, submit for review | ✅ | — | ✅ | ✅ |
+| Team analytics (volume, on-time, first-pass) | ✅ | ✅ | ✅ | — |
+| Per-designer timing and scorecards | ✅ | ✅ | — | own only |
+| Nightly scorecard email | ✅ | ✅ | — | — |
+| Invite people, set roles and benchmarks | ✅ | — | — | — |
+
+**Operator** reads the numbers without running the board — analytics,
+scorecards and timing, plus the nightly digest, but no ability to move work
+through the pipeline.
+
+## Who sees time, and how
+
+Timing is management information, not a scoreboard, and the visibility rules
+say so:
+
+- **Admins and operators** see everything, including clocks running live.
+- **Designers** see what a piece of work took, never a stopwatch ticking while
+  they do it. Watching your own seconds is pressure, not information — and the
+  final number is identical either way.
+- **Strategists** see no timing at all. They get delivery status.
+
+Enforced in row-level security as well as in the UI, so it holds over a direct
+database connection too.
+
+## Breaks
+
+A **Break** button sits in the sidebar for every designer. Taking one stops the
+clock, blanks the screen, and returns them to the same ticket where they left
+off — the total continues rather than restarting. The heartbeat is refused
+server-side while a break is open, so a tab left running in the background
+can't quietly restart it either.
+
+Lunch simply isn't in the numbers. Nobody should have to choose between taking
+a proper break and looking slow.
 
 Enforced by Postgres row-level security and by triggers on the tickets table —
 a designer can't edit a brief or approve their own work even with a direct

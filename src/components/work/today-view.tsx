@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { CalendarCheck, CalendarPlus, Timer, X } from "lucide-react";
 import type { Profile, TicketWithRefs } from "@/lib/types";
-import { STATUSES } from "@/lib/types";
+import { STATUSES, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, humanDuration, isoDay } from "@/lib/format";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
@@ -143,7 +143,7 @@ export function TodayView({
                       on “{live.title}”
                     </span>
                   )}
-                  {tracked > 0 && (
+                  {tracked > 0 && canSeeOwnTime(viewer.role) && (
                     <span className="tabular ml-2 flex items-center gap-1 text-[11.5px] text-[var(--color-ink-3)]">
                       <Timer size={11} />
                       {humanDuration(tracked)}

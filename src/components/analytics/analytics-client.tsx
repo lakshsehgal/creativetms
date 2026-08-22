@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { DailyScorecard, FormatBenchmark, Profile } from "@/lib/types";
-import { FORMAT_ORDER, FORMATS } from "@/lib/types";
+import { FORMAT_ORDER, FORMATS, canSeeAllTime } from "@/lib/types";
 import { humanDuration, isoDay, minutesToHuman, pct } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
@@ -41,7 +41,7 @@ export function AnalyticsClient({
 }) {
   const supabase = supabaseBrowser();
   const [range, setRange] = useState("30");
-  const isAdmin = profile.role === "admin";
+  const isAdmin = canSeeAllTime(profile.role);
 
   const { from, to } = useMemo(() => {
     const end = new Date();
@@ -244,7 +244,7 @@ export function AnalyticsClient({
           ) : (
             <Card>
               <p className="text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
-                Per-designer timing is admin-only. These team figures are the
+                Per-designer timing is for admins and operators. These team figures are the
                 planning numbers — what a{" "}
                 {FORMATS.static.label.toLowerCase()} or{" "}
                 {FORMATS.video.label.toLowerCase()} actually costs in hours, so
