@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 116" fill="none">
+  <g stroke="#000" stroke-width="4" stroke-linejoin="round">
+    <path d="M28 104V26h20l40 48V26h20v78H88L48 56v48H28Z" fill="#e8d600" transform="translate(10 -10)"/>
+    <path d="M18 104V26h20l40 48V26h20v78H78L38 56v48H18Z" fill="#fcef24"/>
+  </g>
+  <text x="150" y="82" font-family="DM Sans, system-ui, sans-serif" font-size="58"
+        font-weight="600" letter-spacing="-1.5" fill="#ffffff">Neuroid</text>
+</svg>

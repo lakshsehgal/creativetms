@@ -31,7 +31,7 @@ export default function LoginPage() {
         />
 
         <div className="relative">
-          <Logo size={32} />
+          <Logo size={32} tone="dark" />
         </div>
 
         <div className="relative max-w-lg">
@@ -82,7 +82,7 @@ export default function LoginPage() {
       <section className="flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-[22rem]">
           <div className="mb-10 lg:hidden">
-            <Logo size={30} />
+            <Logo size={30} tone="light" />
           </div>
           <Suspense fallback={<div className="skeleton h-52" />}>
             <LoginForm />

@@ -215,6 +215,10 @@ h1, h2, h3 {
   animation: cx-rise 0.18s var(--ease-out-quick) both;
 }
 
+/* Swap the light/dark logo lockups without a client-side theme check. */
+:root[data-theme="dark"] .dark-hidden { display: none; }
+:root[data-theme="dark"] .dark-shown  { display: block; }
+
 @utility display {
   font-family: var(--font-display);
   font-style: italic;

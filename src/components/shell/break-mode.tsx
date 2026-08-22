@@ -72,7 +72,7 @@ export function BreakMode({ profile }: { profile: Profile }) {
   if (onBreak) {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#111111] px-6 text-center">
-        <Logo size={34} />
+        <Logo size={34} tone="dark" />
 
         <p className="mt-12 text-[13px] uppercase tracking-[0.18em] text-white/45">
           On a break
