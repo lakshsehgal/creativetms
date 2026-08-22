@@ -7,6 +7,7 @@ import {
   BarChart3,
   Building2,
   ChevronLeft,
+  Clapperboard,
   KanbanSquare,
   Moon,
   Sun,
@@ -15,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import type { Profile, UserRole } from "@/lib/types";
+import { canRunShoots } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
 import { BreakMode } from "./break-mode";
@@ -26,6 +28,11 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ size?: number | string }>;
   roles: UserRole[];
+  /**
+   * A second gate for entries a role alone doesn't decide. Shoot is the one:
+   * most strategists never see it, and the one who runs production does.
+   */
+  when?: (profile: Profile) => boolean;
 }
 
 const NAV: NavItem[] = [
@@ -33,6 +40,13 @@ const NAV: NavItem[] = [
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
   { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator", "strategist"] },
   { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator", "designer"] },
+  {
+    href: "/shoot",
+    label: "Shoot",
+    icon: Clapperboard,
+    roles: ["admin", "operator", "strategist"],
+    when: canRunShoots,
+  },
   { href: "/brands", label: "Brands", icon: Building2, roles: ["admin", "operator", "strategist"] },
   { href: "/team", label: "Team", icon: Users, roles: ["admin", "operator"] },
 ];
@@ -70,7 +84,9 @@ export function Sidebar({ profile }: { profile: Profile }) {
     });
   }
 
-  const items = NAV.filter((item) => item.roles.includes(profile.role));
+  const items = NAV.filter(
+    (item) => item.roles.includes(profile.role) && (item.when ? item.when(profile) : true),
+  );
 
   return (
     <nav

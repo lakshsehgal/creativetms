@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ShieldCheck, UserPlus } from "lucide-react";
+import { Clapperboard, ShieldCheck, UserPlus } from "lucide-react";
 import type { FormatBenchmark, Profile, UserRole } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 import { humanDuration, isoDay, minutesToHuman } from "@/lib/format";
@@ -13,20 +13,20 @@ import { Avatar, Card, PageHeader } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { RemovedTickets } from "./removed-tickets";
-import { ShootBlocks } from "./shoot-blocks";
 import {
   inviteTeammate,
   setActive,
   setBenchmark,
   setCapacity,
   setRole,
+  setShootOps,
   type ActionResult,
 } from "@/app/(app)/team/actions";
 
 const ROLE_BLURB: Record<UserRole, string> = {
   admin: "Everything, including timing data and this page",
   operator: "Reads all analytics, scorecards and timing — doesn't run the board",
-  strategist: "Raises tickets, reviews work, sees team analytics",
+  strategist: "Raises tickets, reviews work, sees team analytics — plus shoots, with shoot ops",
   designer: "Works tickets, sees their own scorecard",
 };
 
@@ -157,6 +157,41 @@ export function TeamClient({
                         </label>
                       )}
 
+                      {/* Shoot ops. Only offered to strategists: admins and
+                          operators already run shoots by virtue of the role,
+                          and a flag they never read is a flag that surprises
+                          whoever inherits it. */}
+                      {role === "strategist" && (
+                        <label
+                          title="Opens the Shoot section and lets them block a designer's bandwidth"
+                          className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[11.5px] ${
+                            person.has_shoot_ops
+                              ? "font-medium text-[var(--color-ink)]"
+                              : "text-[var(--color-ink-3)]"
+                          }`}
+                          style={
+                            person.has_shoot_ops
+                              ? {
+                                  background:
+                                    "color-mix(in srgb, var(--color-series-5) 14%, transparent)",
+                                }
+                              : undefined
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={person.has_shoot_ops}
+                            disabled={pending}
+                            onChange={(event) =>
+                              run(() => setShootOps(person.id, event.target.checked))
+                            }
+                            aria-label={`Shoot ops for ${person.full_name || person.email}`}
+                          />
+                          <Clapperboard size={12} />
+                          Shoot ops
+                        </label>
+                      )}
+
                       <Select
                         value={person.role}
                         disabled={pending || person.id === profile.id}
@@ -263,8 +298,6 @@ export function TeamClient({
               })}
             </ul>
           </Card>
-
-          <ShootBlocks designers={team.filter((person) => person.role === "designer")} />
 
           {profile.role === "admin" && <RemovedTickets />}
         </div>

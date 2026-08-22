@@ -58,10 +58,17 @@ or reference that should sit with the ticket. It isn't where finished work goes.
 | Per-designer timing and scorecards | ✅ | ✅ | — | own only |
 | Nightly scorecard email | ✅ | ✅ | — | — |
 | Invite people, set roles and benchmarks | ✅ | — | — | — |
+| Block bandwidth, write call sheets | ✅ | ✅ | with shoot ops | — |
 
 **Operator** reads the numbers without running the board — analytics,
 scorecards and timing, plus the nightly digest, but no ability to move work
-through the pipeline.
+through the pipeline. They also keep Brands and Team tidy, with one line they
+can't cross: an admin's role, an admin's access, and handing out shoot ops all
+stay with admins, enforced in the database rather than by a hidden button.
+
+**Shoot ops** is a flag, not a role. An admin can give it to a strategist who
+effectively runs production, and it unlocks exactly two things — the Shoot
+section, and the ability to block a designer's day.
 
 ## Who sees time, and how
 
@@ -103,16 +110,21 @@ keys from **Project Settings → API**.
 
 ### 2. Run the migration
 
-Paste `supabase/migrations/0001_init.sql` into the **SQL Editor** and run it. It
-creates every table, the RLS policies, the time-tracking triggers and the
-reporting functions. Optionally run `supabase/seed.sql` for a few starter brands.
+Paste the files in `supabase/migrations/` into the **SQL Editor** and run them
+**in filename order**, one at a time. `0001_init.sql` creates every table, the
+RLS policies, the time-tracking triggers and the reporting functions; each later
+file adds what its name says. All of them are safe to run more than once, so
+re-running one you're unsure about costs nothing. Optionally run
+`supabase/seed.sql` for a few starter brands.
 
-Then run `0003_workflow_v2.sql`, which brings in the nine-status workflow, the
-UGC format, saved views and the daily plan.
+Two notes on the order:
 
-`0002_review_links.sql` is only needed if you ran an earlier copy of `0001`
-before review links existed — a fresh project gets everything from `0001` alone.
-It's safe to run either way.
+- `0002_review_links.sql` is only needed if you ran an earlier copy of `0001`
+  before review links existed. A fresh project gets everything from `0001`
+  alone, and it's safe either way.
+- `0009` is split into `STEP-1` and `STEP-2` because Postgres won't let a new
+  enum value be *used* in the same transaction that adds it. Run STEP-1, then
+  STEP-2, as two separate statements.
 
 ### 3. Point the first admin at your email
 
@@ -273,6 +285,35 @@ bell in the sidebar.
 | Size Changes | The designer |
 | Approved / Sent to Client | The designer |
 | Assigned | The new assignee |
+| Somebody booked out for a shoot | Every strategist and admin, and the person themselves |
+
+The shoot ping is written once per marking, not once per day blocked: a
+three-day shoot is one fact, and three identical pings is how a bell gets
+ignored.
+
+Anything somebody is waiting on also arrives as a desktop notification, through
+a service worker, so it reaches a tab that isn't in front. Turn them on in
+Profile → Desktop alerts.
+
+## Shoots
+
+Several of the designers shoot as well, and a day on set is a day gone. The
+Shoot section holds both halves of that:
+
+**Bandwidth.** Mark a whole day or a slice of one. Those hours come out of the
+Workload grid immediately, and a strategist briefing that person for that day
+gets warned before they raise it — a warning, not a wall, because shoots move
+and a tool that refuses the brief outright just gets worked around in Slack.
+
+**The bar at the top.** From 24 hours before a shoot starts until the moment it
+ends, everyone who raises briefs sees a line naming who's out and when. A
+notification is a moment; this is a state, and by the Tuesday it matters the
+notification is four hundred rows down a bell nobody opens.
+
+**Call sheets.** Locations, scripts by day, crew and reporting times, actors,
+and a meal estimate that works itself out from the crew. Plus the run-up
+checklist — the same three phases every time, ticked live on the day. It saves
+as you type and prints to a clean A4 page with none of the app around it.
 
 ## The noon rule
 

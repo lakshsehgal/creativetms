@@ -41,6 +41,13 @@ const BLOCKING = new Set(["needs_edit", "size_changes", "assigned", "ready_for_a
 
 const PERMISSION_ASKED = "neuroid.desktop-alerts-asked";
 
+/** Where opening one lands you. Not everything is about a ticket. */
+function destination(row: AppNotification): string {
+  if (row.ticket_id) return `/tickets/${row.ticket_id}`;
+  if (row.kind === "shoot_block") return "/shoot";
+  return "/board";
+}
+
 export function NotificationPopups({ profile }: { profile: Profile }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
@@ -114,7 +121,7 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
         .update({ read_at: new Date().toISOString() })
         .eq("id", row.id);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      router.push(row.ticket_id ? `/tickets/${row.ticket_id}` : "/board");
+      router.push(destination(row));
     },
     [router, supabase, queryClient],
   );
@@ -145,7 +152,7 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
           title: row.title,
           body: row.body,
           tag: row.ticket_id ?? row.id,
-          url: row.ticket_id ? `/tickets/${row.ticket_id}` : "/board",
+          url: destination(row),
           // Stays on screen until acknowledged. A handoff that vanishes after
           // four seconds while someone is in Premiere never happened.
           requireInteraction: blocking,

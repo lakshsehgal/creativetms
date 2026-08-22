@@ -175,3 +175,53 @@ export async function setBenchmark(
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
   }
 }
+
+/**
+ * Shoot ops — the Shoot section and the ability to block someone's bandwidth,
+ * handed to a strategist who runs production without making them an operator.
+ *
+ * Admin-only in two independent places. This action runs as the service role,
+ * which bypasses RLS and leaves auth.uid() null — so the database guard waves
+ * it through and `requireAdmin` above is the check that holds here. The guard
+ * trigger is what stops the other route: a signed-in strategist writing to
+ * their own profile row straight from the browser.
+ */
+export async function setShootOps(userId: string, granted: boolean): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+
+    const service = supabaseAdmin();
+    const { data: person } = await service
+      .from("profiles")
+      .select("role, full_name, email")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (!person) return { ok: false, error: "No such person" };
+
+    // Admins and operators already have it by virtue of the role. Setting a
+    // flag they don't read would leave it lying around to surprise whoever
+    // moves them to strategist later.
+    if (person.role !== "strategist") {
+      return {
+        ok: false,
+        error: "Shoot ops is for strategists — admins and operators already run shoots",
+      };
+    }
+
+    const { error } = await service
+      .from("profiles")
+      .update({ has_shoot_ops: granted })
+      .eq("id", userId);
+    if (error) return { ok: false, error: error.message };
+
+    const who = (person.full_name as string) || (person.email as string);
+    revalidatePath("/team");
+    return {
+      ok: true,
+      message: granted ? `${who} can run shoots` : `Shoot ops removed from ${who}`,
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
+  }
+}

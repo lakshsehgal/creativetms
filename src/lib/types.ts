@@ -40,6 +40,12 @@ export interface Profile {
   /** Set while this person is on a break; the clock is stopped. */
   break_started_at: string | null;
   break_ticket_id: string | null;
+  /**
+   * Shoot ops. An admin can hand this to a strategist who effectively runs
+   * production, so they get the Shoot section and can block bandwidth without
+   * being handed the whole floor.
+   */
+  has_shoot_ops: boolean;
 }
 
 export interface Brand {
@@ -465,6 +471,18 @@ export const BLOCK_KINDS: Record<BlockKind, { label: string; tone: string }> = {
   other: { label: "Unavailable", tone: "var(--color-ink-3)" },
 };
 
+/**
+ * Who may open the Shoot section and block someone's day.
+ *
+ * Mirrors can_run_shoots() in the database exactly. The database is the one
+ * that decides — this is only here so the sidebar doesn't offer a door that
+ * won't open.
+ */
+export function canRunShoots(profile: Pick<Profile, "role" | "has_shoot_ops">): boolean {
+  if (profile.role === "admin" || profile.role === "operator") return true;
+  return profile.role === "strategist" && Boolean(profile.has_shoot_ops);
+}
+
 export function blockKindMeta(kind: string | null | undefined) {
   return BLOCK_KINDS[kind as BlockKind] ?? { label: kind ?? "Unavailable", tone: "var(--color-ink-3)" };
 }
@@ -494,6 +512,113 @@ export interface BlockedDay {
   kinds: string[];
   notes: string[];
 }
+
+/* --------------------------------------------------------------- shoots */
+
+/**
+ * A shoot brief — the call sheet.
+ *
+ * The body is jsonb rather than fifteen columns on purpose: every shoot has a
+ * field the last one didn't, and none of this is ever aggregated across
+ * shoots. What is pulled out beside it is what the list screen sorts on.
+ */
+export interface Shoot {
+  id: string;
+  title: string;
+  brand: string;
+  shoot_date: string | null;
+  doc: ShootDoc;
+  checklist: ChecklistPhase[];
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+}
+
+export interface ShootDoc {
+  days: number;
+  callTime: string;
+  locations: ShootLocation[];
+  scripts: ShootScript[];
+  crew: CrewGroup[];
+  actors: ShootActor[];
+  meals: ShootMeals;
+}
+
+export interface ShootLocation {
+  id: string;
+  name: string;
+  mapUrl: string;
+  address: string;
+}
+
+export interface ShootScript {
+  id: string;
+  name: string;
+  day: number;
+  hours: string;
+  versions: string;
+  link: string;
+}
+
+export interface CrewGroup {
+  id: string;
+  role: string;
+  members: CrewMember[];
+}
+
+export interface CrewMember {
+  id: string;
+  name: string;
+  reportingTime: string;
+}
+
+export interface ShootActor {
+  id: string;
+  name: string;
+  age: string;
+  requirement: string;
+  timeIn: string;
+  timeOut: string;
+}
+
+export interface ShootMeals {
+  breakfast: boolean;
+  lunch: boolean;
+  dinner: boolean;
+  snacks: boolean;
+  costPerMeal: string;
+  notes: string;
+}
+
+export interface ChecklistPhase {
+  id: string;
+  title: string;
+  items: ChecklistItem[];
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  owner: string;
+  note: string;
+  done: boolean;
+}
+
+export const CREW_ROLES = [
+  "Operations",
+  "Content strategist",
+  "Videographer",
+  "Frame team",
+  "Photographer",
+  "Editor",
+  "Director",
+  "Assistant",
+  "Other",
+] as const;
+
+export const SCRIPT_VERSIONS = ["Vertical", "Horizontal", "Both", "Square", "Story / Reel"] as const;
 
 export interface SavedView {
   id: string;

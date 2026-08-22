@@ -234,3 +234,31 @@ h1, h2, h3 {
 @utility breathe {
   animation: cx-breathe 2.2s ease-in-out infinite;
 }
+
+/* ---------------------------------------------------------------------------
+   Print
+   ---------------------------------------------------------------------------
+   The app is a fixed-height shell with its own scrolling pane, which is right
+   on screen and wrong on paper: the pane clips at one viewport and the rest of
+   the call sheet never comes out of the printer. On print the whole thing goes
+   back to flowing, and the chrome nobody needs on a page handed to a crew —
+   the sidebar, the banners, the tab strips — is left behind.
+--------------------------------------------------------------------------- */
+@media print {
+  html, body { height: auto; background: #fff; }
+
+  /* The shell and every scroll pane inside it. */
+  .h-dvh, .overflow-hidden, .overflow-y-auto, .min-h-0 {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* The sidebar. Scoped to the element, not to every <header> on the page —
+     the call sheet has its own, and it is the half of the page that matters. */
+  nav { display: none !important; }
+
+  /* Cards print as plain sections — a boxed border per section wastes ink and
+     makes a call sheet look like a screenshot of an app. */
+  main [class*="shadow"] { box-shadow: none !important; }
+}

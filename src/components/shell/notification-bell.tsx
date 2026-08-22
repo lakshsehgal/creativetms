@@ -120,7 +120,13 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
               {rows.map((row) => (
                 <li key={row.id}>
                   <Link
-                    href={row.ticket_id ? `/tickets/${row.ticket_id}` : "/board"}
+                    href={
+                      row.ticket_id
+                        ? `/tickets/${row.ticket_id}`
+                        : row.kind === "shoot_block"
+                          ? "/shoot"
+                          : "/board"
+                    }
                     onClick={() => setOpen(false)}
                     className={`block border-b border-[var(--color-line)] px-3 py-2 transition-colors last:border-0 hover:bg-[var(--color-surface-2)] ${
                       row.read_at ? "" : "bg-[var(--color-accent-soft)]"

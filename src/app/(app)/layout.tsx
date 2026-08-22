@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { PendingApproval } from "@/components/shell/pending-approval";
 import { ConnectionStatus } from "@/components/shell/connection-status";
 import { NotificationPopups } from "@/components/shell/notification-popups";
+import { ShootBanner } from "@/components/shell/shoot-banner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const profile = await currentProfile();
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             rather than covering it — an alert that hides the thing it's about
             is worse than no alert. */}
         <ConnectionStatus />
+        <ShootBanner profile={profile} />
         <NotificationPopups profile={profile} />
         {children}
       </main>
