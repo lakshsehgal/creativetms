@@ -111,7 +111,11 @@ export function TicketActions({
     queryClient.invalidateQueries({ queryKey: queryKeys.ticket(ticket.id) });
     queryClient.invalidateQueries({ queryKey: ["sessions", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
-    toast.success("Sent for review");
+    toast.success(
+      ticket.work_phase === "size_change"
+        ? "Resizes sent for review"
+        : "Sent for review",
+    );
   }
 
   async function requestRevisions(event: React.FormEvent) {
@@ -206,7 +210,13 @@ export function TicketActions({
           variant="primary"
           size="sm"
           loading={busy === "submit"}
-          onClick={() => setAskingForLink(true)}
+          // Resized sets land in the same Frame.io folder as the main output,
+          // beside it — there's no second link to paste, so don't ask for one.
+          onClick={() =>
+            ticket.work_phase === "size_change"
+              ? void submitForReview("")
+              : setAskingForLink(true)
+          }
         >
           <Send size={13} /> Ready for approval
         </Button>,
@@ -289,9 +299,7 @@ export function TicketActions({
         description={
           ticket.work_phase === "revision"
             ? "This round's cut. The strategist gets a notification the moment you submit."
-            : ticket.work_phase === "size_change"
-              ? "The resized set. The strategist gets a notification the moment you submit."
-              : "Paste the share link so the strategist can watch it straight away."
+            : "Paste the share link so the strategist can watch it straight away."
         }
         width={460}
       >

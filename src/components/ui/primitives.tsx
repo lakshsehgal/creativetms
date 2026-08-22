@@ -251,6 +251,7 @@ export function StatTile({
   deltaGood,
   hint,
   accent,
+  swatch,
 }: {
   label: string;
   value: string | number;
@@ -259,13 +260,28 @@ export function StatTile({
   deltaGood?: "up" | "down";
   hint?: string;
   accent?: string;
+  /**
+   * A series colour shown as a chip beside the label.
+   *
+   * Use this rather than `accent` when the tile belongs to a chart series:
+   * the chip carries the identity and the figure stays in ink, which reads
+   * better at 26px and keeps colour doing one job.
+   */
+  swatch?: string;
 }) {
   const showDelta = delta != null && Number.isFinite(delta) && delta !== 0;
   const positive = showDelta && (deltaGood === "down" ? delta! < 0 : delta! > 0);
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
-      <p className="text-[11px] font-medium uppercase tracking-[0.07em] text-[var(--color-ink-3)]">
+      <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.07em] text-[var(--color-ink-3)]">
+        {swatch && (
+          <span
+            aria-hidden
+            className="h-[7px] w-[12px] shrink-0 rounded-full"
+            style={{ background: swatch }}
+          />
+        )}
         {label}
       </p>
       <p className="mt-2 flex items-baseline gap-1.5">

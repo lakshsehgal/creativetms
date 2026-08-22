@@ -38,6 +38,9 @@ export async function fetchBoardTickets(
     .from("tickets")
     .select(TICKET_SELECT)
     .neq("status", "approved")
+    // RLS lets an admin read removed tickets so they can be restored; the
+    // board is not where that belongs.
+    .is("deleted_at", null)
     .order("position", { ascending: true })
     .limit(500);
 

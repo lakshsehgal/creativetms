@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
 import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
@@ -15,6 +16,7 @@ import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { Select } from "@/components/ui/form";
 import { useTicketData } from "./use-ticket-data";
 import { TicketActions } from "./ticket-actions";
+import { DeleteTicket } from "./delete-ticket";
 import { TimePanel } from "./time-panel";
 import { Activity } from "./activity";
 import { AttachmentsPanel } from "./attachments-panel";
@@ -38,6 +40,7 @@ export function TicketDetail({
   variant?: "page" | "modal";
   onClose?: () => void;
 }) {
+  const router = useRouter();
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const { ticket, comments, events, revisions, attachments, sessions, deliverables } = useTicketData(
@@ -101,6 +104,17 @@ export function TicketDetail({
         <StatusPill status={data.status} />
         <div className="ml-auto flex items-center gap-2">
           <TicketActions ticket={data} profile={profile} />
+
+          <DeleteTicket
+            ticket={data}
+            profile={profile}
+            onDeleted={() => {
+              // The ticket no longer exists as far as every list is concerned,
+              // so staying on its page would show a dead screen.
+              if (variant === "modal") onClose?.();
+              else router.push("/board");
+            }}
+          />
 
           {variant === "modal" && (
             <>

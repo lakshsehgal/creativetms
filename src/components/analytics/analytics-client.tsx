@@ -11,6 +11,7 @@ import { Card, PageHeader, StatTile } from "@/components/ui/primitives";
 import { BarChart, type BarDatum } from "@/components/charts/bar-chart";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { DesignerTable } from "./designer-table";
+import { PhasePanel } from "./phase-panel";
 
 const RANGES = [
   { key: "7", label: "7 days" },
@@ -233,6 +234,12 @@ export function AnalyticsClient({
             </p>
             <TrendChart series={trend} formatValue={(value) => String(value)} />
           </Card>
+
+          {/* The phase split is the detailed view, and it is per-person
+              timing, so it sits behind the same gate as the designer table. */}
+          {isAdmin && (
+            <PhasePanel from={from} to={to} range={range} designers={designers} />
+          )}
 
           {isAdmin ? (
             <DesignerTable

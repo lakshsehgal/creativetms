@@ -79,6 +79,9 @@ export interface Ticket {
   position: number;
   created_at: string;
   updated_at: string;
+  /** Set when the ticket was removed. The row is kept so it can come back. */
+  deleted_at: string | null;
+  deleted_by: string | null;
 }
 
 type PersonRef = Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
@@ -344,11 +347,23 @@ export const ALLOWED_TARGETS: Record<UserRole, TicketStatus[]> = {
   designer: ["in_progress", "ready_for_approval", "awaiting_assets", "on_hold"],
 };
 
-export const PHASES: Record<WorkPhase, { label: string; tone: string }> = {
-  initial: { label: "Original build", tone: "var(--color-accent)" },
-  revision: { label: "Revisions", tone: "var(--color-serious)" },
-  size_change: { label: "Size changes", tone: "#a259d9" },
+/**
+ * The three kinds of work.
+ *
+ * These are chart series, not status colours, so they take validated
+ * categorical slots. Purple was the obvious pick for size changes — it
+ * matches the Size Changes status pill — but blue against purple collapses
+ * to dE 3.7 under protanopia, which is exactly the comparison this chart is
+ * for. Blue / orange / green clears every check in both modes.
+ */
+export const PHASES: Record<WorkPhase, { label: string; short: string; tone: string }> = {
+  initial: { label: "Original build", short: "Build", tone: "var(--color-series-1)" },
+  revision: { label: "Revisions", short: "Revisions", tone: "var(--color-series-2)" },
+  size_change: { label: "Size changes", short: "Resizes", tone: "var(--color-series-3)" },
 };
+
+/** Everything that isn't the first attempt. The number this studio watches. */
+export const REWORK_PHASES: WorkPhase[] = ["revision", "size_change"];
 
 export const PHASE_ORDER: WorkPhase[] = ["initial", "revision", "size_change"];
 
@@ -358,7 +373,40 @@ export const PHASE_ORDER: WorkPhase[] = ["initial", "revision", "size_change"];
  * whole screen down instead of rendering one odd-looking chip.
  */
 export function phaseMeta(phase: string | null | undefined) {
-  return PHASES[phase as WorkPhase] ?? { label: phase ?? "Unknown", tone: "var(--color-ink-3)" };
+  return (
+    PHASES[phase as WorkPhase] ?? {
+      label: phase ?? "Unknown",
+      short: phase ?? "Unknown",
+      tone: "var(--color-ink-3)",
+    }
+  );
+}
+
+/** Rows returned by designer_phase_breakdown(). */
+export interface DesignerPhaseRow {
+  designer_id: string;
+  designer_name: string;
+  phase: WorkPhase;
+  total_seconds: number;
+  sessions: number;
+  tickets: number;
+}
+
+/** Rows returned by designer_format_phase(). */
+export interface FormatPhaseRow {
+  designer_id: string;
+  format: CreativeFormat;
+  phase: WorkPhase;
+  total_seconds: number;
+  tickets: number;
+  units: number;
+}
+
+/** Rows returned by studio_phase_daily(). */
+export interface PhaseDayRow {
+  day: string;
+  phase: WorkPhase;
+  total_seconds: number;
 }
 
 export function statusMeta(status: string | null | undefined) {
