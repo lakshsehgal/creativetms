@@ -73,6 +73,11 @@ export interface Ticket {
   delivered_at: string | null;
   /** The designer's pledge that this is today's work. */
   planned_for: string | null;
+  /**
+   * Where it sits in that day's running order. Meaningless — and cleared —
+   * once the ticket leaves the plan.
+   */
+  plan_position: number | null;
   /** Which kind of work the ticket is currently in. */
   work_phase: WorkPhase;
   revision_count: number;

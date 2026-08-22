@@ -4,18 +4,19 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CircleDot, Inbox, Play } from "lucide-react";
+import { Inbox, Play } from "lucide-react";
 import type { DailyScorecard, FormatBenchmark, Profile, TicketWithRefs, WorkSession } from "@/lib/types";
-import { FORMAT_ORDER, FORMATS, PRIORITIES } from "@/lib/types";
+import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 import { dueLabel, dueState, humanDuration, isoDay, stopwatch } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
 import { useLiveTickets } from "@/hooks/use-live-tickets";
-import { Card, EmptyState, FormatBadge, PageHeader, StatTile } from "@/components/ui/primitives";
+import { Card, FormatBadge, PageHeader, StatTile } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
 import { TrendChart } from "@/components/charts/trend-chart";
+import { DayPlan } from "./day-plan";
 
 export function MyDayClient({
   profile,
@@ -32,17 +33,10 @@ export function MyDayClient({
 
   const mine = tickets.filter((ticket) => ticket.assigned_to === profile.id);
   const running = mine.find((ticket) => ticket.status === "in_progress");
-  const upNext = mine
-    .filter((ticket) =>
-      ["new_request", "size_changes", "needs_edit", "on_hold", "awaiting_assets"].includes(
-        ticket.status,
-      ),
-    )
-    .sort(
-      (a, b) =>
-        PRIORITIES[b.priority].rank - PRIORITIES[a.priority].rank ||
-        (a.due_at ?? "9999").localeCompare(b.due_at ?? "9999"),
-    );
+  // What the designer has actually pledged to today, in their own order.
+  const plannedToday = mine.filter(
+    (ticket) => ticket.planned_for === isoDay() && ticket.status !== "approved",
+  );
   const waiting = mine.filter((ticket) =>
     ["ready_for_approval", "sent_to_client"].includes(ticket.status),
   );
@@ -129,7 +123,7 @@ export function MyDayClient({
     <>
       <PageHeader
         title={`${greeting(profile.timezone)}, ${firstName}`}
-        subtitle={`${upNext.length} queued · ${waiting.length} in review`}
+        subtitle={`${plannedToday.length} picked for today · ${waiting.length} in review`}
       />
 
       <div className="flex-1 overflow-y-auto px-5 py-5">
@@ -180,29 +174,21 @@ export function MyDayClient({
               value={humanDuration(trackedToday)}
               hint={`${capacityPct}% of your ${Math.round(profile.daily_capacity_minutes / 60)}h day`}
             />
-            <StatTile label="In your queue" value={upNext.length} hint="Assigned and ready" />
+            <StatTile
+              label="Picked for today"
+              value={plannedToday.length}
+              hint="Chosen by you, not assigned to you"
+            />
             <StatTile label="Awaiting review" value={waiting.length} hint="Submitted, not yet signed off" />
           </div>
 
-          {/* ---------------------------------------------------- your queue */}
-          <Card padded={false}>
-            <h2 className="border-b border-[var(--color-line)] px-4 py-3 text-[13px] font-semibold tracking-tight">
-              Your queue
-            </h2>
-            {upNext.length === 0 ? (
-              <EmptyState
-                icon={<CircleDot size={20} />}
-                title="Queue's clear"
-                hint="Nothing assigned and waiting. Grab something from the backlog below."
-              />
-            ) : (
-              <ul>
-                {upNext.map((ticket) => (
-                  <QueueRow key={ticket.id} ticket={ticket} onStart={() => void start(ticket)} />
-                ))}
-              </ul>
-            )}
-          </Card>
+          {/* ------------------------------------ pick the day, then order it */}
+          <DayPlan
+            profile={profile}
+            tickets={tickets}
+            benchmarks={benchmarks}
+            onStart={(ticket) => void start(ticket)}
+          />
 
           {/* ------------------------------------------------ open backlog */}
           {free.length > 0 && (
