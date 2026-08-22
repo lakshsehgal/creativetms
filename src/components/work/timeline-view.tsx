@@ -7,8 +7,8 @@ import {
   addDays,
   buildTimeline,
   dayRange,
+  dayShape,
   groupBars,
-  isWeekend,
   startOfWeek,
   RISKS,
   RISK_ORDER,
@@ -300,7 +300,7 @@ function Header({
         {days.map((day, index) => {
           const [y, m, d] = day.split("-").map(Number);
           const date = new Date(y, m - 1, d);
-          const weekend = isWeekend(day);
+          const shape = dayShape(day);
           const monday = index % 7 === 0;
           // At 8 weeks a label per day is unreadable, so only Mondays are named.
           const labelled = !dense || monday;
@@ -309,7 +309,11 @@ function Header({
             <div
               key={day}
               className={`shrink-0 py-1.5 text-center ${
-                weekend ? "bg-[var(--color-surface-2)]" : ""
+                shape === "off"
+                  ? "bg-[var(--color-surface-3)]"
+                  : shape === "half"
+                    ? "bg-[var(--color-surface-2)]"
+                    : ""
               } ${index === todayIndex ? "bg-[var(--color-accent-soft)]" : ""} ${
                 monday ? "border-l border-[var(--color-line-strong)]" : ""
               }`}
@@ -413,9 +417,10 @@ function Row({
           backgroundImage: [
             `repeating-linear-gradient(to right, var(--color-line) 0 1px, transparent 1px ${dayWidth}px)`,
             `repeating-linear-gradient(to right, var(--color-line-strong) 0 1px, transparent 1px ${dayWidth * 7}px)`,
-            // The window always opens on a Monday, so Sat/Sun are the last two
-            // columns of every seven.
-            `repeating-linear-gradient(to right, transparent 0 ${dayWidth * 5}px, var(--color-surface-2) ${dayWidth * 5}px ${dayWidth * 7}px)`,
+            // The window always opens on a Monday, so Saturday is column six
+            // and Sunday column seven of every group. Sunday is the day off,
+            // so it reads a step heavier than the Saturday half-day.
+            `repeating-linear-gradient(to right, transparent 0 ${dayWidth * 5}px, var(--color-surface-2) ${dayWidth * 5}px ${dayWidth * 6}px, var(--color-surface-3) ${dayWidth * 6}px ${dayWidth * 7}px)`,
           ].join(", "),
         }}
       >

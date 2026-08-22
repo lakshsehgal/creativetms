@@ -4,12 +4,19 @@ import { useMemo, useState } from "react";
 import { CircleHelp, Users } from "lucide-react";
 import type { Profile, TicketWithRefs } from "@/lib/types";
 import { canSeeAllTime } from "@/lib/types";
-import { dayRange, buildWorkload, estimateMinutes, loadState, LOAD_STATES } from "@/lib/planning";
-import type { BenchmarkMap, LoadState, WorkloadCell, WorkloadRow } from "@/lib/planning";
+import {
+  dayRange,
+  buildWorkload,
+  dayCapacity,
+  dayShape,
+  estimateMinutes,
+  loadState,
+  LOAD_STATES,
+} from "@/lib/planning";
+import type { BenchmarkMap, DayShape, LoadState, WorkloadCell, WorkloadRow } from "@/lib/planning";
 import { minutesToHuman } from "@/lib/format";
 import { useToday } from "@/hooks/use-today";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
-import { isWeekend } from "@/lib/planning";
 
 const WINDOWS = [7, 14] as const;
 type Window = (typeof WINDOWS)[number];
@@ -60,16 +67,21 @@ export function WorkloadView({
       days.map((day, index) => {
         let minutes = 0;
         let unestimated = 0;
+        let capacity = 0;
         rows.forEach((row) => {
           minutes += row.cells[index].minutes;
           unestimated += row.cells[index].unestimated;
+          // Saturday is half and Sunday is nothing, so the studio's capacity
+          // is a different number every column.
+          capacity += row.cells[index].capacity;
         });
-        return { day, minutes, unestimated };
+        return { day, minutes, unestimated, capacity };
       }),
     [rows, days],
   );
 
-  const teamCapacity = rows.reduce((sum, row) => sum + row.capacityMinutes, 0);
+  /** A full weekday's worth of studio, for the row label. */
+  const teamFullDay = rows.reduce((sum, row) => sum + row.capacityMinutes, 0);
 
   const openCell = useMemo(() => {
     if (!selected) return null;
@@ -194,8 +206,8 @@ export function WorkloadView({
                   <LoadCell
                     key={cell.day}
                     cell={cell}
-                    capacity={row.capacityMinutes}
-                    weekend={isWeekend(cell.day)}
+                    capacity={cell.capacity}
+                    shape={dayShape(cell.day)}
                     isToday={index === 0}
                     selected={
                       selected?.rowKey === row.person.id && selected?.day === cell.day
@@ -214,7 +226,7 @@ export function WorkloadView({
                 <LoadCell
                   cell={row.undated}
                   capacity={row.capacityMinutes}
-                  weekend={false}
+                  shape="full"
                   isToday={false}
                   undated
                   selected={selected?.rowKey === row.person.id && selected?.day === "undated"}
@@ -239,24 +251,44 @@ export function WorkloadView({
               >
                 Studio
                 <span className="ml-1.5 font-normal text-[var(--color-ink-3)]">
-                  {Math.round(teamCapacity / 60)}h a day
+                  {Math.round(teamFullDay / 60)}h a full day
                 </span>
               </th>
               {teamTotals.map((total) => {
-                const state = loadState(total.minutes, teamCapacity);
+                const state = loadState(total.minutes, total.capacity);
+                const shape = dayShape(total.day);
                 return (
-                  <td key={total.day} className="px-2 py-2 text-center">
+                  <td
+                    key={total.day}
+                    className={`px-2 py-2 text-center ${
+                      shape === "off" ? "bg-[var(--color-surface-3)]" : ""
+                    }`}
+                  >
                     <span className="tabular text-[11.5px] font-medium">
-                      {total.minutes > 0 ? minutesToHuman(total.minutes) : "—"}
+                      {total.minutes > 0
+                        ? minutesToHuman(total.minutes)
+                        : shape === "off"
+                          ? "Off"
+                          : "—"}
                     </span>
-                    {teamCapacity > 0 && total.minutes > 0 && (
+                    {total.capacity > 0 && total.minutes > 0 && (
                       <span
                         className="ml-1 text-[10.5px]"
                         style={{ color: LOAD_STATES[state].tone }}
                         aria-label={LOAD_STATES[state].label}
                       >
                         {LOAD_STATES[state].icon}
-                        {Math.round((total.minutes / teamCapacity) * 100)}%
+                        {Math.round((total.minutes / total.capacity) * 100)}%
+                      </span>
+                    )}
+                    {/* Work booked on a day nobody works has no percentage to
+                        quote — it just shouldn't be there. */}
+                    {total.capacity === 0 && total.minutes > 0 && (
+                      <span
+                        className="ml-1 text-[10.5px] font-medium"
+                        style={{ color: "var(--color-critical)" }}
+                      >
+                        ▲ on a day off
                       </span>
                     )}
                     {total.unestimated > 0 && (
@@ -294,7 +326,9 @@ export function WorkloadView({
         client don&apos;t count against a designer, and a format with no
         benchmark set shows as{" "}
         <span className="font-medium text-[var(--color-ink-2)]">+n?</span>{" "}
-        rather than as free time.{" "}
+        rather than as free time. The week is full Monday to Friday, half on
+        Saturday, and Sunday off — so a Saturday fills at half the hours, and
+        anything booked on a Sunday is flagged rather than absorbed.{" "}
         {canSeeAllTime(viewer.role) && (
           <>Actual time spent lives in Analytics and Scorecards.</>
         )}
@@ -305,16 +339,26 @@ export function WorkloadView({
 
 /* ---------------------------------------------------------------- pieces */
 
+const SHAPE_NOTE: Record<DayShape, string> = {
+  full: "",
+  half: "\u00bd day",
+  off: "Off",
+};
+
 function DayHeader({ day, isToday }: { day: string; isToday: boolean }) {
   const [y, m, d] = day.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  const weekend = isWeekend(day);
+  const shape = dayShape(day);
 
   return (
     <th
       scope="col"
       className={`min-w-[104px] px-2 py-2 text-center ${
-        weekend ? "bg-[var(--color-surface-2)]" : ""
+        shape === "off"
+          ? "bg-[var(--color-surface-3)]"
+          : shape === "half"
+            ? "bg-[var(--color-surface-2)]"
+            : ""
       }`}
     >
       <span
@@ -326,6 +370,9 @@ function DayHeader({ day, isToday }: { day: string; isToday: boolean }) {
       </span>
       <span className="tabular block text-[11px] text-[var(--color-ink-3)]">
         {date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+        {SHAPE_NOTE[shape] && (
+          <span className="ml-1 font-medium">· {SHAPE_NOTE[shape]}</span>
+        )}
       </span>
     </th>
   );
@@ -342,7 +389,7 @@ function DayHeader({ day, isToday }: { day: string; isToday: boolean }) {
 function LoadCell({
   cell,
   capacity,
-  weekend,
+  shape,
   isToday,
   undated = false,
   selected,
@@ -351,7 +398,7 @@ function LoadCell({
 }: {
   cell: WorkloadCell;
   capacity: number;
-  weekend: boolean;
+  shape: DayShape;
   isToday: boolean;
   undated?: boolean;
   selected: boolean;
@@ -373,15 +420,25 @@ function LoadCell({
     ? `${cell.tickets.length} undated ticket${cell.tickets.length === 1 ? "" : "s"} for ${personName}`
     : `${personName}, ${cell.day}: ${
         empty
-          ? "nothing booked"
-          : unknownOnly
-            ? `${cell.unestimated} ticket(s) booked, no benchmark to size them`
-            : `${minutesToHuman(cell.minutes)} of ${Math.round(capacity / 60)}h`
+          ? shape === "off"
+            ? "day off"
+            : "nothing booked"
+          : shape === "off"
+            ? `${minutesToHuman(cell.minutes)} booked on a day off`
+            : unknownOnly
+              ? `${cell.unestimated} ticket(s) booked, no benchmark to size them`
+              : `${minutesToHuman(cell.minutes)} of ${Math.round(capacity / 60)}h`
       }`;
 
   return (
     <td
-      className={`px-1.5 py-1.5 align-middle ${weekend ? "bg-[var(--color-surface-2)]" : ""} ${
+      className={`px-1.5 py-1.5 align-middle ${
+        shape === "off"
+          ? "bg-[var(--color-surface-3)]"
+          : shape === "half"
+            ? "bg-[var(--color-surface-2)]"
+            : ""
+      } ${
         isToday ? "bg-[var(--color-accent-soft)]" : ""
       }`}
     >
@@ -403,7 +460,9 @@ function LoadCell({
         }
       >
         {empty ? (
-          <span className="block py-1 text-center text-[11px] text-[var(--color-ink-3)]">—</span>
+          <span className="block py-1 text-center text-[11px] text-[var(--color-ink-3)]">
+            {shape === "off" ? "Off" : "—"}
+          </span>
         ) : (
           <>
             <span className="flex items-baseline justify-between gap-1">
@@ -427,6 +486,14 @@ function LoadCell({
                 {/* A percentage of an unknown is not 0% — it's unknown. */}
                 {!undated && capacity > 0 && cell.minutes > 0 && (
                   <span className="tabular text-[var(--color-ink-3)]">{pct}%</span>
+                )}
+                {!undated && shape === "off" && (
+                  <span
+                    className="font-medium"
+                    style={{ color: "var(--color-critical)" }}
+                  >
+                    day off
+                  </span>
                 )}
               </span>
             </span>

@@ -35,9 +35,36 @@ export function startOfWeek(day: string): string {
 }
 
 export function isWeekend(day: string): boolean {
+  const shape = dayShape(day);
+  return shape !== "full";
+}
+
+/**
+ * The studio week.
+ *
+ * Monday to Friday are full days, Saturday is a half day, and Sunday is off.
+ * Treating all seven as full — which the first version of this grid did —
+ * quietly understated how loaded a Friday–Saturday run really was, and showed
+ * Sunday as if it had eight free hours in it.
+ */
+export type DayShape = "full" | "half" | "off";
+
+export const SATURDAY_FRACTION = 0.5;
+
+export function dayShape(day: string): DayShape {
   const [y, m, d] = day.split("-").map(Number);
   const weekday = new Date(y, m - 1, d).getDay();
-  return weekday === 0 || weekday === 6;
+  if (weekday === 0) return "off";
+  if (weekday === 6) return "half";
+  return "full";
+}
+
+/** What one person can actually give on one day. */
+export function dayCapacity(fullDayMinutes: number, day: string): number {
+  const shape = dayShape(day);
+  if (shape === "off") return 0;
+  if (shape === "half") return Math.round(fullDayMinutes * SATURDAY_FRACTION);
+  return fullDayMinutes;
 }
 
 /** The local day a timestamp falls on. */
@@ -124,6 +151,8 @@ export const LOAD_STATES: Record<
 
 export interface WorkloadCell {
   day: string;
+  /** What this person can give on this day — 0 on a Sunday, half on a Saturday. */
+  capacity: number;
   /** Estimated minutes we could actually put a number on. */
   minutes: number;
   /** Tickets whose format has no benchmark yet — counted, never silently zeroed. */
@@ -141,8 +170,8 @@ export interface WorkloadRow {
   totalUnestimated: number;
 }
 
-function emptyCell(day: string): WorkloadCell {
-  return { day, minutes: 0, unestimated: 0, tickets: [] };
+function emptyCell(day: string, capacity = 0): WorkloadCell {
+  return { day, capacity, minutes: 0, unestimated: 0, tickets: [] };
 }
 
 /**
@@ -180,7 +209,7 @@ export function buildWorkload({
   const make = (person: Profile): WorkloadRow => ({
     person,
     capacityMinutes: person.daily_capacity_minutes,
-    cells: days.map(emptyCell),
+    cells: days.map((day) => emptyCell(day, dayCapacity(person.daily_capacity_minutes, day))),
     undated: emptyCell("undated"),
     totalMinutes: 0,
     totalUnestimated: 0,
