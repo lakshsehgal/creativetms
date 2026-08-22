@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CircleHelp, Users } from "lucide-react";
 import type { Profile, TicketWithRefs } from "@/lib/types";
 import { canSeeAllTime } from "@/lib/types";
@@ -17,6 +18,10 @@ import type { BenchmarkMap, DayShape, LoadState, WorkloadCell, WorkloadRow } fro
 import { minutesToHuman } from "@/lib/format";
 import { useToday } from "@/hooks/use-today";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { blockKindMeta } from "@/lib/types";
+import type { BlockedDay } from "@/lib/types";
+import { blockIndex } from "@/lib/planning";
 
 const WINDOWS = [7, 14] as const;
 type Window = (typeof WINDOWS)[number];
@@ -50,11 +55,39 @@ export function WorkloadView({
   const [selected, setSelected] = useState<{ rowKey: string; day: string } | null>(null);
 
   const days = useMemo(() => (today ? dayRange(today, span) : []), [today, span]);
+  const supabase = supabaseBrowser();
+
+  /**
+   * Shoots and time off. Fetched here rather than threaded down from the page
+   * so the grid always reflects a block the moment an operator adds one.
+   */
+  const blocked = useQuery({
+    queryKey: ["blocked-minutes", today, span],
+    enabled: days.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("blocked_minutes", {
+        p_from: days[0],
+        p_to: days[days.length - 1],
+      });
+      if (error) throw error;
+      return (data ?? []) as BlockedDay[];
+    },
+  });
+
+  const blocks = useMemo(() => blockIndex(blocked.data ?? []), [blocked.data]);
+  const blockDetail = useMemo(() => {
+    const map = new Map<string, BlockedDay>();
+    (blocked.data ?? []).forEach((row) =>
+      map.set(`${row.designer_id}|${row.day.slice(0, 10)}`, row),
+    );
+    return map;
+  }, [blocked.data]);
 
   const { rows, unassigned } = useMemo(() => {
     if (!today) return { rows: [] as WorkloadRow[], unassigned: null };
-    return buildWorkload({ tickets, people: designers, days, today, benchmarks });
-  }, [tickets, designers, days, today, benchmarks]);
+    return buildWorkload({ tickets, people: designers, days, today, benchmarks, blocks });
+  }, [tickets, designers, days, today, benchmarks, blocks]);
 
   const allRows = useMemo(
     () => (unassigned ? [...rows, unassigned] : rows),
@@ -208,6 +241,7 @@ export function WorkloadView({
                     cell={cell}
                     capacity={cell.capacity}
                     shape={dayShape(cell.day)}
+                    block={blockDetail.get(`${row.person.id}|${cell.day}`)}
                     isToday={index === 0}
                     selected={
                       selected?.rowKey === row.person.id && selected?.day === cell.day
@@ -390,6 +424,7 @@ function LoadCell({
   cell,
   capacity,
   shape,
+  block,
   isToday,
   undated = false,
   selected,
@@ -399,6 +434,7 @@ function LoadCell({
   cell: WorkloadCell;
   capacity: number;
   shape: DayShape;
+  block?: BlockedDay;
   isToday: boolean;
   undated?: boolean;
   selected: boolean;
@@ -416,9 +452,13 @@ function LoadCell({
   /** Work is booked here, but every ticket is in a format we can't size yet. */
   const unknownOnly = !empty && cell.minutes === 0 && cell.unestimated > 0;
 
+  /** Out on a shoot or on leave — the reason this day has fewer hours. */
+  const blocked = Boolean(block);
+  const blockLabel = block ? blockKindMeta(block.kinds[0]).label : "";
+
   const label = undated
     ? `${cell.tickets.length} undated ticket${cell.tickets.length === 1 ? "" : "s"} for ${personName}`
-    : `${personName}, ${cell.day}: ${
+    : `${personName}, ${cell.day}${blocked ? ` (${blockLabel})` : ""}: ${
         empty
           ? shape === "off"
             ? "day off"
@@ -461,7 +501,7 @@ function LoadCell({
       >
         {empty ? (
           <span className="block py-1 text-center text-[11px] text-[var(--color-ink-3)]">
-            {shape === "off" ? "Off" : "—"}
+            {shape === "off" ? "Off" : blocked ? blockLabel : "—"}
           </span>
         ) : (
           <>
@@ -505,6 +545,15 @@ function LoadCell({
                 tone={meta.tone}
                 unknownOnly={unknownOnly}
               />
+            )}
+            {!undated && blocked && (
+              <span
+                className="mt-1 block truncate text-[10px] font-medium"
+                style={{ color: blockKindMeta(block!.kinds[0]).tone }}
+                title={block!.notes.join(" · ")}
+              >
+                {blockLabel}
+              </span>
             )}
             {undated && (
               <span className="mt-1 block text-[10.5px] text-[var(--color-ink-3)]">

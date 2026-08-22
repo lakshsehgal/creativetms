@@ -10,7 +10,10 @@ export const dynamic = "force-dynamic";
 export default async function TeamPage() {
   const profile = await currentProfile();
   if (!profile) redirect("/login");
-  if (profile.role !== "admin") redirect("/board");
+  // Operators run the floor: they set capacity, mark shoots and keep brands
+  // tidy. What they cannot do — touch an admin's role or access — is enforced
+  // by the profiles guard in the database, not by hiding a button.
+  if (profile.role !== "admin" && profile.role !== "operator") redirect("/board");
 
   const supabase = await supabaseServer();
   const [team, benchmarks] = await Promise.all([

@@ -456,6 +456,45 @@ export function canSeeLiveTimer(role: UserRole): boolean {
   return canSeeAllTime(role);
 }
 
+export type BlockKind = "shoot" | "leave" | "holiday" | "other";
+
+export const BLOCK_KINDS: Record<BlockKind, { label: string; tone: string }> = {
+  shoot: { label: "On a shoot", tone: "var(--color-series-5)" },
+  leave: { label: "On leave", tone: "var(--color-ink-3)" },
+  holiday: { label: "Holiday", tone: "var(--color-ink-3)" },
+  other: { label: "Unavailable", tone: "var(--color-ink-3)" },
+};
+
+export function blockKindMeta(kind: string | null | undefined) {
+  return BLOCK_KINDS[kind as BlockKind] ?? { label: kind ?? "Unavailable", tone: "var(--color-ink-3)" };
+}
+
+/** A slice of somebody's day that isn't available for briefs. */
+export interface AvailabilityBlock {
+  id: string;
+  designer_id: string;
+  day: string;
+  /** Null on both means the whole day. */
+  start_time: string | null;
+  end_time: string | null;
+  /** Null means the whole day, whatever that person's day is worth. */
+  minutes: number | null;
+  kind: BlockKind;
+  note: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** One designer-day, rolled up. Returned by blocked_minutes(). */
+export interface BlockedDay {
+  designer_id: string;
+  day: string;
+  minutes: number;
+  whole_day: boolean;
+  kinds: string[];
+  notes: string[];
+}
+
 export interface SavedView {
   id: string;
   owner_id: string;

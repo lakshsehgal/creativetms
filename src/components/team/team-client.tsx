@@ -13,6 +13,7 @@ import { Avatar, Card, PageHeader } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { RemovedTickets } from "./removed-tickets";
+import { ShootBlocks } from "./shoot-blocks";
 import {
   inviteTeammate,
   setActive,
@@ -262,6 +263,8 @@ export function TeamClient({
               })}
             </ul>
           </Card>
+
+          <ShootBlocks designers={team.filter((person) => person.role === "designer")} />
 
           {profile.role === "admin" && <RemovedTickets />}
         </div>

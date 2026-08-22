@@ -59,12 +59,48 @@ export function dayShape(day: string): DayShape {
   return "full";
 }
 
-/** What one person can actually give on one day. */
+/** What one person can actually give on one day, before anything is booked out. */
 export function dayCapacity(fullDayMinutes: number, day: string): number {
   const shape = dayShape(day);
   if (shape === "off") return 0;
   if (shape === "half") return Math.round(fullDayMinutes * SATURDAY_FRACTION);
   return fullDayMinutes;
+}
+
+/**
+ * The same, minus whatever is blocked out — a shoot, leave, a public holiday.
+ *
+ * Some designers are videographers, and a day on set is a day gone. Before
+ * this the grid showed them with a full eight hours while they were standing
+ * in a warehouse, which is exactly the kind of confident wrong number that
+ * gets a brief promised for Thursday.
+ */
+export function availableCapacity(
+  fullDayMinutes: number,
+  day: string,
+  blocked?: { minutes: number; whole_day: boolean } | null,
+): number {
+  const base = dayCapacity(fullDayMinutes, day);
+  if (!blocked) return base;
+  // A whole-day block takes the whole day, whatever it was worth — including
+  // a half-day Saturday.
+  if (blocked.whole_day) return 0;
+  return Math.max(0, base - blocked.minutes);
+}
+
+/** Index the rolled-up blocks by "designer|day" for O(1) lookup in a grid. */
+export function blockIndex(
+  rows: { designer_id: string; day: string; minutes: number; whole_day: boolean }[],
+): Map<string, { minutes: number; whole_day: boolean }> {
+  const map = new Map<string, { minutes: number; whole_day: boolean }>();
+  rows.forEach((row) => {
+    // Postgres hands dates back as yyyy-mm-dd, sometimes with a time on the end.
+    map.set(`${row.designer_id}|${row.day.slice(0, 10)}`, {
+      minutes: Number(row.minutes) || 0,
+      whole_day: Boolean(row.whole_day),
+    });
+  });
+  return map;
 }
 
 /** The local day a timestamp falls on. */
@@ -151,7 +187,10 @@ export const LOAD_STATES: Record<
 
 export interface WorkloadCell {
   day: string;
-  /** What this person can give on this day — 0 on a Sunday, half on a Saturday. */
+  /**
+   * What this person can actually give on this day — 0 on a Sunday, half on a
+   * Saturday, and less again for a shoot or a day off.
+   */
   capacity: number;
   /** Estimated minutes we could actually put a number on. */
   minutes: number;
@@ -197,19 +236,31 @@ export function buildWorkload({
   days,
   today,
   benchmarks,
+  blocks,
 }: {
   tickets: TicketWithRefs[];
   people: Profile[];
   days: string[];
   today: string;
   benchmarks: BenchmarkMap;
+  /** Shoots and time off, keyed "designer|day". See blockIndex(). */
+  blocks?: Map<string, { minutes: number; whole_day: boolean }>;
 }): { rows: WorkloadRow[]; unassigned: WorkloadRow | null } {
   const index = new Map(days.map((day, position) => [day, position]));
 
   const make = (person: Profile): WorkloadRow => ({
     person,
     capacityMinutes: person.daily_capacity_minutes,
-    cells: days.map((day) => emptyCell(day, dayCapacity(person.daily_capacity_minutes, day))),
+    cells: days.map((day) =>
+      emptyCell(
+        day,
+        availableCapacity(
+          person.daily_capacity_minutes,
+          day,
+          blocks?.get(`${person.id}|${day}`),
+        ),
+      ),
+    ),
     undated: emptyCell("undated"),
     totalMinutes: 0,
     totalUnestimated: 0,

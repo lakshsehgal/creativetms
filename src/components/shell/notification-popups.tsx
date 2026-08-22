@@ -8,6 +8,13 @@ import { Bell, BellRing, X } from "lucide-react";
 import type { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
 import type { AppNotification, Profile } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import {
+  alertState,
+  disableAlerts,
+  enableAlerts,
+  ensureWorker,
+  showDesktopAlert,
+} from "@/lib/desktop-alerts";
 
 /**
  * Notifications you cannot miss.
@@ -46,7 +53,10 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
   /* -------------------------------------------------- desktop permission */
 
   useEffect(() => {
-    if (typeof Notification === "undefined") return;
+    // Register early so the worker is in control by the time the first
+    // notification lands, not one beat behind it.
+    if (alertState() === "on") void ensureWorker();
+
     let asked = "";
     try {
       asked = window.localStorage.getItem(PERMISSION_ASKED) ?? "";
@@ -54,24 +64,39 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
       /* storage blocked — just don't offer */
       return;
     }
-    if (Notification.permission === "default" && !asked) setOfferAlerts(true);
+    if (alertState() === "off" && !asked) setOfferAlerts(true);
   }, []);
 
-  const enableAlerts = useCallback(async () => {
+  const turnOnAlerts = useCallback(async () => {
     setOfferAlerts(false);
     try {
       window.localStorage.setItem(PERMISSION_ASKED, "1");
     } catch {
       /* fine */
     }
-    if (typeof Notification === "undefined") return;
-    // Must be called from the click, not from an effect, or browsers ignore it.
-    const result = await Notification.requestPermission();
-    if (result === "granted") toast.success("Desktop alerts on");
+    // Must run from the click itself — browsers ignore a permission request
+    // that didn't come from a gesture, and they ignore it silently.
+    const state = await enableAlerts();
+    if (state === "on") {
+      toast.success("Desktop alerts on", {
+        description: "You'll get a popup even when this tab is in the background.",
+      });
+      void showDesktopAlert({
+        title: "Desktop alerts are on",
+        body: "This is what a handoff will look like.",
+        tag: "neuroid-test",
+      });
+    } else if (state === "denied") {
+      toast.error("Your browser is blocking notifications", {
+        description: "Allow them for this site in the address-bar padlock menu.",
+        duration: 10_000,
+      });
+    }
   }, []);
 
   const dismissOffer = useCallback(() => {
     setOfferAlerts(false);
+    disableAlerts();
     try {
       window.localStorage.setItem(PERMISSION_ASKED, "1");
     } catch {
@@ -111,29 +136,20 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
 
       if (blocking) setPinned((rows) => [row, ...rows.filter((r) => r.id !== row.id)].slice(0, 3));
 
-      // A tab that's in front already showed a toast; a desktop notification
-      // on top of that is just noise.
-      if (
-        typeof Notification !== "undefined" &&
-        Notification.permission === "granted" &&
-        document.visibilityState === "hidden"
-      ) {
-        try {
-          const native = new Notification(row.title, {
-            body: row.body,
-            icon: "/neuroid-mark.svg",
-            // Same tag replaces rather than stacks, so ten updates on one
-            // ticket don't bury the desktop.
-            tag: row.ticket_id ?? row.id,
-          });
-          native.onclick = () => {
-            window.focus();
-            open(row);
-            native.close();
-          };
-        } catch {
-          /* some browsers refuse outside a service worker */
-        }
+      // A tab in front already showed a toast, so a desktop popup on top of
+      // it is noise — unless somebody is actually waiting, in which case being
+      // in a different app is exactly when it needs to reach them.
+      const hidden = document.visibilityState === "hidden";
+      if (hidden || blocking) {
+        void showDesktopAlert({
+          title: row.title,
+          body: row.body,
+          tag: row.ticket_id ?? row.id,
+          url: row.ticket_id ? `/tickets/${row.ticket_id}` : "/board",
+          // Stays on screen until acknowledged. A handoff that vanishes after
+          // four seconds while someone is in Premiere never happened.
+          requireInteraction: blocking,
+        });
       }
     },
     [open],
@@ -177,7 +193,7 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
           notes.
         </span>
         <button
-          onClick={() => void enableAlerts()}
+          onClick={() => void turnOnAlerts()}
           className="ml-auto shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-2 py-1 text-[11.5px] font-medium text-[var(--color-accent-ink)]"
         >
           Turn on

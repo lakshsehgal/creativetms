@@ -33,8 +33,8 @@ const NAV: NavItem[] = [
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
   { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator", "strategist"] },
   { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator", "designer"] },
-  { href: "/brands", label: "Brands", icon: Building2, roles: ["admin", "strategist"] },
-  { href: "/team", label: "Team", icon: Users, roles: ["admin"] },
+  { href: "/brands", label: "Brands", icon: Building2, roles: ["admin", "operator", "strategist"] },
+  { href: "/team", label: "Team", icon: Users, roles: ["admin", "operator"] },
 ];
 
 const ROLE_LABEL: Record<UserRole, string> = {

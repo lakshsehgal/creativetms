@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Inbox, Play } from "lucide-react";
 import type { DailyScorecard, FormatBenchmark, Profile, TicketWithRefs, WorkSession } from "@/lib/types";
-import { FORMAT_ORDER, FORMATS } from "@/lib/types";
+import { FORMAT_ORDER, FORMATS, canSeeLiveTimer } from "@/lib/types";
 import { dueLabel, dueState, humanDuration, isoDay, stopwatch } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
@@ -45,7 +45,14 @@ export function MyDayClient({
   );
 
   useHeartbeat(running?.id ?? null, Boolean(running));
-  useTicking(Boolean(running));
+  /**
+   * A designer's totals move at the pace they're written in — minutes — so the
+   * page re-renders once a minute rather than once a second. Hiding the
+   * stopwatch while "Tracked today" still counted up in front of them would
+   * have moved the surveillance feeling rather than removed it, and it saves
+   * fifty-nine renders a minute besides.
+   */
+  useTicking(Boolean(running), canSeeLiveTimer(profile.role) ? 1000 : 60_000);
 
   /** Today's own sessions — the number the designer sees before anyone else does. */
   const today = useQuery({
@@ -154,9 +161,29 @@ export function MyDayClient({
                     {running.brand?.name}
                   </p>
                 </div>
-                <p className="tabular text-[34px] font-semibold leading-none tracking-tight">
-                  {stopwatch(sessionElapsed(today.data, running.id))}
-                </p>
+                {/*
+                  No ticking clock. A designer watching their own seconds count
+                  up is the surveillance feeling this tool exists to avoid —
+                  the timing is a by-product of the board, not a stopwatch
+                  anyone is being held to. Admins and operators see the live
+                  figure in Analytics.
+                */}
+                {canSeeLiveTimer(profile.role) ? (
+                  <p className="tabular text-[34px] font-semibold leading-none tracking-tight">
+                    {stopwatch(sessionElapsed(today.data, running.id))}
+                  </p>
+                ) : (
+                  <p
+                    className="flex items-center gap-1.5 text-[12.5px] font-medium"
+                    style={{ color: "var(--color-accent)" }}
+                  >
+                    <span
+                      className="breathe h-1.5 w-1.5 rounded-full"
+                      style={{ background: "var(--color-accent)" }}
+                    />
+                    Clock running
+                  </p>
+                )}
               </div>
             </Card>
           ) : (

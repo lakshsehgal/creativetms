@@ -10,6 +10,7 @@ import { useDraft } from "@/hooks/use-draft";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { queryKeys } from "@/lib/queries";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
+import { AvailabilityWarning } from "./availability-warning";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/ui/form";
 
 /** Everything the form holds, so it can be stored and restored as one thing. */
@@ -285,6 +286,8 @@ export function NewTicketDialog({
             placeholder="https://drive.google.com/..."
           />
         </Field>
+
+        <AvailabilityWarning designerId={assignee} dueAt={dueAt} designers={designers} />
 
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onClose}>

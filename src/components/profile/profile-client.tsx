@@ -9,6 +9,7 @@ import { avatarTint, initials } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { Card, PageHeader } from "@/components/ui/primitives";
 import { Button, Field, TextInput } from "@/components/ui/form";
+import { AlertSettings } from "./alert-settings";
 
 const ROLE_LABEL: Record<Profile["role"], string> = {
   admin: "Admin",
@@ -206,6 +207,8 @@ export function ProfileClient({ profile }: { profile: Profile }) {
               </div>
             </form>
           </Card>
+
+          <AlertSettings />
         </div>
       </div>
     </>
