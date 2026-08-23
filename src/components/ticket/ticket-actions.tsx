@@ -118,9 +118,37 @@ export function TicketActions({
     );
   }
 
+  /**
+   * The notes go in first, then the status moves.
+   *
+   * Two reasons, and the second is the one that bites. The notification the
+   * designer gets quotes what was actually asked for, and it is written by the
+   * trigger on the status change — so the notes have to already exist or the
+   * alert goes out saying nothing. And if only one of these two writes lands,
+   * losing the status change is recoverable in a click; losing what somebody
+   * typed is not.
+   *
+   * The round is `revision_count + 1` because that is exactly what the trigger
+   * is about to bump it to.
+   */
   async function requestRevisions(event: React.FormEvent) {
     event.preventDefault();
     setBusy("revisions");
+
+    const round = ticket.revision_count + 1;
+
+    const { error: notesError } = await supabase.from("ticket_revisions").insert({
+      ticket_id: ticket.id,
+      round,
+      requested_by: profile.id,
+      notes: notes.trim(),
+    });
+
+    if (notesError) {
+      setBusy(null);
+      toast.error(notesError.message);
+      return;
+    }
 
     const { error } = await supabase
       .from("tickets")
@@ -132,20 +160,6 @@ export function TicketActions({
       toast.error(error.message);
       return;
     }
-
-    // revision_count was just bumped by the trigger; that value is the round.
-    const { data: fresh } = await supabase
-      .from("tickets")
-      .select("revision_count")
-      .eq("id", ticket.id)
-      .single();
-
-    await supabase.from("ticket_revisions").insert({
-      ticket_id: ticket.id,
-      round: fresh?.revision_count ?? 1,
-      requested_by: profile.id,
-      notes: notes.trim(),
-    });
 
     setBusy(null);
     setRevising(false);

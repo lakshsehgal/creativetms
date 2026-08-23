@@ -111,6 +111,11 @@ export interface DesktopAlert {
   url?: string;
   /** Stay on screen until acknowledged — for handoffs someone is waiting on. */
   requireInteraction?: boolean;
+  /**
+   * Show it without the OS sound. Set when the tab is in front and the app has
+   * already played its own note — one event should make one sound.
+   */
+  silent?: boolean;
 }
 
 /**
@@ -136,6 +141,7 @@ export async function showDesktopAlert(alert: DesktopAlert): Promise<boolean> {
       badge: "/icon-192.png",
       tag: alert.tag,
       requireInteraction: Boolean(alert.requireInteraction),
+      silent: Boolean(alert.silent),
       data: { url: alert.url ?? "/tickets" },
     });
     return true;

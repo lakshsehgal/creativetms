@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, BellOff, BellRing, Check, Download, RefreshCw, Wifi, X } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  BellRing,
+  Check,
+  Download,
+  RefreshCw,
+  Volume2,
+  VolumeX,
+  Wifi,
+  X,
+} from "lucide-react";
 import {
   alertState,
   diagnose,
@@ -12,6 +23,7 @@ import {
   type AlertCheck,
   type AlertState,
 } from "@/lib/desktop-alerts";
+import { chime, primeSound, soundPreferred, soundSupported, setSoundPreferred } from "@/lib/chime";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
@@ -118,6 +130,93 @@ function InstallApp() {
           Dock.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * The sound, and the switch that silences it.
+ *
+ * Separate from the desktop-alert toggle on purpose: plenty of people want the
+ * popup and not the note, and one control for two behaviours means whoever
+ * dislikes the sound turns off the alerts entirely.
+ */
+function SoundToggle() {
+  const [on, setOn] = useState(true);
+  const [supported, setSupported] = useState(true);
+
+  // Read after mount — localStorage is not something the server can know.
+  useEffect(() => {
+    setSupported(soundSupported());
+    setOn(soundPreferred());
+  }, []);
+
+  if (!supported) return null;
+
+  return (
+    <div className="mt-4 border-t border-[var(--color-line)] pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {on ? (
+          <Volume2 size={13} className="text-[var(--color-ink-3)]" />
+        ) : (
+          <VolumeX size={13} className="text-[var(--color-ink-3)]" />
+        )}
+        <span className="text-[12px] font-medium">Sound</span>
+        <span className="text-[11.5px] text-[var(--color-ink-3)]">
+          {on
+            ? "A short note when something lands — two, rising, when somebody is waiting on you"
+            : "Off — notifications arrive silently"}
+        </span>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant={on ? "ghost" : "primary"}
+          onClick={() => {
+            const next = !on;
+            setSoundPreferred(next);
+            setOn(next);
+            if (next) {
+              // From the click, so the browser lets the audio start at all.
+              primeSound();
+              chime("ask", true);
+            }
+          }}
+        >
+          {on ? "Turn off" : "Turn on"}
+        </Button>
+
+        {on && (
+          <>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                primeSound();
+                if (!chime("soft", true)) {
+                  toast.error("Your browser wouldn't play it", {
+                    description:
+                      "Some browsers block sound on a site until you have clicked something on it. Try again.",
+                  });
+                }
+              }}
+            >
+              Hear it
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                primeSound();
+                chime("ask", true);
+              }}
+            >
+              And the urgent one
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -278,6 +377,8 @@ export function AlertSettings() {
           </>
         ) : null}
       </div>
+
+      <SoundToggle />
 
       <InstallApp />
 

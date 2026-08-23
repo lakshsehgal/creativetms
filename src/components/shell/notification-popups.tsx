@@ -15,6 +15,7 @@ import {
   ensureWorker,
   showDesktopAlert,
 } from "@/lib/desktop-alerts";
+import { chime, primeSound } from "@/lib/chime";
 
 /**
  * Notifications you cannot miss.
@@ -91,7 +92,10 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
       /* fine */
     }
     // Must run from the click itself — browsers ignore a permission request
-    // that didn't come from a gesture, and they ignore it silently.
+    // that didn't come from a gesture, and they ignore it silently. Audio has
+    // the same rule, so the context is unlocked here too rather than
+    // discovering it is blocked when the first real handoff lands.
+    primeSound();
     const state = await enableAlerts();
     if (state === "on") {
       toast.success("Desktop alerts on", {
@@ -143,7 +147,10 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
       const blocking = BLOCKING.has(row.kind);
 
       toast(row.title, {
-        description: row.body,
+        // A node rather than a string: the body is two lines now — the work on
+        // one, what somebody actually said on the other — and a plain string
+        // collapses that into a run-on.
+        description: <span className="whitespace-pre-line">{row.body}</span>,
         // Something waiting on you shouldn't time out after four seconds.
         duration: blocking ? 15_000 : 6000,
         closeButton: true,
@@ -156,6 +163,16 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
       // it is noise — unless somebody is actually waiting, in which case being
       // in a different app is exactly when it needs to reach them.
       const hidden = document.visibilityState === "hidden";
+
+      // Sound, and only one of them.
+      //
+      // While the tab is in front, the app plays its own note and the desktop
+      // popup is asked to stay silent — two sounds a beat apart for one event
+      // reads as a bug. When the tab is behind, the OS notification carries
+      // the sound: it is the one that will actually reach somebody in Premiere,
+      // and a background tab's audio is throttled anyway.
+      if (!hidden) chime(blocking ? "ask" : "soft");
+
       if (hidden || blocking) {
         void showDesktopAlert({
           title: row.title,
@@ -165,6 +182,7 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
           // Stays on screen until acknowledged. A handoff that vanishes after
           // four seconds while someone is in Premiere never happened.
           requireInteraction: blocking,
+          silent: !hidden,
         });
       }
     },
@@ -242,7 +260,12 @@ export function NotificationPopups({ profile }: { profile: Profile }) {
           <BellRing size={13} className="shrink-0 text-[var(--color-ink-2)]" />
           <span className="min-w-0 truncate">
             <span className="font-semibold">{row.title}</span>
-            <span className="text-[var(--color-ink-2)]"> — {row.body}</span>
+            {/* One strip, one line — the breaks become separators rather than
+                a body that gets cut off after its first line. */}
+            <span className="text-[var(--color-ink-2)]">
+              {" — "}
+              {row.body.split("\n").join(" · ")}
+            </span>
           </span>
           <button
             onClick={() => open(row)}

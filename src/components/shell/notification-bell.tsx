@@ -142,7 +142,12 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
                         {relativeTime(row.created_at)}
                       </span>
                     </p>
-                    <p className="truncate text-[11.5px] text-[var(--color-ink-2)]">{row.body}</p>
+                    {/* Bodies now carry the ticket line and, under it, whatever
+                        was actually said. Two lines is the point — truncating
+                        to one would throw away the half people open this for. */}
+                    <p className="whitespace-pre-line text-[11.5px] leading-relaxed text-[var(--color-ink-2)]">
+                      {row.body}
+                    </p>
                   </Link>
                 </li>
               ))}
