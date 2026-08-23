@@ -7,6 +7,7 @@ import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
 import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, dueState, humanDuration } from "@/lib/format";
 import { Avatar, FormatBadge } from "@/components/ui/primitives";
+import { EtaChip } from "@/components/ui/eta-chip";
 
 const DUE_TONE: Record<string, string> = {
   overdue: "var(--color-critical)",
@@ -317,6 +318,12 @@ const Row = memo(function Row({
           style={{ color: DUE_TONE[due] }}
         >
           {ticket.due_at ? dueLabel(ticket.due_at) : "—"}
+        </span>
+        {/* Under the promise rather than in a column of its own: the two are
+            only worth anything read against each other, and a column would be
+            empty on most rows. */}
+        <span className="mt-0.5 block">
+          <EtaChip ticket={ticket} />
         </span>
       </td>
 

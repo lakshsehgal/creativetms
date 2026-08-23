@@ -37,7 +37,14 @@ import {
  */
 
 /** Handoffs where somebody is waiting on the person being told. */
-const BLOCKING = new Set(["needs_edit", "size_changes", "assigned", "ready_for_approval"]);
+const BLOCKING = new Set([
+  "needs_edit",
+  "size_changes",
+  "assigned",
+  "ready_for_approval",
+  // Somebody is waiting on an answer only this person can give.
+  "eta_requested",
+]);
 
 const PERMISSION_ASKED = "neuroid.desktop-alerts-asked";
 

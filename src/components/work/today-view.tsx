@@ -7,6 +7,7 @@ import type { Profile, TicketWithRefs } from "@/lib/types";
 import { STATUSES, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, humanDuration, isoDay } from "@/lib/format";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
+import { EtaChip } from "@/components/ui/eta-chip";
 import { Button } from "@/components/ui/form";
 
 /**
@@ -170,6 +171,7 @@ export function TodayView({
                         </span>
                       )}
                       <StatusPill status={ticket.status} />
+                      <EtaChip ticket={ticket} />
                       {ticket.due_at && (
                         <span
                           suppressHydrationWarning

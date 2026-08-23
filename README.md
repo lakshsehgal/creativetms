@@ -286,6 +286,8 @@ bell in the sidebar.
 | Approved / Sent to Client | The designer |
 | Assigned | The new assignee |
 | Somebody booked out for a shoot | Every strategist and admin, and the person themselves |
+| An estimate asked for | The designer on the ticket |
+| An estimate given or moved | Whoever raised the brief, and whoever asked |
 
 The shoot ping is written once per marking, not once per day blocked: a
 three-day shoot is one fact, and three identical pings is how a bell gets
@@ -294,6 +296,37 @@ ignored.
 Anything somebody is waiting on also arrives as a desktop notification, through
 a service worker, so it reaches a tab that isn't in front. Turn them on in
 Profile → Desktop alerts.
+
+## Two dates, and why
+
+Every brief carries a **due date**: the promise made when it was raised. It's
+set by the strategist and it doesn't move.
+
+Some briefs also carry an **estimate** — the designer's own read on when the
+thing will actually be ready. It moves as often as reality does. The distance
+between the two is the entire point: nobody needs a timesheet, they need to
+know the Thursday promise became Monday while there's still time to tell the
+client.
+
+It is deliberately not a field on every ticket. A strategist chasing one
+particular brief presses **Ask for an ETA** on it; the designer gets a
+notification and a row at the top of My Day with four one-click answers — end
+of today, end of tomorrow, in two days, end of the week — and can pick any
+other date instead. Answering clears the question. Moving it later tells the
+same people again, with a reason if the designer gave one.
+
+The reason is offered and never required. Mandatory reasons train people to
+type "busy"; optional ones get filled in when there's something real to say,
+and "waiting on product shots" three briefs running is the sort of fact worth
+having.
+
+Every answer is kept. A date that has moved three times is its own warning,
+and the reasons stack up over a quarter into a straight answer about where
+the weeks actually go.
+
+The estimate never touches the due date. Only the designer on the ticket (or
+an admin) can set one; only staff can ask for one. Both halves are enforced in
+the database.
 
 ## Shoots
 

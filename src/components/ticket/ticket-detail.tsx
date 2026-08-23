@@ -21,6 +21,7 @@ import { TimePanel } from "./time-panel";
 import { Activity } from "./activity";
 import { AttachmentsPanel } from "./attachments-panel";
 import { ReviewLink } from "./review-link";
+import { EtaPanel } from "./eta-panel";
 
 export function TicketDetail({
   profile,
@@ -177,6 +178,8 @@ export function TicketDetail({
             </div>
 
             <ReviewLink ticket={data} profile={profile} versions={deliverables.data ?? []} />
+
+            <EtaPanel ticket={data} profile={profile} />
 
             {showRevisionBanner && (
               <div

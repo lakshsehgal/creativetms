@@ -28,6 +28,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { positionBetween, queryKeys } from "@/lib/queries";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { Card, EmptyState, FormatBadge, StatusPill } from "@/components/ui/primitives";
+import { EtaAsks } from "./eta-asks";
 import { Button } from "@/components/ui/form";
 
 /**
@@ -180,6 +181,10 @@ export function DayPlan({
 
   return (
     <div className="space-y-5">
+      {/* Open questions first. Somebody is blocked on an answer only this
+          person can give, and it clears itself the moment they give it. */}
+      <EtaAsks tickets={mine} />
+
       {/* --------------------------------------------------- today's plan */}
       <Card padded={false}>
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] px-4 py-3">

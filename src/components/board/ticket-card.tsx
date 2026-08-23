@@ -8,6 +8,7 @@ import { Link2, Play, RotateCcw, Timer } from "lucide-react";
 import type { TicketWithRefs } from "@/lib/types";
 import { dueLabel, dueState, humanDuration } from "@/lib/format";
 import { Avatar, FormatBadge, PriorityFlag } from "@/components/ui/primitives";
+import { EtaChip } from "@/components/ui/eta-chip";
 
 const DUE_TONE: Record<string, string> = {
   overdue: "var(--color-critical)",
@@ -146,6 +147,10 @@ function TicketCardInner({
         )}
 
         <span className="ml-auto flex items-center gap-1.5">
+          {/* The designer's own read, next to the promise it may be about to
+              break. Only present on briefs where somebody asked or answered. */}
+          <EtaChip ticket={ticket} />
+
           {ticket.due_at && (
             <span
               // Relative to "now", so the server and client can word it

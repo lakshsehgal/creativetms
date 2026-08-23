@@ -93,6 +93,27 @@ export interface Ticket {
   /** Set when the ticket was removed. The row is kept so it can come back. */
   deleted_at: string | null;
   deleted_by: string | null;
+  /**
+   * The designer's own read on when this lands — not the promise, which is
+   * `due_at` and doesn't move. The distance between the two is the signal.
+   */
+  eta_at: string | null;
+  eta_reason: string;
+  /** Set when somebody asks. Cleared the moment the designer answers. */
+  eta_requested_at: string | null;
+  eta_requested_by: string | null;
+}
+
+/** One answer, kept. The trail of these is worth more than any single date. */
+export interface EtaUpdate {
+  id: string;
+  ticket_id: string;
+  eta_at: string | null;
+  previous_eta_at: string | null;
+  reason: string;
+  set_by: string | null;
+  created_at: string;
+  setter?: Pick<Profile, "id" | "full_name" | "email"> | null;
 }
 
 type PersonRef = Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
