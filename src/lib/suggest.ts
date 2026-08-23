@@ -91,6 +91,10 @@ const STATUS_SCORE: Record<string, number> = {
 };
 
 function reasonFor(ticket: TicketWithRefs, days: number | null): string {
+  // The approved escalation is the reason. Anything else here would be
+  // burying the one fact that explains why it's at the top.
+  if (ticket.rush_state === "approved") return "Approved as urgent for today";
+
   if (days != null && days < 0) {
     const late = -days;
     return late === 1 ? "A day late" : `${late} days late`;
@@ -105,6 +109,17 @@ function reasonFor(ticket: TicketWithRefs, days: number | null): string {
   return "Ready to pick up";
 }
 
+/**
+ * An approved same-day escalation.
+ *
+ * Somebody senior has already looked at this one and agreed the afternoon
+ * changes shape for it. That decision has been made — the suggestions list
+ * shouldn't quietly re-litigate it by ranking a tidy Thursday job above it.
+ * Large enough to clear the top of the ordinary range, not infinite, so two
+ * approved rushes still sort against each other on the date.
+ */
+const RUSH_SCORE = 120;
+
 export function scoreTicket(ticket: TicketWithRefs, now: number): number {
   const status = STATUS_SCORE[ticket.status];
   if (status === Number.NEGATIVE_INFINITY) return Number.NEGATIVE_INFINITY;
@@ -112,7 +127,8 @@ export function scoreTicket(ticket: TicketWithRefs, now: number): number {
   return (
     dueScore(daysUntilDue(ticket.due_at, now)) +
     (PRIORITY_SCORE[ticket.priority] ?? PRIORITIES[ticket.priority]?.rank ?? 0) +
-    (status ?? 0)
+    (status ?? 0) +
+    (ticket.rush_state === "approved" ? RUSH_SCORE : 0)
   );
 }
 

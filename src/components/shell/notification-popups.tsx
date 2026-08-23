@@ -44,6 +44,8 @@ const BLOCKING = new Set([
   "ready_for_approval",
   // Somebody is waiting on an answer only this person can give.
   "eta_requested",
+  "rush_requested",
+  "rush_approved",
 ]);
 
 const PERMISSION_ASKED = "neuroid.desktop-alerts-asked";

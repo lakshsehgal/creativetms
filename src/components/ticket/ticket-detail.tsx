@@ -22,6 +22,7 @@ import { Activity } from "./activity";
 import { AttachmentsPanel } from "./attachments-panel";
 import { ReviewLink } from "./review-link";
 import { EtaPanel } from "./eta-panel";
+import { RushPanel } from "./rush-panel";
 
 export function TicketDetail({
   profile,
@@ -176,6 +177,8 @@ export function TicketDetail({
                 {relativeTime(data.created_at)}
               </p>
             </div>
+
+            <RushPanel ticket={data} profile={profile} />
 
             <ReviewLink ticket={data} profile={profile} versions={deliverables.data ?? []} />
 

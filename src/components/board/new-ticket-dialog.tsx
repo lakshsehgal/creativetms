@@ -9,6 +9,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useDraft } from "@/hooks/use-draft";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { queryKeys } from "@/lib/queries";
+import { Flame } from "lucide-react";
+import { isStudioToday, needsRushApproval, pastNoonInStudio, rushReasonOk } from "@/lib/rush";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { AvailabilityWarning } from "./availability-warning";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/ui/form";
@@ -24,6 +26,9 @@ interface DraftTicket {
   assignee: string;
   dueAt: string;
   references: string;
+  /** Set only when someone deliberately breaks the noon rule. */
+  rush: boolean;
+  rushReason: string;
 }
 
 const EMPTY: DraftTicket = {
@@ -36,6 +41,8 @@ const EMPTY: DraftTicket = {
   assignee: "",
   dueAt: "",
   references: "",
+  rush: false,
+  rushReason: "",
 };
 
 export function NewTicketDialog({
@@ -74,7 +81,7 @@ export function NewTicketDialog({
   const field = <K extends keyof DraftTicket>(key: K, value: DraftTicket[K]) =>
     draft.set((previous) => ({ ...previous, [key]: value }));
 
-  const { title, brief, format, quantity, priority, brandId, assignee, dueAt, references } =
+  const { title, brief, format, quantity, priority, brandId, assignee, dueAt, references, rush, rushReason } =
     form;
 
   const setTitle = (value: string) => field("title", value);
@@ -86,18 +93,37 @@ export function NewTicketDialog({
   const setAssignee = (value: string) => field("assignee", value);
   const setDueAt = (value: string) => field("dueAt", value);
   const setReferences = (value: string) => field("references", value);
+  const setRushReason = (value: string) => field("rushReason", value);
 
   const [saving, setSaving] = useState(false);
 
-  // Mirrors the database rule in enforce_due_date_rule().
-  const pastNoon = new Date().getHours() >= 12;
+  // Mirrors the database rule in enforce_due_date_rule(), including its one
+  // door: an escalation somebody has put a reason to. Judged in the studio's
+  // clock rather than the browser's — see lib/rush.ts.
+  const pastNoon = pastNoonInStudio();
   const earliestDue = (() => {
     const date = new Date();
-    if (pastNoon) date.setDate(date.getDate() + 1);
+    if (pastNoon && !rush) date.setDate(date.getDate() + 1);
     date.setHours(0, 0, 0, 0);
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T00:00`;
   })();
+
+  // Only an escalation that is actually for today needs approving. Ticking the
+  // box and then picking Friday is just a normal brief.
+  const dueToday = Boolean(dueAt) && isStudioToday(new Date(dueAt));
+  const needsApproval = rush && needsRushApproval(dueAt);
+
+  function toggleRush(on: boolean) {
+    draft.set((previous) => ({
+      ...previous,
+      rush: on,
+      // Turning it off puts the date back inside the rule rather than leaving
+      // an impossible one sitting in the field.
+      dueAt: on ? previous.dueAt : "",
+      rushReason: on ? previous.rushReason : "",
+    }));
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -116,6 +142,10 @@ export function NewTicketDialog({
         assigned_to: assignee || null,
         status: "new_request",
         due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        // The database decides what this means: it holds the designer back,
+        // routes it for approval, and auto-approves an admin's own.
+        rush_state: needsApproval ? "pending" : null,
+        rush_reason: needsApproval ? rushReason.trim() : "",
         reference_urls: references
           .split(/[\n,]/)
           .map((url) => url.trim())
@@ -257,20 +287,79 @@ export function NewTicketDialog({
           <Field
             label="Due"
             htmlFor="due"
-            hint={pastNoon ? "After midday — earliest is tomorrow" : undefined}
+            hint={pastNoon && !rush ? "After midday — earliest is tomorrow" : undefined}
           >
             <TextInput
               id="due"
               type="datetime-local"
-              // Past midday the picker won't offer today at all. A brief
-              // raised this afternoon can't realistically ship tonight — the
-              // designer's day was planned this morning.
+              // Past midday the picker won't offer today, unless the escalation
+              // below is switched on. A brief raised this afternoon can't
+              // realistically ship tonight — the designer's day was planned
+              // this morning — and the exception is a decision, not a default.
               min={earliestDue}
               value={dueAt}
               onChange={(event) => setDueAt(event.target.value)}
             />
           </Field>
         </div>
+
+        {/* ------------------------------------------------- the exception */}
+        {pastNoon && (
+          <div
+            className="mt-3.5 rounded-[var(--radius-md)] border px-3 py-2.5"
+            style={{
+              borderColor: rush
+                ? "color-mix(in srgb, var(--color-serious) 45%, transparent)"
+                : "var(--color-line)",
+              background: rush
+                ? "color-mix(in srgb, var(--color-serious) 7%, transparent)"
+                : "transparent",
+            }}
+          >
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={rush}
+                onChange={(event) => toggleRush(event.target.checked)}
+                className="mt-0.5 shrink-0"
+              />
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 text-[12.5px] font-medium">
+                  <Flame size={13} style={{ color: "var(--color-serious)" }} />
+                  This can&apos;t wait until tomorrow
+                </span>
+                <span className="mt-0.5 block text-[11.5px] leading-relaxed text-[var(--color-ink-2)]">
+                  Unlocks today&apos;s date. An operator or an admin has to agree
+                  before it reaches a designer — until then nobody is working on
+                  it.
+                </span>
+              </span>
+            </label>
+
+            {rush && (
+              <div className="mt-2.5 pl-[26px]">
+                <TextArea
+                  rows={2}
+                  aria-label="Why this can't wait"
+                  placeholder="What's actually on fire? Whoever approves it reads this."
+                  value={rushReason}
+                  onChange={(event) => setRushReason(event.target.value)}
+                />
+                {needsApproval && rushReason.trim().length > 0 && !rushReasonOk(rushReason) && (
+                  <p className="mt-1.5 text-[11px]" style={{ color: "var(--color-serious)" }}>
+                    A few more words — a sentence somebody can act on.
+                  </p>
+                )}
+                {rush && !dueToday && dueAt && (
+                  <p className="mt-1.5 text-[11px] text-[var(--color-ink-3)]">
+                    That date isn&apos;t today, so this goes through as an
+                    ordinary brief — no approval needed.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <Field
           label="Reference links"
@@ -293,8 +382,15 @@ export function NewTicketDialog({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={saving}>
-            Raise ticket
+          {/* The label says what will actually happen. "Raise ticket" on an
+              escalation would imply it lands on somebody, and it doesn't. */}
+          <Button
+            type="submit"
+            variant="primary"
+            loading={saving}
+            disabled={needsApproval && !rushReasonOk(rushReason)}
+          >
+            {needsApproval ? "Send for approval" : "Raise ticket"}
           </Button>
         </DialogFooter>
       </form>

@@ -8,6 +8,7 @@ import { STATUSES, canSeeOwnTime } from "@/lib/types";
 import { dueLabel, humanDuration, isoDay } from "@/lib/format";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
+import { RushFlag } from "@/components/ui/rush-flag";
 import { Button } from "@/components/ui/form";
 
 /**
@@ -171,6 +172,7 @@ export function TodayView({
                         </span>
                       )}
                       <StatusPill status={ticket.status} />
+                      <RushFlag state={ticket.rush_state} />
                       <EtaChip ticket={ticket} />
                       {ticket.due_at && (
                         <span

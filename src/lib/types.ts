@@ -102,6 +102,38 @@ export interface Ticket {
   /** Set when somebody asks. Cleared the moment the designer answers. */
   eta_requested_at: string | null;
   eta_requested_by: string | null;
+
+  /**
+   * A same-day brief raised after midday — the noon rule, deliberately broken
+   * by someone who put their name to it. Null on an ordinary brief.
+   */
+  rush_state: RushState | null;
+  rush_reason: string;
+  rush_requested_at: string | null;
+  rush_requested_by: string | null;
+  rush_decided_at: string | null;
+  rush_decided_by: string | null;
+  rush_note: string;
+  /** The intended designer, held out of assigned_to until somebody approves. */
+  rush_designer_id: string | null;
+}
+
+export type RushState = "pending" | "approved" | "declined";
+
+export const RUSH_STATES: Record<RushState, { label: string; tone: string }> = {
+  pending: { label: "Waiting on approval", tone: "var(--color-serious)" },
+  approved: { label: "Urgent — approved for today", tone: "var(--color-critical)" },
+  declined: { label: "Moved to tomorrow", tone: "var(--color-ink-3)" },
+};
+
+/** Who answers a same-day request. Mirrors is_analyst() in the database. */
+export function canDecideRush(role: UserRole): boolean {
+  return role === "admin" || role === "operator";
+}
+
+/** Who may ask for one. Mirrors is_staff(). */
+export function canRequestRush(role: UserRole): boolean {
+  return role === "admin" || role === "strategist";
 }
 
 /** One answer, kept. The trail of these is worth more than any single date. */

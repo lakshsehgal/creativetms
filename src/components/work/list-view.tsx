@@ -8,6 +8,7 @@ import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canSeeOwnTime } from "@/lib/ty
 import { dueLabel, dueState, humanDuration } from "@/lib/format";
 import { Avatar, FormatBadge } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
+import { RushFlag } from "@/components/ui/rush-flag";
 
 const DUE_TONE: Record<string, string> = {
   overdue: "var(--color-critical)",
@@ -196,6 +197,7 @@ const Row = memo(function Row({
           <span className="tabular shrink-0 text-[11px] text-[var(--color-ink-3)]">
             #{ticket.number}
           </span>
+          <RushFlag state={ticket.rush_state} />
           <Link
             href={`/tickets/${ticket.id}`}
             onClick={(event) => {

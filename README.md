@@ -399,12 +399,43 @@ and a meal estimate that works itself out from the crew. Plus the run-up
 checklist — the same three phases every time, ticked live on the day. It saves
 as you type and prints to a clean A4 page with none of the app around it.
 
-## The noon rule
+## The noon rule, and the way through it
 
 A brief raised after midday can't be given the same day's due date. The
 designer's day is planned in the morning, so a same-day deadline set at 3pm is
 a promise the floor can't keep. The date picker won't offer today, and the
-database refuses it as well.
+database refuses it as well. Both judge it on the studio's clock rather than
+the viewer's, so the form and the database always agree.
+
+It is also, occasionally, wrong — a client escalates, an ad set is live on a
+claim legal wants down. Until there was a way through, the only way through
+was to lie about the due date, which is worse than the rule it dodges: the
+number stops meaning anything for everybody.
+
+So a strategist can tick **this can't wait**, which unlocks today and asks for
+a sentence saying why. What happens next is the whole design:
+
+- The brief exists, but **the designer has not been asked to do anything**.
+  It isn't assigned, it isn't in their day, it doesn't count against their
+  capacity, and they aren't told. A pending escalation that already sits in
+  somebody's queue is not an approval step, it's a notification with extra
+  clicks.
+- Every operator and admin gets it, as a bar above the page with the reason
+  and Approve / Not today in it. Nothing to dismiss; it clears when answered.
+- **Approved** hands it to the designer, tells them, marks it on the board and
+  puts it at the top of their suggestions.
+- **Not today** moves the date to tomorrow rather than throwing the brief
+  away, and tells the strategist why.
+
+An admin's own escalation is approved as they raise it. Making the person who
+carries the studio wait for a second signature on their own call is ceremony,
+not control.
+
+A decision, once made, stands — a declined rush can't be quietly flipped later
+by whoever wanted it. And because the reason and the decision are both kept on
+the ticket, it stays possible to look back at how often the rule got broken
+and on whose say-so. That's the number that matters: an exception nobody
+counts becomes the process.
 
 ## Views
 
