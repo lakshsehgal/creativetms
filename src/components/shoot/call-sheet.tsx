@@ -23,6 +23,9 @@ import type {
 } from "@/lib/types";
 import { CREW_ROLES, SCRIPT_VERSIONS } from "@/lib/types";
 import { blankMember, crewCount, mealsSelected, rowId } from "@/lib/shoot";
+
+/** The dropdown's escape hatch, not a brand anybody can be called. */
+const BRAND_OTHER = "\u0000other";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/primitives";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/ui/form";
@@ -153,20 +156,7 @@ function Editor({
               onChange={(event) => onMeta({ title: event.target.value })}
             />
           </Field>
-          <Field label="Brand" htmlFor="cs-brand">
-            <TextInput
-              id="cs-brand"
-              list="cs-brand-list"
-              value={brand}
-              placeholder="Pick or type one"
-              onChange={(event) => onMeta({ brand: event.target.value })}
-            />
-            <datalist id="cs-brand-list">
-              {brands.map((row) => (
-                <option key={row.id} value={row.name} />
-              ))}
-            </datalist>
-          </Field>
+          <BrandField brand={brand} brands={brands} onMeta={onMeta} />
         </div>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -647,6 +637,94 @@ function Editor({
 }
 
 /* -------------------------------------------------------------- preview */
+
+/**
+ * Whose shoot it is.
+ *
+ * The list is the Brands section — the same rows the sidebar manages, not a
+ * copy that drifts the first time somebody signs a new client. It used to be a
+ * text box with a <datalist> against it, which is technically the same list and
+ * practically invisible: no arrow, nothing until you start typing, and most
+ * people never found out the options were there.
+ *
+ * So it's a dropdown, with a way out. A shoot for a pitch, or for a client
+ * nobody has added yet, still has to be writable — a call sheet that can't say
+ * whose shoot it is because the brand hasn't been set up is a call sheet that
+ * gets written in WhatsApp instead.
+ */
+function BrandField({
+  brand,
+  brands,
+  onMeta,
+}: {
+  brand: string;
+  brands: Brand[];
+  onMeta: (meta: { brand: string }) => void;
+}) {
+  const known = brands.some((row) => row.name === brand);
+  const [freeform, setFreeform] = useState(false);
+
+  // A value that isn't on the loaded list was typed, so keep the box open on
+  // it. Guarded on the list having arrived — mid-fetch everything looks
+  // unknown, and flipping to a text box and back would be worse than a beat of
+  // nothing.
+  const typing = freeform || (brands.length > 0 && brand !== "" && !known);
+
+  if (typing) {
+    return (
+      <Field label="Brand" htmlFor="cs-brand">
+        <TextInput
+          id="cs-brand"
+          value={brand}
+          autoFocus={freeform}
+          placeholder="Whose shoot is it?"
+          onChange={(event) => onMeta({ brand: event.target.value })}
+        />
+        <p className="mt-1 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
+          Not on the list — it stays on this call sheet and isn&apos;t added to Brands.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setFreeform(false);
+              onMeta({ brand: "" });
+            }}
+            className="underline underline-offset-2 transition-colors hover:text-[var(--color-ink-2)]"
+          >
+            Pick from the list instead
+          </button>
+        </p>
+      </Field>
+    );
+  }
+
+  return (
+    <Field label="Brand" htmlFor="cs-brand">
+      <Select
+        id="cs-brand"
+        value={brand}
+        onChange={(event) => {
+          if (event.target.value === BRAND_OTHER) {
+            setFreeform(true);
+            onMeta({ brand: "" });
+            return;
+          }
+          onMeta({ brand: event.target.value });
+        }}
+      >
+        <option value="">No brand</option>
+        {/* Whatever is already saved, in case the list hasn't landed yet — a
+            brief must never look like its brand has been cleared. */}
+        {brand !== "" && !known && <option value={brand}>{brand}</option>}
+        {brands.map((row) => (
+          <option key={row.id} value={row.name}>
+            {row.name}
+          </option>
+        ))}
+        <option value={BRAND_OTHER}>Something else…</option>
+      </Select>
+    </Field>
+  );
+}
 
 /* --------------------------------------------------------------- the sheet */
 
