@@ -132,8 +132,8 @@ export async function showDesktopAlert(alert: DesktopAlert): Promise<boolean> {
   try {
     await reg.showNotification(alert.title, {
       body: alert.body,
-      icon: "/neuroid-mark.svg",
-      badge: "/neuroid-mark.svg",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
       tag: alert.tag,
       requireInteraction: Boolean(alert.requireInteraction),
       data: { url: alert.url ?? "/board" },

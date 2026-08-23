@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, BellOff, BellRing, Check, RefreshCw, Wifi, X } from "lucide-react";
+import { Bell, BellOff, BellRing, Check, Download, RefreshCw, Wifi, X } from "lucide-react";
 import {
   alertState,
   diagnose,
@@ -29,6 +29,95 @@ import { Button } from "@/components/ui/form";
  */
 
 type Live = "checking" | "connected" | "failed";
+
+/** Chrome hands this over so a site can offer its own install button. */
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+/**
+ * Installing, and why it's on the notifications card.
+ *
+ * A desktop notification from an ordinary website is captioned with the
+ * origin, so every handoff turns up under "something.vercel.app". No API
+ * changes that — the browser puts it there on purpose. Installing the app is
+ * the one thing that does: the caption becomes the app's name, the icon
+ * becomes the mark, and it gets its own window into the bargain.
+ */
+function InstallApp() {
+  const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    // Already running as an installed app — nothing to offer.
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setInstalled(true);
+      return;
+    }
+
+    const capture = (event: Event) => {
+      event.preventDefault();
+      setPrompt(event as InstallPromptEvent);
+    };
+    const done = () => {
+      setInstalled(true);
+      setPrompt(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", capture);
+    window.addEventListener("appinstalled", done);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", capture);
+      window.removeEventListener("appinstalled", done);
+    };
+  }, []);
+
+  if (installed) {
+    return (
+      <p className="mt-3 flex items-start gap-2 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
+        <Check size={12} className="mt-0.5 shrink-0" style={{ color: "var(--color-good)" }} />
+        <span>Installed — alerts are captioned Creative TMS rather than the web address.</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2.5 py-2">
+      <p className="flex items-start gap-2 text-[11.5px] leading-relaxed text-[var(--color-ink-2)]">
+        <Download size={12} className="mt-0.5 shrink-0 text-[var(--color-ink-3)]" />
+        <span>
+          Alerts are captioned with the web address, because that&apos;s what the
+          browser shows for a website. Install this as an app and they say
+          <b> Creative TMS</b> instead, with the mark for an icon and a window of
+          its own.
+        </span>
+      </p>
+      {prompt ? (
+        <div className="mt-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              void prompt.prompt();
+              void prompt.userChoice.then(({ outcome }) => {
+                if (outcome === "accepted") setInstalled(true);
+              });
+            }}
+          >
+            <Download size={13} /> Install
+          </Button>
+        </div>
+      ) : (
+        <p className="mt-1.5 pl-5 text-[11px] leading-relaxed text-[var(--color-ink-3)]">
+          Chrome and Edge: the install icon at the right of the address bar, or
+          the ⋮ menu → Cast, save and share → Install. Safari: Share → Add to
+          Dock.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function AlertSettings() {
   const [state, setState] = useState<AlertState>("unsupported");
@@ -186,6 +275,8 @@ export function AlertSettings() {
           </>
         ) : null}
       </div>
+
+      <InstallApp />
 
       {/* ------------------------------------------------------ the checks */}
 

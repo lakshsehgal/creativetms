@@ -294,8 +294,16 @@ three-day shoot is one fact, and three identical pings is how a bell gets
 ignored.
 
 Anything somebody is waiting on also arrives as a desktop notification, through
-a service worker, so it reaches a tab that isn't in front. Turn them on in
-Profile → Desktop alerts.
+a service worker, so it reaches a tab that isn't in front. They are opt-in per
+person **and per browser** — everyone turns them on once in Profile → Desktop
+alerts, and again on any other machine they use. The same card checks every
+link in the chain and names the one that's broken when nothing appears.
+
+Desktop notifications are captioned by the browser with wherever the app is
+served from, which no API can change. Installing it (Profile → Desktop alerts
+→ Install, or the install icon in the address bar) captions them **Creative
+TMS** instead and gives it the Neuroid mark and its own window. A custom
+domain fixes the caption for anyone who'd rather stay in a tab.
 
 ## Two dates, and why
 
