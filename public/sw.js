@@ -1,5 +1,5 @@
 /**
- * Neuroid TMS service worker.
+ * Neuroid Creative Studio service worker.
  *
  * It exists for one reason: notifications shown through a service worker are
  * real OS notifications. They survive the tab being backgrounded or the window

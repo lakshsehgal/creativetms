@@ -1,6 +1,7 @@
-# Creative TMS
+# Neuroid Creative Studio
 
-Creative ticketing and productivity tracking for a post-production team.
+Briefs, rounds and delivery for the Neuroid creative studio — one place for
+every brand and every round.
 Strategists raise tickets, designers work them on a board, and the time each
 piece takes is measured from that work rather than from anything anyone has to
 fill in.
@@ -159,15 +160,15 @@ npm run dev
 
 Optional, and worth doing before the team settles in.
 
-1. **Vercel → Project → Settings → Domains** → add `ctms.neuroidmedia.com`.
+1. **Vercel → Project → Settings → Domains** → add `studio.neuroidmedia.com`.
 2. **DNS**, wherever `neuroidmedia.com` is hosted → a `CNAME` record,
-   name `ctms`, value `cname.vercel-dns.com`. Vercel issues the certificate
+   name `studio`, value `cname.vercel-dns.com`. Vercel issues the certificate
    once it resolves.
 3. **Supabase → Authentication → URL Configuration** → set **Site URL** to
-   `https://ctms.neuroidmedia.com` and add `https://ctms.neuroidmedia.com/**`
+   `https://studio.neuroidmedia.com` and add `https://studio.neuroidmedia.com/**`
    to **Redirect URLs**. Sign-in links are built from these, so a stale Site
    URL sends everyone back to the old address.
-4. **Vercel → Environment Variables** → `CANONICAL_HOST=ctms.neuroidmedia.com`,
+4. **Vercel → Environment Variables** → `CANONICAL_HOST=studio.neuroidmedia.com`,
    then redeploy.
 5. **Google Cloud Console**, if Google sign-in is on: the **Authorized
    redirect URI** stays the *Supabase* callback
@@ -328,7 +329,7 @@ link in the chain and names the one that's broken when nothing appears.
 Desktop notifications are captioned by the browser with wherever the app is
 served from, which no API can change. Installing it (Profile → Desktop alerts
 → Install, or the install icon in the address bar) captions them **Creative
-TMS** instead and gives it the Neuroid mark and its own window. A custom
+Creative Studio** instead and gives it the Neuroid mark and its own window. A custom
 domain fixes the caption for anyone who'd rather stay in a tab.
 
 ## Two dates, and why

@@ -77,7 +77,10 @@ function InstallApp() {
     return (
       <p className="mt-3 flex items-start gap-2 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
         <Check size={12} className="mt-0.5 shrink-0" style={{ color: "var(--color-good)" }} />
-        <span>Installed — alerts are captioned Creative TMS rather than the web address.</span>
+        <span>
+          Installed — alerts are captioned Neuroid Creative Studio rather than the
+          web address.
+        </span>
       </p>
     );
   }
@@ -89,8 +92,8 @@ function InstallApp() {
         <span>
           Alerts are captioned with the web address, because that&apos;s what the
           browser shows for a website. Install this as an app and they say
-          <b> Creative TMS</b> instead, with the mark for an icon and a window of
-          its own.
+          <b> Neuroid Creative Studio</b> instead, with the mark for an icon and a
+          window of its own.
         </span>
       </p>
       {prompt ? (

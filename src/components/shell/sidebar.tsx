@@ -94,8 +94,15 @@ export function Sidebar({ profile }: { profile: Profile }) {
       className="flex shrink-0 flex-col border-r border-[var(--color-line)] bg-[var(--color-surface)] transition-[width] duration-200 ease-[var(--ease-out-quick)]"
       style={{ width: collapsed ? 60 : 224 }}
     >
+      {/* The wordmark is the company; this says which of its tools you're in.
+          Hidden on the rail, where there's no room for either. */}
       <div className="flex h-14 items-center gap-2.5 px-4">
         <Logo size={28} showWord={!collapsed} />
+        {!collapsed && (
+          <span className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink-3)]">
+            Studio
+          </span>
+        )}
       </div>
 
       <ul className="mt-2 flex-1 space-y-0.5 px-2.5">

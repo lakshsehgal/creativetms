@@ -17,7 +17,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Creative TMS error:", error);
+    console.error("Neuroid Creative Studio error:", error);
   }, [error]);
 
   return (

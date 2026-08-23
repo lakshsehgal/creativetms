@@ -17,10 +17,12 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Neuroid Creative TMS",
-    short_name: "Creative TMS",
+    name: "Neuroid Creative Studio",
+    // The label under the icon on a home screen or dock, where the full name
+    // would be truncated to something unrecognisable.
+    short_name: "Neuroid Studio",
     description:
-      "Creative ticketing and productivity tracking for post-production teams.",
+      "Briefs, rounds and delivery for the Neuroid creative studio — one place for every brand and every round.",
     start_url: "/board",
     scope: "/",
     display: "standalone",

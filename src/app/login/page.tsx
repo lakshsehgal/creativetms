@@ -39,7 +39,7 @@ export default function LoginPage() {
             className="text-[12px] font-medium uppercase tracking-[0.2em]"
             style={{ color: "var(--color-brand)" }}
           >
-            Creative Operations
+            Neuroid Creative Studio
           </p>
 
           <h1 className="display mt-5 text-[2.7rem] leading-[1.08] text-white">
@@ -83,6 +83,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[22rem]">
           <div className="mb-10 lg:hidden">
             <Logo size={30} tone="light" />
+            <p className="mt-2 text-[11.5px] font-medium uppercase tracking-[0.16em] text-[var(--color-ink-3)]">
+              Creative Studio
+            </p>
           </div>
           <Suspense fallback={<div className="skeleton h-52" />}>
             <LoginForm />

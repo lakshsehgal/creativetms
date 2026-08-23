@@ -5,8 +5,9 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Creative TMS", template: "%s · Creative TMS" },
-  description: "Creative ticketing and productivity tracking for post-production teams.",
+  title: { default: "Neuroid Creative Studio", template: "%s · Neuroid Creative Studio" },
+  description:
+    "Briefs, rounds and delivery for the Neuroid creative studio — one place for every brand and every round.",
 };
 
 /**
