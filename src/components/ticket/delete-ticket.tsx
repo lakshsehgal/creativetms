@@ -18,17 +18,18 @@ import { Button } from "@/components/ui/form";
  * getting an afternoon of someone's tracked time back once it's gone — so the
  * ticket leaves every list and stops counting, and can be put back.
  *
- * Who may: an admin, always. Anyone else, only for a brief they raised that
- * nobody has picked up yet. The database enforces both; this only decides
+ * Who may: an admin or an operator, always — they run the floor and shouldn't
+ * have to find each other to clear a duplicate. Anyone else, a brief they
+ * raised themselves, as long as no clock has ever run against it. A removal
+ * stops time counting, and a designer's day quietly changing because somebody
+ * tidied up a brief is the one outcome worth a guard.
+ *
+ * The database enforces all of this in delete_ticket(); this only decides
  * whether to draw the button.
  */
 export function canRemove(ticket: TicketWithRefs, viewer: Profile): boolean {
-  if (viewer.role === "admin") return true;
-  return (
-    ticket.created_by === viewer.id &&
-    ticket.status === "new_request" &&
-    !ticket.assigned_to
-  );
+  if (viewer.role === "admin" || viewer.role === "operator") return true;
+  return ticket.created_by === viewer.id && (ticket.total_seconds ?? 0) === 0;
 }
 
 export function DeleteTicket({

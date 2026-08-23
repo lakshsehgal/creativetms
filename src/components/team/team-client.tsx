@@ -308,7 +308,8 @@ export function TeamClient({
             </ul>
           </Card>
 
-          {profile.role === "admin" && <RemovedTickets />}
+          {/* Whoever can remove a ticket can see the ones that were. */}
+          {(profile.role === "admin" || profile.role === "operator") && <RemovedTickets />}
         </div>
       </div>
 
