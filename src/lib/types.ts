@@ -53,7 +53,36 @@ export interface Brand {
   name: string;
   color: string;
   is_active: boolean;
+  /**
+   * The brand's profile. All four are links or free text, all four are
+   * optional, and all four are empty strings rather than null — a brand added
+   * in ten seconds while raising a brief has to stay that cheap, and code that
+   * reads them shouldn't have to ask whether "nothing" is "" or null.
+   */
+  brief_url: string;
+  assets_url: string;
+  onboarding_url: string;
+  notes: string;
 }
+
+/** Everything on a brand's profile that is a link, in the order it's read. */
+export const BRAND_LINKS = [
+  {
+    key: "brief_url",
+    label: "Brand brief",
+    hint: "How this brand talks, and what it looks like",
+  },
+  {
+    key: "assets_url",
+    label: "Brand files",
+    hint: "Logos, fonts, the kit — the folder, not a copy of it",
+  },
+  {
+    key: "onboarding_url",
+    label: "Onboarding form",
+    hint: "What the client said themselves when they signed",
+  },
+] as const satisfies readonly { key: keyof Brand; label: string; hint: string }[];
 
 export interface Ticket {
   id: string;

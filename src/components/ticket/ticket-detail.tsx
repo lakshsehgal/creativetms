@@ -23,6 +23,7 @@ import { AttachmentsPanel } from "./attachments-panel";
 import { ReviewLink } from "./review-link";
 import { EtaPanel } from "./eta-panel";
 import { RushPanel } from "./rush-panel";
+import { BrandPanel } from "./brand-panel";
 
 export function TicketDetail({
   profile,
@@ -179,6 +180,10 @@ export function TicketDetail({
             </div>
 
             <RushPanel ticket={data} profile={profile} />
+
+            {/* Above the work, not buried beside it: the brand's rules are
+                something you read before starting, not after. */}
+            <BrandPanel brand={brands.find((row) => row.id === data.brand_id)} />
 
             <ReviewLink ticket={data} profile={profile} versions={deliverables.data ?? []} />
 
