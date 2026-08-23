@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Neuroid Studio",
     description:
       "Briefs, rounds and delivery for the Neuroid creative studio — one place for every brand and every round.",
-    start_url: "/board",
+    start_url: "/tickets",
     scope: "/",
     display: "standalone",
     background_color: "#f6f7fb",

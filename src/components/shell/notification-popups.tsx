@@ -54,7 +54,7 @@ const PERMISSION_ASKED = "neuroid.desktop-alerts-asked";
 function destination(row: AppNotification): string {
   if (row.ticket_id) return `/tickets/${row.ticket_id}`;
   if (row.kind === "shoot_block") return "/shoot";
-  return "/board";
+  return "/tickets";
 }
 
 export function NotificationPopups({ profile }: { profile: Profile }) {

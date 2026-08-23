@@ -15,7 +15,8 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
-import { ALLOWED_TARGETS, BOARD_COLUMNS, STATUSES, canSeeOwnTime } from "@/lib/types";
+import { ALLOWED_TARGETS, STATUSES, canSeeOwnTime } from "@/lib/types";
+import { isDraggable, type Group, type GroupKey } from "@/lib/grouping";
 import { positionBetween } from "@/lib/queries";
 import { Column } from "@/components/board/column";
 import { TicketCard } from "@/components/board/ticket-card";
@@ -23,12 +24,16 @@ import { TicketCard } from "@/components/board/ticket-card";
 export function BoardView({
   profile,
   tickets,
+  groups,
+  groupBy,
   onMove,
   onStart,
   onOpen,
 }: {
   profile: Profile;
   tickets: TicketWithRefs[];
+  groups: Group[];
+  groupBy: GroupKey;
   onMove: (ticket: TicketWithRefs, status: TicketStatus, position: number) => void;
   onStart: (ticket: TicketWithRefs) => void;
   onOpen: (ticketId: string) => void;
@@ -41,17 +46,22 @@ export function BoardView({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const byColumn = useMemo(() => {
-    const map = new Map<TicketStatus, TicketWithRefs[]>();
-    BOARD_COLUMNS.forEach((status) => map.set(status, []));
-    tickets.forEach((ticket) => map.get(ticket.status)?.push(ticket));
-    map.forEach((list) => list.sort((a, b) => a.position - b.position));
-    return map;
-  }, [tickets]);
+  /** Lanes in their given order, cards in the order people dragged them into. */
+  const lanes = useMemo(
+    () =>
+      groups.map((group) => ({
+        ...group,
+        tickets: [...group.tickets].sort((a, b) => a.position - b.position),
+      })),
+    [groups],
+  );
+
+  const dragEnabled = isDraggable(groupBy);
 
   /** A designer drags their own work, plus anything free in New Request. */
   const draggableIds = useMemo(() => {
     const ids = new Set<string>();
+    if (!dragEnabled) return ids;
     tickets.forEach((ticket) => {
       if (
         profile.role !== "designer" ||
@@ -62,7 +72,7 @@ export function BoardView({
       }
     });
     return ids;
-  }, [tickets, profile]);
+  }, [tickets, profile, dragEnabled]);
 
   const allowedTargets = ALLOWED_TARGETS[profile.role];
 
@@ -109,7 +119,9 @@ export function BoardView({
       return;
     }
 
-    const column = (byColumn.get(target) ?? []).filter((row) => row.id !== ticket.id);
+    const column = (lanes.find((lane) => lane.id === target)?.tickets ?? []).filter(
+      (row) => row.id !== ticket.id,
+    );
     const dropIndex = overId.startsWith("col:")
       ? column.length
       : Math.max(0, column.findIndex((row) => row.id === overId));
@@ -136,17 +148,17 @@ export function BoardView({
       onDragCancel={() => setDragging(null)}
     >
       <div className="flex flex-1 gap-3 overflow-x-auto px-5 py-4">
-        {BOARD_COLUMNS.map((status) => (
+        {lanes.map((lane) => (
           <Column
-            key={status}
-            status={status}
-            tickets={byColumn.get(status) ?? []}
-            canDrop={allowedTargets.includes(status)}
+            key={lane.id}
+            group={lane}
+            canDrop={dragEnabled && allowedTargets.includes(lane.id as TicketStatus)}
             canStart={canStart}
             onStart={onStart}
             onOpen={onOpen}
             showTime={canSeeOwnTime(profile.role)}
             draggableIds={draggableIds}
+            empty={dragEnabled ? lane.hint : undefined}
           />
         ))}
       </div>

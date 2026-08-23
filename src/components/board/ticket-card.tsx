@@ -6,7 +6,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Link2, Play, RotateCcw, Timer } from "lucide-react";
 import type { TicketWithRefs } from "@/lib/types";
-import { dueLabel, dueState, humanDuration } from "@/lib/format";
+import { dueLabel, dueState, humanDuration, shortName } from "@/lib/format";
 import { Avatar, FormatBadge, PriorityFlag } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
@@ -86,15 +86,28 @@ function TicketCardInner({
         {ticket.title}
       </Link>
 
-      {ticket.brand && (
-        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[var(--color-ink-3)]">
+      {/* Brand and the strategist who raised it, on one line. Who asked for a
+          piece of work is context a designer wants before they open it —
+          whose client it is, and who to go back to with a question. */}
+      <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[var(--color-ink-3)]">
+        {ticket.brand && (
+          <>
+            <span
+              className="h-2 w-2 shrink-0 rounded-[2px]"
+              style={{ background: ticket.brand.color }}
+            />
+            <span className="truncate">{ticket.brand.name}</span>
+          </>
+        )}
+        {ticket.author && (
           <span
-            className="h-2 w-2 shrink-0 rounded-[2px]"
-            style={{ background: ticket.brand.color }}
-          />
-          {ticket.brand.name}
-        </p>
-      )}
+            className="ml-auto shrink-0"
+            title={`Raised by ${ticket.author.full_name || ticket.author.email}`}
+          >
+            by {shortName(ticket.author)}
+          </span>
+        )}
+      </p>
 
       <footer className="mt-3 flex items-center gap-2">
         {ticket.assignee ? (

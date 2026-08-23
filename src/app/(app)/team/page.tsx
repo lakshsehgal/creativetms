@@ -13,7 +13,7 @@ export default async function TeamPage() {
   // Operators run the floor: they set capacity and keep brands tidy. What they
   // cannot do — touch an admin's role or access, or hand out shoot ops — is
   // enforced by the profiles guard in the database, not by hiding a button.
-  if (profile.role !== "admin" && profile.role !== "operator") redirect("/board");
+  if (profile.role !== "admin" && profile.role !== "operator") redirect("/tickets");
 
   const supabase = await supabaseServer();
   const [team, benchmarks] = await Promise.all([

@@ -14,7 +14,7 @@ export default async function ShootPage() {
   // Admins and operators, plus any strategist an admin has given shoot ops to.
   // The database says the same thing in can_run_shoots() — this redirect is
   // only so the door isn't there to walk into.
-  if (!canRunShoots(profile)) redirect("/board");
+  if (!canRunShoots(profile)) redirect("/tickets");
 
   const supabase = await supabaseServer();
   const { data } = await supabase

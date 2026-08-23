@@ -130,3 +130,17 @@ export function formatCount(units: Partial<Record<CreativeFormat, number>>): num
 export function pct(part: number, whole: number): number {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;
 }
+
+/**
+ * What to call somebody in a space too small for their full name.
+ *
+ * Falls back to the part of the email before the @, because a profile with no
+ * name filled in should still say who somebody is rather than nothing at all.
+ */
+export function shortName(person: { full_name?: string | null; email?: string | null } | null | undefined): string {
+  const full = person?.full_name?.trim();
+  if (full) return full.split(/\s+/)[0];
+  const email = person?.email?.trim();
+  if (email) return email.split("@")[0];
+  return "Someone";
+}

@@ -12,10 +12,10 @@ export default function NotFound() {
           This ticket either doesn&apos;t exist or isn&apos;t one you have access to.
         </p>
         <Link
-          href="/board"
+          href="/tickets"
           className="mt-5 inline-block rounded-[var(--radius-md)] bg-[var(--color-accent)] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)]"
         >
-          Back to the board
+          Back to Tickets
         </Link>
       </div>
     </main>

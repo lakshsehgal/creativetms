@@ -129,7 +129,7 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
                         ? `/tickets/${row.ticket_id}`
                         : row.kind === "shoot_block"
                           ? "/shoot"
-                          : "/board"
+                          : "/tickets"
                     }
                     onClick={() => setOpen(false)}
                     className={`block border-b border-[var(--color-line)] px-3 py-2 transition-colors last:border-0 hover:bg-[var(--color-surface-2)] ${

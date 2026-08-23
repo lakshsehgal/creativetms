@@ -94,7 +94,7 @@ export function TicketDetail({
           </button>
         ) : (
           <Link
-            href="/board"
+            href="/tickets"
             className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
             aria-label="Back to the list"
           >
@@ -115,7 +115,7 @@ export function TicketDetail({
               // The ticket no longer exists as far as every list is concerned,
               // so staying on its page would show a dead screen.
               if (variant === "modal") onClose?.();
-              else router.push("/board");
+              else router.push("/tickets");
             }}
           />
 
@@ -173,9 +173,33 @@ export function TicketDetail({
               <h1 className="mt-3 text-[24px] font-semibold leading-tight tracking-tight">
                 {data.title}
               </h1>
-              <p suppressHydrationWarning className="mt-1.5 text-[12px] text-[var(--color-ink-3)]">
-                Raised by {data.author?.full_name || data.author?.email || "—"} ·{" "}
-                {relativeTime(data.created_at)}
+              {/* Who raised it, said with a face rather than in small print.
+                  On a floor where four strategists brief the same designers,
+                  "whose brief is this" is the first question asked and it
+                  shouldn't need a scroll to answer. */}
+              <p
+                suppressHydrationWarning
+                className="mt-2 flex items-center gap-2 text-[12px] text-[var(--color-ink-2)]"
+              >
+                {data.author && (
+                  <Avatar
+                    id={data.author.id}
+                    name={data.author.full_name}
+                    email={data.author.email}
+                    src={data.author.avatar_url}
+                    size={22}
+                  />
+                )}
+                <span>
+                  Raised by{" "}
+                  <span className="font-medium text-[var(--color-ink)]">
+                    {data.author?.full_name || data.author?.email || "—"}
+                  </span>
+                  <span className="text-[var(--color-ink-3)]">
+                    {" · "}
+                    {relativeTime(data.created_at)}
+                  </span>
+                </span>
               </p>
             </div>
 

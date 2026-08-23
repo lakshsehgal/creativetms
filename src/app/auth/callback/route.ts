@@ -11,7 +11,7 @@ import { supabaseServer } from "@/lib/supabase/server";
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
-  const next = searchParams.get("next") ?? "/board";
+  const next = searchParams.get("next") ?? "/tickets";
 
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");

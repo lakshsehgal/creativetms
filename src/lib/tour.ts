@@ -37,7 +37,7 @@ import { canRunShoots } from "./types";
  */
 export type Anchor =
   // shell
-  | "nav-board"
+  | "nav-tickets"
   | "nav-my-day"
   | "nav-scorecards"
   | "nav-analytics"
@@ -48,6 +48,7 @@ export type Anchor =
   | "profile-link"
   // work
   | "layouts"
+  | "group-by"
   | "view-list"
   | "view-board"
   | "view-today"
@@ -115,7 +116,7 @@ const DESIGNER: Track = {
   steps: [
     {
       id: "hello",
-      path: "/board",
+      path: "/tickets",
       title: "Two minutes, then you're set",
       body:
         "This is where the studio's work lives. Before anything else, the one promise the tool makes to you: you will never be asked to log time, fill a timesheet, or account for your day. Not once. The rest of this explains how that works.",
@@ -129,10 +130,10 @@ const DESIGNER: Track = {
     },
     {
       id: "work",
-      target: "nav-board",
-      title: "Work",
+      target: "nav-tickets",
+      title: "Tickets",
       body:
-        "Everything the studio has on, in one place. Yours and everyone else's — nothing here is hidden from you.",
+        "Every brief the studio has on, in one place. Yours and everyone else's — nothing here is hidden from you.",
     },
     {
       id: "board",
@@ -240,15 +241,15 @@ const STRATEGIST: Track = {
   steps: [
     {
       id: "hello",
-      path: "/board",
+      path: "/tickets",
       title: "Two minutes, then you're set",
       body:
         "This is where you hand work to the studio and watch it come back. The short version: you raise briefs, you can see who has room before you do, and you find out when things land without asking anybody.",
     },
     {
       id: "work",
-      target: "nav-board",
-      title: "Work",
+      target: "nav-tickets",
+      title: "Tickets",
       body: "Every brief in the studio, whoever raised it. Start here for anything.",
     },
     {
@@ -257,6 +258,13 @@ const STRATEGIST: Track = {
       title: "Five ways to look at it",
       body:
         "The same briefs, arranged for five different questions: what's the state of everything, where is it in the flow, what got picked up today, who has room this week, and when does it all land.",
+    },
+    {
+      id: "grouping",
+      target: "group-by",
+      title: "Stack it however the question needs",
+      body:
+        "Status is the workflow, and the only arrangement you can drag a card between. Group by brand to see what one client has on, by designer to see who is carrying what, or by due date to find what's late. It stays in the address bar, so a grouped, filtered screen is a link you can send.",
     },
     {
       id: "new",

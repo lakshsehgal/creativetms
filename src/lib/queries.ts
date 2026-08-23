@@ -28,16 +28,30 @@ export const queryKeys = {
 };
 
 /**
- * Board payload. Delivered tickets are excluded — they live in Analytics, and
- * keeping them out is what stops the board getting heavier every week.
+ * How long a signed-off ticket stays on the board.
+ *
+ * Delivered work used to disappear the moment it was approved, which kept the
+ * board light but made a resize ask unanswerable: those arrive after sign-off —
+ * the ad works, so now the client wants it in nine more placements — and the
+ * ticket to send back no longer existed anywhere you could click. A fortnight
+ * covers that conversation and still stops the board growing forever;
+ * everything older lives in Analytics, where the long tail belongs.
+ */
+const KEEP_APPROVED_DAYS = 14;
+
+/**
+ * Board payload. Old delivered work is excluded — it lives in Analytics, and
+ * keeping it out is what stops the board getting heavier every week.
  */
 export async function fetchBoardTickets(
   supabase: SupabaseClient,
 ): Promise<TicketWithRefs[]> {
+  const cutoff = new Date(Date.now() - KEEP_APPROVED_DAYS * 86_400_000).toISOString();
+
   const { data, error } = await supabase
     .from("tickets")
     .select(TICKET_SELECT)
-    .neq("status", "approved")
+    .or(`status.neq.approved,approved_at.gte.${cutoff}`)
     // RLS lets an admin read removed tickets so they can be restored; the
     // board is not where that belongs.
     .is("deleted_at", null)

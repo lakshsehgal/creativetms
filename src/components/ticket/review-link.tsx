@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Check, ExternalLink, Link2, Pencil } from "lucide-react";
 import type { Deliverable, Profile, TicketWithRefs } from "@/lib/types";
 import { phaseMeta } from "@/lib/types";
+import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Button, TextInput } from "@/components/ui/form";
@@ -78,7 +79,27 @@ export function ReviewLink({
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-medium">Review link</p>
+          <p className="flex items-center gap-1.5 text-[12px] font-medium">
+            Review link
+            {/* The link can be swapped in place, and whoever was already sent
+                it has no way of knowing. Saying so is the whole job — the
+                activity feed below carries the link it replaced. */}
+            {ticket.review_url_edited_at && (
+              <span
+                suppressHydrationWarning
+                title={`This link was changed ${relativeTime(
+                  ticket.review_url_edited_at,
+                )} — the one it replaced is in the activity feed`}
+                className="rounded-[3px] px-1 py-px text-[10px] font-normal"
+                style={{
+                  background: "var(--color-surface-3)",
+                  color: "var(--color-ink-3)",
+                }}
+              >
+                edited
+              </span>
+            )}
+          </p>
           <p className="truncate text-[11.5px] text-[var(--color-ink-3)]">{ticket.review_url}</p>
         </div>
 

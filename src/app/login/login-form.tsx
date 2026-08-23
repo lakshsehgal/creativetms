@@ -23,7 +23,7 @@ const CODE_LENGTH = (() => {
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/board";
+  const next = params.get("next") || "/tickets";
 
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");

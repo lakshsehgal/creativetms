@@ -136,7 +136,7 @@ export async function showDesktopAlert(alert: DesktopAlert): Promise<boolean> {
       badge: "/icon-192.png",
       tag: alert.tag,
       requireInteraction: Boolean(alert.requireInteraction),
-      data: { url: alert.url ?? "/board" },
+      data: { url: alert.url ?? "/tickets" },
     });
     return true;
   } catch {

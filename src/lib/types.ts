@@ -92,6 +92,13 @@ export interface Ticket {
   reference_urls: string[];
   /** Frame.io review link — where the deliverable is actually watched. */
   review_url: string | null;
+  /**
+   * Set when the link was swapped in place rather than by submitting a new
+   * cut. Somebody may already have been sent the old one, so the ticket says
+   * "edited" rather than quietly pointing somewhere else.
+   */
+  review_url_edited_at: string | null;
+  review_url_edited_by: string | null;
   format: CreativeFormat;
   quantity: number;
   status: TicketStatus;

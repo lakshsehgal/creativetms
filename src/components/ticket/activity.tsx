@@ -77,11 +77,26 @@ export function Activity({
               className="flex items-center gap-2.5 pl-[34px] text-[11.5px] text-[var(--color-ink-3)]"
             >
               <span className="h-1 w-1 shrink-0 rounded-full bg-[var(--color-line-strong)]" />
-              <span>
+              <span className="min-w-0">
                 <span className="text-[var(--color-ink-2)]">
                   {entry.data.actor?.full_name || entry.data.actor?.email || "Someone"}
                 </span>{" "}
                 {describe(entry.data, nameById)}
+                {/* The link it replaced. Somebody may have been sent that one
+                    and be halfway through reviewing it. */}
+                {entry.data.kind === "review_link" && entry.data.from_value && (
+                  <>
+                    {" — "}
+                    <a
+                      href={entry.data.from_value}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-[var(--color-ink-2)]"
+                    >
+                      the one it replaced
+                    </a>
+                  </>
+                )}
               </span>
               <span className="ml-auto shrink-0">{relativeTime(entry.at)}</span>
             </li>
@@ -140,5 +155,6 @@ function describe(event: TicketEvent, names: Map<string, string>): string {
     const who = event.to_value ? (names.get(event.to_value) ?? "a designer") : null;
     return who ? `assigned it to ${who}` : "unassigned it";
   }
+  if (event.kind === "review_link") return "changed the review link";
   return event.kind;
 }

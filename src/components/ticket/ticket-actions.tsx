@@ -228,14 +228,25 @@ export function TicketActions({
    * Everything client-facing, plus the two ways work comes back.
    * -------------------------------------------------------------------- */
   if (isStaff) {
-    if (ticket.status === "ready_for_approval" || ticket.status === "sent_to_client") {
+    // Approved is on this list on purpose. A resize ask almost always arrives
+    // AFTER sign-off — the ad works, so now it's wanted in nine more
+    // placements — and closing every door at approval meant raising a
+    // duplicate brief, which loses the history and counts the work twice.
+    const canSendBack =
+      ticket.status === "ready_for_approval" ||
+      ticket.status === "sent_to_client" ||
+      ticket.status === "approved";
+
+    if (canSendBack) {
+      const signedOff = ticket.status === "approved";
       actions.push(
         <Button key="revise" size="sm" onClick={() => setRevising(true)}>
-          <RotateCcw size={13} /> Needs edit
+          <RotateCcw size={13} /> {signedOff ? "Reopen with notes" : "Needs edit"}
         </Button>,
         <Button
           key="sizes"
           size="sm"
+          variant={signedOff ? "primary" : "secondary"}
           loading={busy === "sizes"}
           onClick={() => move("size_changes", "Sent back for size changes", "sizes")}
           title="A resize ask — deliberately not counted as a revision round"
@@ -286,7 +297,7 @@ export function TicketActions({
               : ticket.status === "sent_to_client"
                 ? "With the client."
                 : ticket.status === "approved"
-                  ? "Approved and done."
+                  ? "Approved. A strategist can still send it back for resizes."
                   : "Nothing for you to do here right now."}
           </p>
         )}
@@ -349,7 +360,11 @@ export function TicketActions({
         open={revising}
         onClose={() => setRevising(false)}
         title={`Revision round ${ticket.revision_count + 1}`}
-        description="Say what needs to change. The designer sees this at the top of the ticket."
+        description={
+          ticket.status === "approved"
+            ? "This was signed off, so reopening it counts as a fresh revision round. Say what changed."
+            : "Say what needs to change. The designer sees this at the top of the ticket."
+        }
       >
         <form onSubmit={requestRevisions}>
           <TextArea

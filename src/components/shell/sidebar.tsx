@@ -37,7 +37,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/board", label: "Work", icon: KanbanSquare, roles: ["admin", "operator", "strategist", "designer"] },
+  { href: "/tickets", label: "Tickets", icon: KanbanSquare, roles: ["admin", "operator", "strategist", "designer"] },
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
   { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator", "strategist"] },
   { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator", "designer"] },

@@ -13,13 +13,14 @@ import type {
   TicketWithRefs,
 } from "@/lib/types";
 import { benchmarkMap } from "@/lib/planning";
+import { GROUPINGS, groupTickets, isDraggable, type GroupKey } from "@/lib/grouping";
 import { positionBetween, queryKeys } from "@/lib/queries";
 import { applyFilters, filtersFromParams, filtersToParams, type TicketFilters } from "@/lib/filters";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { useLiveTickets } from "@/hooks/use-live-tickets";
 import { PageHeader } from "@/components/ui/primitives";
-import { Button } from "@/components/ui/form";
+import { Button, Select } from "@/components/ui/form";
 import { NewTicketDialog } from "@/components/board/new-ticket-dialog";
 import { TicketModal } from "@/components/ticket/ticket-modal";
 import { FilterBar } from "./filter-bar";
@@ -81,6 +82,17 @@ export function WorkClient({
   const [filters, setLocalFilters] = useState<TicketFilters>(() => filtersFromParams(params));
   const [layout, setLayout] = useState<Layout>(() => (params.get("view") as Layout) || "list");
 
+  /**
+   * How the work is stacked. Status is the default because it's the shape of
+   * the workflow; the rest answer questions the lanes can't.
+   *
+   * It lives in the address bar next to the filters, so "everything for
+   * SuperBottoms, grouped by designer" is a link somebody can send.
+   */
+  const [groupBy, setGroupBy] = useState<GroupKey>(
+    () => (params.get("group") as GroupKey) || "status",
+  );
+
   const setFilters = useCallback((next: TicketFilters, nextLayout: Layout = layout) => {
     setLocalFilters(next);
     setLayout(nextLayout);
@@ -92,11 +104,12 @@ export function WorkClient({
     const id = setTimeout(() => {
       const search = filtersToParams(filters);
       if (layout !== "list") search.set("view", layout);
-      const url = search.toString() ? `/board?${search}` : "/board";
+      if (groupBy !== "status") search.set("group", groupBy);
+      const url = search.toString() ? `/tickets?${search}` : "/tickets";
       window.history.replaceState(null, "", url);
     }, 250);
     return () => clearTimeout(id);
-  }, [filters, layout]);
+  }, [filters, layout, groupBy]);
 
   const visible = useMemo(
     () => applyFilters(tickets, filters, profile),
@@ -104,6 +117,12 @@ export function WorkClient({
   );
 
   const benchmarkLookup = useMemo(() => benchmarkMap(benchmarks), [benchmarks]);
+
+  /* One arrangement, shared by the board and the list, so they can't disagree. */
+  const groups = useMemo(
+    () => groupTickets(visible, groupBy, { designers, brands, now: new Date() }),
+    [visible, groupBy, designers, brands],
+  );
 
   /**
    * Optimistic write: patch the cache first, reconcile after. This is what
@@ -175,7 +194,7 @@ export function WorkClient({
   return (
     <>
       <PageHeader
-        title="Work"
+        title="Tickets"
         subtitle={`${visible.length} shown · ${live} in progress`}
       >
         <SavedViews
@@ -214,6 +233,30 @@ export function WorkClient({
           })}
         </div>
 
+        {/* Only where a heading exists to change — Workload, Timeline and Today
+            have arrangements of their own that a grouping would fight with. */}
+        {(layout === "board" || layout === "list") && (
+          <label
+            data-tour="group-by"
+            className="flex items-center gap-1.5 text-[11.5px] text-[var(--color-ink-3)]"
+            title={GROUPINGS.find((option) => option.key === groupBy)?.hint}
+          >
+            Group by
+            <Select
+              value={groupBy}
+              onChange={(event) => setGroupBy(event.target.value as GroupKey)}
+              aria-label="Group tickets by"
+              className="!w-auto !py-1 !pl-2 !pr-7 !text-[12px]"
+            >
+              {GROUPINGS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </label>
+        )}
+
         {profile.role !== "designer" && (
           <Button
             data-tour="new-ticket"
@@ -242,6 +285,8 @@ export function WorkClient({
           <BoardView
             profile={profile}
             tickets={visible}
+            groups={groups}
+            groupBy={groupBy}
             onMove={move}
             onStart={start}
             onOpen={setOpenTicketId}
@@ -250,6 +295,7 @@ export function WorkClient({
         {layout === "list" && (
           <ListView
             tickets={visible}
+            groups={groups}
             viewer={profile}
             designers={designers}
             onPatch={(ticket, fields) => void patch(ticket, fields)}

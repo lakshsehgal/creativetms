@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ChevronRight, Link2, RotateCcw } from "lucide-react";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
 import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canSeeOwnTime } from "@/lib/types";
-import { dueLabel, dueState, humanDuration } from "@/lib/format";
+import type { Group } from "@/lib/grouping";
+import { dueLabel, dueState, humanDuration, shortName } from "@/lib/format";
 import { Avatar, FormatBadge } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
@@ -21,18 +22,23 @@ const DUE_TONE: Record<string, string> = {
 type SortKey = "due" | "number" | "title" | "time";
 
 /**
- * The spreadsheet view. Grouped by status with a coloured rail down the left,
- * the way people expect after living in Monday — the group tells you the
- * state, so the row can spend its width on the things that differ.
+ * The spreadsheet view. Grouped with a coloured rail down the left, the way
+ * people expect after living in Monday — the heading carries what the rows
+ * have in common, so each row can spend its width on what differs.
+ *
+ * What it's grouped by is decided above, and shared with the board, so the two
+ * views never disagree about how the work is stacked.
  */
 export function ListView({
   tickets,
+  groups: incoming,
   viewer,
   designers,
   onPatch,
   onOpen,
 }: {
   tickets: TicketWithRefs[];
+  groups: Group[];
   viewer: Profile;
   designers: Profile[];
   onPatch: (ticket: TicketWithRefs, fields: Record<string, unknown>) => void;
@@ -44,25 +50,27 @@ export function ListView({
   // Strategists never see timing; designers see their own finished totals.
   const showTime = canSeeOwnTime(viewer.role);
 
-  const groups = useMemo(() => {
-    const byStatus = new Map<TicketStatus, TicketWithRefs[]>();
-    STATUS_ORDER.forEach((status) => byStatus.set(status, []));
-    tickets.forEach((ticket) => byStatus.get(ticket.status)?.push(ticket));
-
-    byStatus.forEach((rows) =>
-      rows.sort((a, b) => {
-        if (sort === "number") return b.number - a.number;
-        if (sort === "title") return a.title.localeCompare(b.title);
-        if (sort === "time") return (b.total_seconds ?? 0) - (a.total_seconds ?? 0);
-        // Undated work sinks to the bottom rather than pretending to be urgent.
-        return (a.due_at ?? "9999").localeCompare(b.due_at ?? "9999");
-      }),
-    );
-
-    return STATUS_ORDER.map((status) => ({ status, rows: byStatus.get(status) ?? [] })).filter(
-      (group) => group.rows.length > 0,
-    );
-  }, [tickets, sort]);
+  /**
+   * The grouping is decided above — this only sorts inside each one, and drops
+   * the empties, because an empty heading in a table is a line of noise where
+   * the board's empty lane is a drop target.
+   */
+  const groups = useMemo(
+    () =>
+      incoming
+        .filter((group) => group.tickets.length > 0)
+        .map((group) => ({
+          ...group,
+          tickets: [...group.tickets].sort((a, b) => {
+            if (sort === "number") return b.number - a.number;
+            if (sort === "title") return a.title.localeCompare(b.title);
+            if (sort === "time") return (b.total_seconds ?? 0) - (a.total_seconds ?? 0);
+            // Undated work sinks rather than pretending to be urgent.
+            return (a.due_at ?? "9999").localeCompare(b.due_at ?? "9999");
+          }),
+        })),
+    [incoming, sort],
+  );
 
   if (tickets.length === 0) {
     return (
@@ -95,42 +103,42 @@ export function ListView({
       </div>
 
       {groups.map((group) => {
-        const meta = STATUSES[group.status];
-        const isCollapsed = collapsed.has(group.status);
-        const units = group.rows.reduce((sum, row) => sum + row.quantity, 0);
+        const isCollapsed = collapsed.has(group.id);
+        const units = group.tickets.reduce((sum, row) => sum + row.quantity, 0);
 
         return (
-          <section key={group.status} className="mb-5">
+          <section key={group.id} className="mb-5">
             <button
               onClick={() =>
                 setCollapsed((prev) => {
                   const next = new Set(prev);
-                  next.has(group.status) ? next.delete(group.status) : next.add(group.status);
+                  next.has(group.id) ? next.delete(group.id) : next.add(group.id);
                   return next;
                 })
               }
               className="mb-1.5 flex items-center gap-2"
+              title={group.hint}
             >
               <ChevronRight
                 size={14}
                 style={{
-                  color: meta.fill,
+                  color: group.tone,
                   transform: isCollapsed ? undefined : "rotate(90deg)",
                   transition: "transform .15s",
                 }}
               />
-              <span className="text-[13px] font-semibold" style={{ color: meta.fill }}>
-                {meta.label}
+              <span className="text-[13px] font-semibold" style={{ color: group.tone }}>
+                {group.label}
               </span>
               <span className="tabular text-[11.5px] text-[var(--color-ink-3)]">
-                {group.rows.length} · {units} unit{units === 1 ? "" : "s"}
+                {group.tickets.length} · {units} unit{units === 1 ? "" : "s"}
               </span>
             </button>
 
             {!isCollapsed && (
               <div
                 className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)]"
-                style={{ borderLeft: `3px solid ${meta.fill}` }}
+                style={{ borderLeft: `3px solid ${group.tone}` }}
               >
                 <table className="w-full border-collapse text-[12.5px]">
                   <thead>
@@ -139,6 +147,7 @@ export function ListView({
                       <th className="px-2 py-1.5 text-left font-medium">Brand</th>
                       <th className="px-2 py-1.5 text-left font-medium">Format</th>
                       <th className="w-[130px] px-0 py-1.5 text-center font-medium">Status</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Raised by</th>
                       <th className="px-2 py-1.5 text-left font-medium">Designer</th>
                       <th className="px-2 py-1.5 text-left font-medium">Due</th>
                       {showTime && (
@@ -147,7 +156,7 @@ export function ListView({
                     </tr>
                   </thead>
                   <tbody>
-                    {group.rows.map((ticket) => (
+                    {group.tickets.map((ticket) => (
                       <Row
                         key={ticket.id}
                         ticket={ticket}
@@ -278,6 +287,29 @@ const Row = memo(function Row({
             ))}
           </select>
         </label>
+      </td>
+
+      {/* Who asked for it. Read next to who is doing it, the two together are
+          the whole handoff — and a designer with a question about the brief
+          now knows who to ask without opening the ticket. */}
+      <td className="px-2 py-1.5">
+        {ticket.author ? (
+          <span
+            className="flex items-center gap-1.5"
+            title={ticket.author.full_name || ticket.author.email}
+          >
+            <Avatar
+              id={ticket.author.id}
+              name={ticket.author.full_name}
+              email={ticket.author.email}
+              src={ticket.author.avatar_url}
+              size={18}
+            />
+            <span className="truncate">{shortName(ticket.author)}</span>
+          </span>
+        ) : (
+          <span className="text-[var(--color-ink-3)]">—</span>
+        )}
       </td>
 
       <td className="px-2 py-1.5">

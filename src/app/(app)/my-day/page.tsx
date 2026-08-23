@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function MyDayPage() {
   const profile = await currentProfile();
   if (!profile) redirect("/login");
-  if (profile.role !== "designer") redirect("/board");
+  if (profile.role !== "designer") redirect("/tickets");
 
   const supabase = await supabaseServer();
   const [tickets, benchmarks] = await Promise.all([
