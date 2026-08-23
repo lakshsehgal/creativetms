@@ -33,7 +33,10 @@ export function FilterBar({
   const active = activeFilterCount(filters);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-2.5">
+    <div
+      data-tour="filters"
+      className="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-2.5"
+    >
       <div className="relative">
         <Search
           size={13}

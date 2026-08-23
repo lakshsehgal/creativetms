@@ -105,6 +105,7 @@ export function BreakMode({ profile }: { profile: Profile }) {
 
   return (
     <button
+      data-tour="break"
       onClick={() => void start()}
       disabled={busy}
       title="Pause everything and step away"

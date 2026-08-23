@@ -264,6 +264,32 @@ h1, h2, h3 {
 }
 
 /* ---------------------------------------------------------------------------
+   The walkthrough's overlay
+
+   It is a modal <dialog> so it can sit above the app's own dialogs — see
+   tour-runner.tsx. That brings user-agent styling which would otherwise shrink
+   it to a box in the middle of the screen, so all of it is undone here.
+--------------------------------------------------------------------------- */
+.tour-layer[open] {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  color: inherit;
+}
+/* The dimmer is drawn inside, with a hole in it. The browser's own backdrop
+   would sit over the spotlight and defeat the whole thing. */
+.tour-layer::backdrop {
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------
    The call sheet, as Neuroid stationery
 
    Set from the studio's letterhead rather than approximated from it: the

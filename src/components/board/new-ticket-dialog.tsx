@@ -214,7 +214,7 @@ export function NewTicketDialog({
           />
         </Field>
 
-        <div className="mt-3.5 grid grid-cols-2 gap-3">
+        <div data-tour="brief-format" className="mt-3.5 grid grid-cols-2 gap-3">
           <Field label="Format" htmlFor="format">
             <Select
               id="format"
@@ -269,43 +269,49 @@ export function NewTicketDialog({
         </div>
 
         <div className="mt-3.5 grid grid-cols-2 gap-3">
-          <Field label="Designer" htmlFor="assignee" hint="Optional">
-            <Select
-              id="assignee"
-              value={assignee}
-              onChange={(event) => setAssignee(event.target.value)}
-            >
-              <option value="">Leave in backlog</option>
-              {designers.map((designer) => (
-                <option key={designer.id} value={designer.id}>
-                  {designer.full_name || designer.email}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <div data-tour="brief-designer">
+            <Field label="Designer" htmlFor="assignee" hint="Optional">
+              <Select
+                id="assignee"
+                value={assignee}
+                onChange={(event) => setAssignee(event.target.value)}
+              >
+                <option value="">Leave in backlog</option>
+                {designers.map((designer) => (
+                  <option key={designer.id} value={designer.id}>
+                    {designer.full_name || designer.email}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
 
-          <Field
-            label="Due"
-            htmlFor="due"
-            hint={pastNoon && !rush ? "After midday — earliest is tomorrow" : undefined}
-          >
-            <TextInput
-              id="due"
-              type="datetime-local"
-              // Past midday the picker won't offer today, unless the escalation
-              // below is switched on. A brief raised this afternoon can't
-              // realistically ship tonight — the designer's day was planned
-              // this morning — and the exception is a decision, not a default.
-              min={earliestDue}
-              value={dueAt}
-              onChange={(event) => setDueAt(event.target.value)}
-            />
-          </Field>
+          <div data-tour="brief-due">
+            <Field
+              label="Due"
+              htmlFor="due"
+              hint={pastNoon && !rush ? "After midday — earliest is tomorrow" : undefined}
+            >
+              <TextInput
+                id="due"
+                type="datetime-local"
+                // Past midday the picker won't offer today, unless the
+                // escalation below is switched on. A brief raised this
+                // afternoon can't realistically ship tonight — the designer's
+                // day was planned this morning — and the exception is a
+                // decision, not a default.
+                min={earliestDue}
+                value={dueAt}
+                onChange={(event) => setDueAt(event.target.value)}
+              />
+            </Field>
+          </div>
         </div>
 
         {/* ------------------------------------------------- the exception */}
         {pastNoon && (
           <div
+            data-tour="brief-rush"
             className="mt-3.5 rounded-[var(--radius-md)] border px-3 py-2.5"
             style={{
               borderColor: rush
@@ -379,7 +385,7 @@ export function NewTicketDialog({
         <AvailabilityWarning designerId={assignee} dueAt={dueAt} designers={designers} />
 
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button data-tour="brief-close" type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           {/* The label says what will actually happen. "Raise ticket" on an

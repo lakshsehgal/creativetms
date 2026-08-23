@@ -19,6 +19,7 @@ import type { Profile, UserRole } from "@/lib/types";
 import { canRunShoots } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
+import { TourLauncher } from "@/components/tour/tour-launcher";
 import { BreakMode } from "./break-mode";
 import { SignOutButton } from "./sign-out-button";
 import { NotificationBell } from "./notification-bell";
@@ -114,6 +115,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
               <Link
                 href={item.href}
                 prefetch
+                data-tour={`nav-${item.href.slice(1)}`}
                 title={collapsed ? item.label : undefined}
                 aria-current={active ? "page" : undefined}
                 className={`relative flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] transition-colors ${
@@ -139,10 +141,17 @@ export function Sidebar({ profile }: { profile: Profile }) {
         })}
       </ul>
 
+      {/* Last in the list rather than first: somebody who already knows the
+          tool shouldn't have to look past a Guide button every day. */}
+      <div className="px-2.5 pb-2">
+        <TourLauncher profile={profile} collapsed={collapsed} />
+      </div>
+
       <div className="space-y-2 border-t border-[var(--color-line)] p-2.5">
         {profile.role === "designer" && !collapsed && <BreakMode profile={profile} />}
         <Link
           href="/profile"
+          data-tour="profile-link"
           title="Your profile"
           className="flex items-center gap-2 rounded-[var(--radius-md)] px-1.5 py-1.5 transition-colors hover:bg-[var(--color-surface-2)]"
         >

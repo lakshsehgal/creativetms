@@ -87,7 +87,7 @@ export function SavedViews({
 
   return (
     <>
-      <div className="flex items-center gap-1">
+      <div data-tour="saved-views" className="flex items-center gap-1">
         {list.length > 0 && (
           <div className="flex items-center gap-1">
             {list.slice(0, 4).map((view) => (

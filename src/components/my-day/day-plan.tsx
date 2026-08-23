@@ -180,7 +180,7 @@ export function DayPlan({
   /* ------------------------------------------------------------------ UI */
 
   return (
-    <div className="space-y-5">
+    <div data-tour="day-plan" className="space-y-5">
       {/* Open questions first. Somebody is blocked on an answer only this
           person can give, and it clears itself the moment they give it. */}
       <EtaAsks tickets={mine} />

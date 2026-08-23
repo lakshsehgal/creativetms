@@ -188,6 +188,7 @@ export function WorkClient({
         <div
           role="tablist"
           aria-label="Layout"
+          data-tour="layouts"
           className="flex items-center gap-0.5 rounded-[var(--radius-md)] border border-[var(--color-line)] p-0.5"
         >
           {LAYOUTS.map((option) => {
@@ -198,6 +199,7 @@ export function WorkClient({
                 key={option.key}
                 role="tab"
                 aria-selected={active}
+                data-tour={`view-${option.key}`}
                 onClick={() => setFilters(filters, option.key)}
                 className={`inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-[12px] transition-colors ${
                   active
@@ -213,7 +215,12 @@ export function WorkClient({
         </div>
 
         {profile.role !== "designer" && (
-          <Button variant="primary" size="sm" onClick={() => setComposing(true)}>
+          <Button
+            data-tour="new-ticket"
+            variant="primary"
+            size="sm"
+            onClick={() => setComposing(true)}
+          >
             <Plus size={14} /> New ticket
           </Button>
         )}

@@ -31,7 +31,7 @@ export function Column({
   const units = tickets.reduce((sum, ticket) => sum + ticket.quantity, 0);
 
   return (
-    <section className="flex h-full w-[286px] shrink-0 flex-col">
+    <section data-tour={`col-${status}`} className="flex h-full w-[286px] shrink-0 flex-col">
       <header
         className="mb-2 flex items-center gap-2 rounded-[var(--radius-md)] px-2.5 py-1.5"
         style={{ background: `color-mix(in srgb, ${meta.fill} 12%, transparent)` }}

@@ -50,6 +50,7 @@ export function EtaAsks({ tickets }: { tickets: TicketWithRefs[] }) {
   }
 
   return (
+    <div data-tour="eta-asks">
     <Card padded={false}>
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-line)] px-4 py-3">
         <HelpCircle size={14} style={{ color: "var(--color-serious)" }} />
@@ -97,5 +98,6 @@ export function EtaAsks({ tickets }: { tickets: TicketWithRefs[] }) {
         ))}
       </ul>
     </Card>
+    </div>
   );
 }

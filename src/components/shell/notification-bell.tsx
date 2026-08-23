@@ -77,7 +77,11 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="relative" onClick={(event) => event.stopPropagation()}>
+    <div
+      data-tour="bell"
+      className="relative"
+      onClick={(event) => event.stopPropagation()}
+    >
       <button
         onClick={() => setOpen((value) => !value)}
         title="Notifications"

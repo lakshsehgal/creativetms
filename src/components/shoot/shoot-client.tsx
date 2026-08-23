@@ -39,6 +39,7 @@ export function ShootClient({
         <div
           role="tablist"
           aria-label="Shoot section"
+          data-tour="shoot-tabs"
           className="flex items-center gap-0.5 rounded-[var(--radius-md)] border border-[var(--color-line)] p-0.5 print:hidden"
         >
           {TABS.map((option) => (
