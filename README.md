@@ -420,6 +420,11 @@ a sentence saying why. What happens next is the whole design:
   capacity, and they aren't told. A pending escalation that already sits in
   somebody's queue is not an approval step, it's a notification with extra
   clicks.
+- Nor can they pick it up. An unassigned brief in New Request is normally
+  claimable by any designer — that's how the backlog works — so the hold is
+  enforced in the database rather than by hiding it: while it's pending,
+  nothing can assign it and nothing can move it out of New Request, whoever
+  is asking.
 - Every operator and admin gets it, as a bar above the page with the reason
   and Approve / Not today in it. Nothing to dismiss; it clears when answered.
 - **Approved** hands it to the designer, tells them, marks it on the board and

@@ -73,6 +73,11 @@ export function BoardView({
       ["new_request", "size_changes", "needs_edit", "on_hold", "awaiting_assets"].includes(
         ticket.status,
       ) &&
+      // A same-day escalation nobody has agreed to yet is not claimable, even
+      // though it's sitting unassigned in New Request like any other backlog
+      // item. The database refuses it too — this only avoids offering a button
+      // that would come back with an error.
+      ticket.rush_state !== "pending" &&
       (!ticket.assigned_to || ticket.assigned_to === profile.id),
     [profile],
   );
@@ -90,6 +95,17 @@ export function BoardView({
 
     if (!allowedTargets.includes(target)) {
       toast.error(`${STATUSES[target].label} isn't yours to move work into.`);
+      return;
+    }
+
+    // Same rule as the Start button, for the other way of moving a card. The
+    // database refuses this as well; saying so here saves a round trip and
+    // explains it in terms of what's actually happening.
+    if (ticket.rush_state === "pending" && target !== ticket.status) {
+      toast.error("Still waiting on approval", {
+        description:
+          "An operator or an admin has to agree to this one before anybody picks it up.",
+      });
       return;
     }
 
