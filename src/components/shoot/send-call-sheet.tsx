@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Send, Users } from "lucide-react";
 import type { Profile, Shoot } from "@/lib/types";
-import { callSheetRecipients, crewCount } from "@/lib/shoot";
+import { SHEET_ROLES, callSheetRecipients, crewCount } from "@/lib/shoot";
 import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { sendCallSheet } from "@/app/(app)/shoot/actions";
@@ -27,21 +27,24 @@ export function SendCallSheet({ shoot }: { shoot: Shoot }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const team = useQuery({
-    queryKey: ["team", "emails"],
+  const staff = useQuery({
+    queryKey: ["team", "sheet-recipients"],
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("email, full_name, is_active");
-      return (data ?? []) as Pick<Profile, "email" | "full_name" | "is_active">[];
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, full_name, is_active, role")
+        .in("role", [...SHEET_ROLES]);
+      return (data ?? []) as Pick<Profile, "email" | "full_name" | "is_active" | "role">[];
     },
   });
 
   const recipients = useMemo(
-    () => callSheetRecipients(shoot.doc.crew, team.data ?? []),
-    [shoot.doc.crew, team.data],
+    () => callSheetRecipients(shoot.doc.crew, staff.data ?? []),
+    [shoot.doc.crew, staff.data],
   );
 
-  const studio = recipients.filter((person) => person.from === "team");
+  const studio = recipients.filter((person) => person.from === "studio");
   const crew = recipients.filter((person) => person.from === "crew");
   const unreachable = shoot.doc.crew
     .flatMap((group) => group.members)
@@ -90,16 +93,16 @@ export function SendCallSheet({ shoot }: { shoot: Shoot }) {
           </p>
         )}
 
-        {team.isLoading ? (
+        {staff.isLoading ? (
           <div className="skeleton h-24" />
         ) : recipients.length === 0 ? (
           <p className="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-3 py-3 text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
-            Nobody to send it to. Nobody on the team has an active account, and
-            no crew member on this sheet has an email against them.
+            Nobody to send it to. No admin or operator has an active account,
+            and no crew member on this sheet has an email against them.
           </p>
         ) : (
           <>
-            <Group label="The studio" people={studio} />
+            <Group label="Admins and operators" people={studio} />
             <Group label="Crew and guests" people={crew} />
           </>
         )}

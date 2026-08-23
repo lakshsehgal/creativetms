@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/form";
 import { CallSheet } from "./call-sheet";
 import { BriefChecklist } from "./brief-checklist";
 import { SendCallSheet } from "./send-call-sheet";
+import { ShootDayBlocks } from "./shoot-day-blocks";
 
 /**
  * Shoot briefs — the call sheet and the run-up checklist.
@@ -48,7 +49,13 @@ const AUTOSAVE_MS = 900;
 
 type Pane = "sheet" | "checklist";
 
-export function ShootBriefs({ profile }: { profile: Profile }) {
+export function ShootBriefs({
+  profile,
+  designers,
+}: {
+  profile: Profile;
+  designers: Profile[];
+}) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -122,6 +129,7 @@ export function ShootBriefs({ profile }: { profile: Profile }) {
     return (
       <BriefEditor
         shoot={open}
+        designers={designers}
         onBack={() => setOpenId(null)}
         onDelete={() => void remove(open)}
       />
@@ -210,10 +218,12 @@ type SaveState = "clean" | "saving" | "saved" | "failed";
 
 function BriefEditor({
   shoot,
+  designers,
   onBack,
   onDelete,
 }: {
   shoot: Shoot;
+  designers: Profile[];
   onBack: () => void;
   onDelete: () => void;
 }) {
@@ -340,14 +350,20 @@ function BriefEditor({
       </div>
 
       {pane === "sheet" ? (
-        <CallSheet
-          title={local.title}
-          brand={local.brand}
-          shootDate={local.shoot_date}
-          doc={local.doc}
-          onMeta={(meta) => change(meta)}
-          onDoc={setDoc}
-        />
+        <>
+          <CallSheet
+            title={local.title}
+            brand={local.brand}
+            shootDate={local.shoot_date}
+            doc={local.doc}
+            onMeta={(meta) => change(meta)}
+            onDoc={setDoc}
+          />
+          {/* Never printed — this is a planning control, not part of the sheet. */}
+          <div className="print:hidden">
+            <ShootDayBlocks shoot={local} designers={designers} />
+          </div>
+        </>
       ) : (
         <BriefChecklist
           phases={local.checklist}

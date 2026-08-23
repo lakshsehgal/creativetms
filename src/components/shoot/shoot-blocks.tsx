@@ -158,39 +158,62 @@ export function ShootBlocks({ designers }: { designers: Profile[] }) {
         )}
       </Card>
 
-      <AddBlockDialog
-        open={adding}
-        onClose={() => setAdding(false)}
-        designers={designers}
-        onSaved={() => queryClient.invalidateQueries({ queryKey: ["availability-blocks"] })}
-      />
+      {adding && (
+        <AddBlockDialog
+          onClose={() => setAdding(false)}
+          designers={designers}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ["availability-blocks"] })}
+        />
+      )}
     </>
   );
 }
 
 /* ------------------------------------------------------------------ form */
 
-function AddBlockDialog({
-  open,
+/**
+ * What the form should already say when it opens.
+ *
+ * Blocking a designer out from inside a call sheet is the same act as blocking
+ * them from the Bandwidth tab, so it is the same form — it just starts with the
+ * shoot's date, call time and name already in it. Retyping a date you are
+ * looking at is how the wrong date gets blocked.
+ */
+export interface BlockPreset {
+  day?: string;
+  until?: string;
+  span?: "whole" | "range";
+  startTime?: string;
+  endTime?: string;
+  kind?: BlockKind;
+  note?: string;
+}
+
+/**
+ * Mounted only while it is open, so every opening starts from the preset
+ * rather than from whatever the last person typed and abandoned.
+ */
+export function AddBlockDialog({
   onClose,
   designers,
   onSaved,
+  preset,
 }: {
-  open: boolean;
   onClose: () => void;
   designers: Profile[];
   onSaved: () => void;
+  preset?: BlockPreset;
 }) {
   const supabase = supabaseBrowser();
   const [saving, setSaving] = useState(false);
   const [designerId, setDesignerId] = useState("");
-  const [day, setDay] = useState(isoDay());
-  const [until, setUntil] = useState("");
-  const [span, setSpan] = useState<"whole" | "range">("whole");
-  const [startTime, setStartTime] = useState("10:00");
-  const [endTime, setEndTime] = useState("16:00");
-  const [kind, setKind] = useState<BlockKind>("shoot");
-  const [note, setNote] = useState("");
+  const [day, setDay] = useState(preset?.day || isoDay());
+  const [until, setUntil] = useState(preset?.until ?? "");
+  const [span, setSpan] = useState<"whole" | "range">(preset?.span ?? "whole");
+  const [startTime, setStartTime] = useState(preset?.startTime || "10:00");
+  const [endTime, setEndTime] = useState(preset?.endTime || "16:00");
+  const [kind, setKind] = useState<BlockKind>(preset?.kind ?? "shoot");
+  const [note, setNote] = useState(preset?.note ?? "");
 
   const person = designers.find((row) => row.id === designerId);
   const preview =
@@ -245,7 +268,7 @@ function AddBlockDialog({
 
   return (
     <Dialog
-      open={open}
+      open
       onClose={onClose}
       title="Block someone's time"
       description="Their hours come out of the workload grid, and strategists get warned before briefing them for it."
@@ -336,7 +359,12 @@ function AddBlockDialog({
           </div>
         )}
 
-        <Field label="Note" htmlFor="block-note" hint="Optional — where, or what for">
+        <Field
+          label="Note"
+          htmlFor="block-note"
+          hint="Optional — where, or what for"
+          className="mt-3.5"
+        >
           <TextInput
             id="block-note"
             value={note}

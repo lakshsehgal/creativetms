@@ -153,8 +153,19 @@ export function crewNames(crew: CrewGroup[]): string[] {
 
 /* ------------------------------------------------------------ recipients */
 
-/** The studio's own domain. Everyone here gets the sheet. */
-export const STUDIO_DOMAIN = "neuroidmedia.com";
+/**
+ * Who at the studio is on every call sheet, by role.
+ *
+ * Admins and operators — the two roles accountable for the day running, and
+ * the two who get asked where somebody is at 7am. Deliberately not everyone
+ * with a Neuroid address: a designer who isn't on the shoot doesn't need the
+ * crew's phone numbers, and a call sheet that lands on people it doesn't
+ * concern is a call sheet everyone filters.
+ *
+ * A strategist who is running the shoot still sees it — they wrote it, and
+ * they're on the crew list if they're going.
+ */
+export const SHEET_ROLES = ["admin", "operator"] as const;
 
 /**
  * Deliberately loose. This is not a validator — a call sheet held up because
@@ -170,23 +181,24 @@ export interface Recipient {
   email: string;
   /** For the confirmation list, so nobody has to guess why an address is there. */
   name: string;
-  from: "team" | "crew";
+  from: "studio" | "crew";
 }
 
 /**
  * Who a call sheet goes to.
  *
- * Everyone at Neuroid, because a shoot is a studio-wide fact, plus whichever
- * crew have an address on the sheet — the freelancers and client-side people
- * who don't have an account here.
+ * The admins and operators, plus whichever crew have an address on the sheet —
+ * the freelancers, actors and client-side people who don't have an account
+ * here. The crew list is the sheet's own answer to "who is coming", so it is
+ * the only list worth mailing.
  *
- * Deduped on the address rather than the person: someone on the team who is
- * also typed into the crew is one recipient, and getting the same call sheet
- * twice is how people start ignoring it.
+ * Deduped on the address rather than the person: someone on staff who is also
+ * typed into the crew is one recipient, and getting the same call sheet twice
+ * is how people start ignoring it.
  */
 export function callSheetRecipients(
   crew: CrewGroup[],
-  team: { email: string; full_name: string; is_active: boolean }[],
+  staff: { email: string; full_name: string; is_active: boolean; role: string }[],
 ): Recipient[] {
   const seen = new Map<string, Recipient>();
 
@@ -196,10 +208,10 @@ export function callSheetRecipients(
     seen.set(clean, { email: clean, name: name.trim() || clean, from });
   };
 
-  for (const person of team) {
+  for (const person of staff) {
     if (!person.is_active) continue;
-    if (!person.email.toLowerCase().endsWith(`@${STUDIO_DOMAIN}`)) continue;
-    add(person.email, person.full_name, "team");
+    if (!(SHEET_ROLES as readonly string[]).includes(person.role)) continue;
+    add(person.email, person.full_name, "studio");
   }
 
   for (const group of crew) {

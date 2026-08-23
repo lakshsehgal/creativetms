@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { currentProfile, supabaseAdmin } from "@/lib/supabase/server";
-import { callSheetRecipients, normaliseShoot } from "@/lib/shoot";
+import { SHEET_ROLES, callSheetRecipients, normaliseShoot } from "@/lib/shoot";
 import { buildCallSheetEmail } from "@/lib/call-sheet-email";
 import { canRunShoots, type Profile } from "@/lib/types";
 
@@ -41,19 +41,23 @@ export async function sendCallSheet(shootId: string): Promise<SendResult> {
 
     const shoot = normaliseShoot(row as Record<string, unknown>);
 
-    const { data: team } = await service
+    // Role, not domain: the sheet goes to the admins and operators, whoever
+    // they are, plus the crew addresses typed onto it.
+    const { data: staff } = await service
       .from("profiles")
-      .select("email, full_name, is_active");
+      .select("email, full_name, is_active, role")
+      .in("role", [...SHEET_ROLES]);
 
     const recipients = callSheetRecipients(
       shoot.doc.crew,
-      (team ?? []) as Pick<Profile, "email" | "full_name" | "is_active">[],
+      (staff ?? []) as Pick<Profile, "email" | "full_name" | "is_active" | "role">[],
     );
 
     if (recipients.length === 0) {
       return {
         ok: false,
-        error: "Nobody to send it to — no active team addresses and no crew emails on the sheet",
+        error:
+          "Nobody to send it to — no active admin or operator accounts, and no crew emails on the sheet",
       };
     }
 

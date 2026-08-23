@@ -65,7 +65,7 @@ export function ShootClient({
             <ShootBlocks designers={designers} />
           </div>
         ) : (
-          <ShootBriefs profile={profile} />
+          <ShootBriefs profile={profile} designers={designers} />
         )}
       </div>
     </>
