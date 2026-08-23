@@ -2,6 +2,7 @@ import type {
   ChecklistItem,
   ChecklistPhase,
   CrewGroup,
+  CrewMember,
   Shoot,
   ShootDoc,
   ShootMeals,
@@ -35,27 +36,20 @@ export function rowId(): string {
 
 /* -------------------------------------------------------------- defaults */
 
+export function blankMember(): CrewMember {
+  return { id: rowId(), name: "", reportingTime: "", email: "" };
+}
+
 export function defaultCrew(): CrewGroup[] {
   return [
-    { id: rowId(), role: "Operations", members: [{ id: rowId(), name: "", reportingTime: "" }] },
-    {
-      id: rowId(),
-      role: "Content strategist",
-      members: [{ id: rowId(), name: "", reportingTime: "" }],
-    },
-    { id: rowId(), role: "Frame team", members: [{ id: rowId(), name: "", reportingTime: "" }] },
+    { id: rowId(), role: "Operations", members: [blankMember()] },
+    { id: rowId(), role: "Content strategist", members: [blankMember()] },
+    { id: rowId(), role: "Frame team", members: [blankMember()] },
   ];
 }
 
 export function defaultMeals(): ShootMeals {
-  return {
-    breakfast: false,
-    lunch: false,
-    dinner: false,
-    snacks: false,
-    costPerMeal: "300",
-    notes: "",
-  };
+  return { breakfast: false, lunch: false, dinner: false, snacks: false, notes: "" };
 }
 
 export function blankDoc(): ShootDoc {
@@ -143,17 +137,6 @@ export function mealsSelected(meals: ShootMeals): number {
   return [meals.breakfast, meals.lunch, meals.dinner, meals.snacks].filter(Boolean).length;
 }
 
-/** meals × crew × cost. Zero when any of the three is missing, not NaN. */
-export function mealCostTotal(doc: ShootDoc): number {
-  const per = Number.parseFloat(doc.meals.costPerMeal);
-  if (!Number.isFinite(per) || per < 0) return 0;
-  return Math.round(per * mealsSelected(doc.meals) * crewCount(doc.crew));
-}
-
-export function rupees(amount: number): string {
-  return `₹${(Number(amount) || 0).toLocaleString("en-IN")}`;
-}
-
 /** Everyone named on the crew, for the checklist's owner dropdown. */
 export function crewNames(crew: CrewGroup[]): string[] {
   const seen = new Set<string>();
@@ -166,6 +149,66 @@ export function crewNames(crew: CrewGroup[]): string[] {
     if (role) seen.add(role);
   }
   return [...seen];
+}
+
+/* ------------------------------------------------------------ recipients */
+
+/** The studio's own domain. Everyone here gets the sheet. */
+export const STUDIO_DOMAIN = "neuroidmedia.com";
+
+/**
+ * Deliberately loose. This is not a validator — a call sheet held up because
+ * somebody typed a perfectly good address a regex disliked is worse than a
+ * bounce. It only has to catch the blanks and the obvious typos.
+ */
+export function looksLikeEmail(value: string): boolean {
+  const trimmed = value.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
+}
+
+export interface Recipient {
+  email: string;
+  /** For the confirmation list, so nobody has to guess why an address is there. */
+  name: string;
+  from: "team" | "crew";
+}
+
+/**
+ * Who a call sheet goes to.
+ *
+ * Everyone at Neuroid, because a shoot is a studio-wide fact, plus whichever
+ * crew have an address on the sheet — the freelancers and client-side people
+ * who don't have an account here.
+ *
+ * Deduped on the address rather than the person: someone on the team who is
+ * also typed into the crew is one recipient, and getting the same call sheet
+ * twice is how people start ignoring it.
+ */
+export function callSheetRecipients(
+  crew: CrewGroup[],
+  team: { email: string; full_name: string; is_active: boolean }[],
+): Recipient[] {
+  const seen = new Map<string, Recipient>();
+
+  const add = (email: string, name: string, from: Recipient["from"]) => {
+    const clean = email.trim().toLowerCase();
+    if (!looksLikeEmail(clean) || seen.has(clean)) return;
+    seen.set(clean, { email: clean, name: name.trim() || clean, from });
+  };
+
+  for (const person of team) {
+    if (!person.is_active) continue;
+    if (!person.email.toLowerCase().endsWith(`@${STUDIO_DOMAIN}`)) continue;
+    add(person.email, person.full_name, "team");
+  }
+
+  for (const group of crew) {
+    for (const member of group.members) {
+      add(member.email, member.name, "crew");
+    }
+  }
+
+  return [...seen.values()];
 }
 
 /** How far through the run-up this shoot is. */
@@ -220,6 +263,7 @@ export function normaliseDoc(input: unknown): ShootDoc {
           id: str(person.id) || rowId(),
           name: str(person.name),
           reportingTime: str(person.reportingTime),
+          email: str(person.email),
         };
       }),
     };
@@ -268,7 +312,6 @@ export function normaliseDoc(input: unknown): ShootDoc {
       lunch: bool(meals.lunch),
       dinner: bool(meals.dinner),
       snacks: bool(meals.snacks),
-      costPerMeal: str(meals.costPerMeal, "300"),
       notes: str(meals.notes),
     },
   };
@@ -312,6 +355,9 @@ export function normaliseShoot(input: Record<string, unknown>): Shoot {
     created_at: str(input.created_at),
     updated_at: str(input.updated_at),
     archived_at: typeof input.archived_at === "string" ? input.archived_at : null,
+    sent_at: typeof input.sent_at === "string" ? input.sent_at : null,
+    sent_by: typeof input.sent_by === "string" ? input.sent_by : null,
+    sent_to: Array.isArray(input.sent_to) ? (input.sent_to as string[]).map(String) : [],
   };
 }
 

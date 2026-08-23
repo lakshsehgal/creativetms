@@ -262,3 +262,81 @@ h1, h2, h3 {
      makes a call sheet look like a screenshot of an app. */
   main [class*="shadow"] { box-shadow: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   The call sheet, as stationery
+
+   Printed and handed to a crew in a car park, so it is set as a piece of
+   Neuroid paper rather than as a screen: DM Sans throughout, the display face
+   on the shoot's name, and white regardless of the app's theme — paper is
+   white, and a dark-mode call sheet is a wasted cartridge or an unreadable
+   page depending on the printer.
+--------------------------------------------------------------------------- */
+.sheet {
+  background: #ffffff;
+  color: #111111;
+  font-family: var(--font-sans);
+  padding: 22px 26px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid #e5e7eb;
+  /* A4 minus the print margins, so the screen shows the real measure rather
+     than a wider one that reflows the moment it goes to paper. */
+  max-width: 182mm;
+  margin: 0 auto;
+}
+
+.sheet-rule {
+  height: 3px;
+  background: #fcef24;
+  margin: 14px 0 12px;
+}
+
+.sheet-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: #111111;
+}
+
+.sheet-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  .sheet {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
+  }
+
+  /* The app's canvas grey has no business on paper. Scoped to the ancestors
+     of a sheet so it can't repaint anything else that happens to print. */
+  body:has(.sheet), body:has(.sheet) main, body:has(.sheet) main * {
+    background-color: transparent !important;
+  }
+
+  /* Without this Chrome drops the brand rule and the mark's fill to save ink,
+     which is exactly the half of the letterhead that makes it letterhead. */
+  .sheet, .sheet * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

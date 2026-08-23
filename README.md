@@ -370,6 +370,7 @@ Three emails, and only one of them is sent by this app.
 | Email | Sent by | Branding lives in |
 |---|---|---|
 | Daily scorecard | This app, via Resend | `src/lib/scorecard-email.ts` |
+| Call sheet | This app, via Resend | `src/lib/call-sheet-email.ts` |
 | Sign-in code | Supabase Auth | Supabase dashboard template |
 | Invite | Supabase Auth | Supabase dashboard template |
 
@@ -395,9 +396,22 @@ notification is a moment; this is a state, and by the Tuesday it matters the
 notification is four hundred rows down a bell nobody opens.
 
 **Call sheets.** Locations, scripts by day, crew and reporting times, actors,
-and a meal estimate that works itself out from the crew. Plus the run-up
-checklist — the same three phases every time, ticked live on the day. It saves
-as you type and prints to a clean A4 page with none of the app around it.
+and which meals are provided. Plus the run-up checklist — the same three
+phases every time, ticked live on the day. It saves as you type.
+
+The sheet is Neuroid stationery: the mark, the brand rule, the shoot's name in
+the display face and DM Sans throughout, on one A4 page with none of the app
+around it. Screen and paper are the same artifact deliberately — two
+renderings of one document is two things to keep in step, and the one nobody
+looks at is the one that goes to the crew.
+
+**Send** emails the whole sheet to everyone at Neuroid plus any crew with an
+address against their name — the freelancers and client-side people who don't
+have an account. It lists them by name before anything goes, because this is
+the one action here that leaves the building and can't be taken back. The
+email carries the whole sheet rather than a link to something half of them
+can't sign into, and who it actually reached is kept on the shoot so nobody
+sends it three times on the morning of.
 
 ## The noon rule, and the way through it
 

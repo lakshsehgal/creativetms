@@ -29,6 +29,7 @@ import { Card, EmptyState } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
 import { CallSheet } from "./call-sheet";
 import { BriefChecklist } from "./brief-checklist";
+import { SendCallSheet } from "./send-call-sheet";
 
 /**
  * Shoot briefs — the call sheet and the run-up checklist.
@@ -327,9 +328,11 @@ function BriefEditor({
         <SaveBadge state={state} onRetry={() => void flush()} />
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Sending is the last step, so it sits last and carries the weight. */}
           <Button size="sm" variant="secondary" onClick={() => window.print()}>
             <Printer size={13} /> Print
           </Button>
+          <SendCallSheet shoot={local} />
           <Button size="sm" variant="ghost" onClick={onDelete}>
             <Trash2 size={13} />
           </Button>

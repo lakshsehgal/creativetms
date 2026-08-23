@@ -22,7 +22,7 @@ import type {
   ShootScript,
 } from "@/lib/types";
 import { CREW_ROLES, SCRIPT_VERSIONS } from "@/lib/types";
-import { crewCount, mealCostTotal, mealsSelected, rowId, rupees } from "@/lib/shoot";
+import { blankMember, crewCount, mealsSelected, rowId } from "@/lib/shoot";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/primitives";
 import { Button, Field, Select, TextArea, TextInput } from "@/components/ui/form";
@@ -406,7 +406,7 @@ function Editor({
                 patch({
                   crew: [
                     ...doc.crew,
-                    { id: rowId(), role: "Other", members: [{ id: rowId(), name: "", reportingTime: "" }] },
+                    { id: rowId(), role: "Other", members: [blankMember()] },
                   ],
                 })
               }
@@ -440,7 +440,7 @@ function Editor({
 
               <ul className="mt-2.5 space-y-2">
                 {group.members.map((member, memberIndex) => (
-                  <li key={member.id} className="grid gap-2.5 sm:grid-cols-[2fr_1fr_auto]">
+                  <li key={member.id} className="grid gap-2.5 sm:grid-cols-[1.6fr_1.6fr_1fr_auto]">
                     <TextInput
                       aria-label={`${group.role} name`}
                       value={member.name}
@@ -449,6 +449,19 @@ function Editor({
                         patch({
                           crew: replaceMember(doc.crew, groupIndex, memberIndex, {
                             name: event.target.value,
+                          }),
+                        })
+                      }
+                    />
+                    <TextInput
+                      aria-label={`${group.role} email`}
+                      type="email"
+                      placeholder="Email — only if they need the sheet"
+                      value={member.email}
+                      onChange={(event) =>
+                        patch({
+                          crew: replaceMember(doc.crew, groupIndex, memberIndex, {
+                            email: event.target.value,
                           }),
                         })
                       }
@@ -483,7 +496,7 @@ function Editor({
                 onClick={() =>
                   patch({
                     crew: replace<CrewGroup>(doc.crew, groupIndex, {
-                      members: [...group.members, { id: rowId(), name: "", reportingTime: "" }],
+                      members: [...group.members, blankMember()],
                     }),
                   })
                 }
@@ -618,26 +631,6 @@ function Editor({
           ))}
         </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <Field label="Cost per meal, per person" htmlFor="cs-meal-cost" hint="₹">
-            <TextInput
-              id="cs-meal-cost"
-              inputMode="numeric"
-              value={doc.meals.costPerMeal}
-              onChange={(event) =>
-                patch({ meals: { ...doc.meals, costPerMeal: event.target.value } })
-              }
-            />
-          </Field>
-          <Field label="Estimated total" htmlFor="cs-meal-total" hint="meals × crew × cost">
-            <TextInput
-              id="cs-meal-total"
-              readOnly
-              value={`${rupees(mealCostTotal(doc))}  (${mealsSelected(doc.meals)} × ${crewCount(doc.crew)} crew)`}
-            />
-          </Field>
-        </div>
-
         <div className="mt-3">
           <Field label="Notes" htmlFor="cs-meal-notes" hint="Allergies, who's arranging it, where from">
             <TextArea
@@ -655,6 +648,24 @@ function Editor({
 
 /* -------------------------------------------------------------- preview */
 
+/* --------------------------------------------------------------- the sheet */
+
+/**
+ * The call sheet as a document.
+ *
+ * This is the thing that gets printed and handed to a crew standing in a car
+ * park at 6am, so it's laid out as a piece of Neuroid stationery rather than
+ * as a screen: a masthead, the shoot's name set in the display face, and rules
+ * that give the eye somewhere to land when it's being read at arm's length.
+ *
+ * Screen and paper are the same artifact deliberately. Two renderings of one
+ * document is two things to keep in step, and the one nobody looks at is the
+ * one that goes to the crew.
+ *
+ * It is set in white on white regardless of the app's theme. Paper is white,
+ * and a dark-mode call sheet is either a wasted cartridge or an unreadable
+ * page depending on the printer.
+ */
 function Preview({
   title,
   brand,
@@ -680,7 +691,7 @@ function Preview({
     }
     if (doc.callTime) parts.push(`call ${doc.callTime}`);
     parts.push(`${doc.days} ${doc.days === 1 ? "day" : "days"}`);
-    return parts.join("  ·  ");
+    return parts.join("   ·   ");
   }, [shootDate, doc.callTime, doc.days]);
 
   const scriptsByDay = useMemo(() => {
@@ -693,40 +704,45 @@ function Preview({
     return [...map.entries()].sort((a, b) => a[0] - b[0]);
   }, [doc.scripts]);
 
-  const total = mealCostTotal(doc);
+  const meals = (["breakfast", "lunch", "dinner", "snacks"] as const).filter(
+    (meal) => doc.meals[meal],
+  );
 
   return (
-    <Card>
-      <header className="border-b border-[var(--color-line)] pb-3">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-ink-3)]">
-          {brand || "Shoot"} — call sheet
-        </p>
-        <h2 className="mt-0.5 text-[20px] font-semibold tracking-tight">
-          {title || "Untitled shoot"}
-        </h2>
-        <p className="mt-0.5 text-[12.5px] text-[var(--color-ink-2)]">{when}</p>
+    <article className="sheet">
+      {/* ------------------------------------------------------- masthead */}
+      <header className="sheet-head">
+        <div className="flex items-end justify-between gap-6">
+          <span className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/neuroid-mark.svg" alt="" width={26} height={26} />
+            <span className="text-[17px] font-bold tracking-[-0.02em] text-black">Neuroid</span>
+          </span>
+          <span className="text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            Call sheet
+            {brand && <span className="block text-black">{brand}</span>}
+          </span>
+        </div>
+
+        <div className="sheet-rule" />
+
+        <h1 className="sheet-title">{title || "Untitled shoot"}</h1>
+        <p className="mt-1.5 text-[11.5px] tracking-wide text-neutral-600">{when}</p>
       </header>
 
-      <PreviewSection title="Locations">
+      <SheetSection title="Locations">
         {doc.locations.length === 0 ? (
           <Dash />
         ) : (
           <ul className="space-y-2">
             {doc.locations.map((place) => (
-              <li key={place.id} className="text-[12.5px] leading-relaxed">
-                <span className="font-medium">{place.name || "Location"}</span>
-                {place.address && (
-                  <span className="text-[var(--color-ink-2)]"> — {place.address}</span>
-                )}
+              <li key={place.id} className="text-[12px] leading-relaxed">
+                <span className="font-semibold text-black">{place.name || "Location"}</span>
+                {place.address && <span className="text-neutral-700"> — {place.address}</span>}
                 {place.mapUrl && (
                   <>
                     {" "}
-                    <a
-                      href={place.mapUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[var(--color-accent)] underline"
-                    >
+                    <a href={place.mapUrl} className="underline decoration-neutral-400">
                       map
                     </a>
                   </>
@@ -735,35 +751,30 @@ function Preview({
             ))}
           </ul>
         )}
-      </PreviewSection>
+      </SheetSection>
 
-      <PreviewSection title="Scripts">
+      <SheetSection title="Scripts">
         {scriptsByDay.length === 0 ? (
           <Dash />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {scriptsByDay.map(([day, scripts]) => (
               <div key={day}>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-ink-3)]">
+                <p className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
                   Day {day}
                 </p>
-                <ul className="mt-1 space-y-1">
+                <ul className="mt-1 space-y-0.5">
                   {scripts.map((script) => (
-                    <li key={script.id} className="text-[12.5px]">
-                      <span className="font-medium">{script.name || "Script"}</span>
-                      <span className="text-[var(--color-ink-2)]">
+                    <li key={script.id} className="text-[12px]">
+                      <span className="font-semibold text-black">{script.name || "Script"}</span>
+                      <span className="text-neutral-700">
                         {script.versions ? ` · ${script.versions}` : ""}
                         {script.hours ? ` · ${script.hours}h` : ""}
                       </span>
                       {script.link && (
                         <>
                           {" "}
-                          <a
-                            href={script.link}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[var(--color-accent)] underline"
-                          >
+                          <a href={script.link} className="underline decoration-neutral-400">
                             open
                           </a>
                         </>
@@ -775,81 +786,80 @@ function Preview({
             ))}
           </div>
         )}
-      </PreviewSection>
+      </SheetSection>
 
-      <PreviewSection title="Crew">
+      <SheetSection title="Crew">
         {crewCount(doc.crew) === 0 ? (
           <Dash />
         ) : (
-          <div className="space-y-2">
-            {doc.crew
-              .filter((group) => group.members.some((member) => member.name.trim()))
-              .map((group) => (
-                <div key={group.id} className="text-[12.5px]">
-                  <span className="text-[var(--color-ink-3)]">{group.role}: </span>
-                  {group.members
-                    .filter((member) => member.name.trim())
-                    .map(
-                      (member) =>
-                        `${member.name}${member.reportingTime ? ` (${member.reportingTime})` : ""}`,
-                    )
-                    .join(", ")}
-                </div>
-              ))}
-          </div>
+          <table className="w-full border-collapse text-[12px]">
+            <tbody>
+              {doc.crew
+                .filter((group) => group.members.some((member) => member.name.trim()))
+                .map((group) => (
+                  <tr key={group.id} className="align-top">
+                    <td className="w-[34%] py-1 pr-3 text-neutral-500">{group.role}</td>
+                    <td className="py-1 text-black">
+                      {group.members
+                        .filter((member) => member.name.trim())
+                        .map(
+                          (member) =>
+                            `${member.name}${member.reportingTime ? ` (${member.reportingTime})` : ""}`,
+                        )
+                        .join(", ")}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         )}
-      </PreviewSection>
+      </SheetSection>
 
-      <PreviewSection title="Actors">
+      <SheetSection title="Actors">
         {doc.actors.length === 0 ? (
           <Dash />
         ) : (
-          <ul className="space-y-1">
-            {doc.actors.map((actor) => (
-              <li key={actor.id} className="text-[12.5px]">
-                <span className="font-medium">{actor.name || "Actor"}</span>
-                <span className="text-[var(--color-ink-2)]">
-                  {actor.age ? ` · ${actor.age}` : ""}
-                  {actor.timeIn || actor.timeOut
-                    ? ` · ${actor.timeIn || "?"}–${actor.timeOut || "?"}`
-                    : ""}
-                  {actor.requirement ? ` · ${actor.requirement}` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <table className="w-full border-collapse text-[12px]">
+            <tbody>
+              {doc.actors.map((actor) => (
+                <tr key={actor.id} className="align-top">
+                  <td className="w-[34%] py-1 pr-3 font-semibold text-black">
+                    {actor.name || "Actor"}
+                    {actor.age && <span className="font-normal text-neutral-500"> · {actor.age}</span>}
+                  </td>
+                  <td className="py-1 text-neutral-700">
+                    {actor.timeIn || actor.timeOut
+                      ? `${actor.timeIn || "?"}–${actor.timeOut || "?"}`
+                      : ""}
+                    {actor.requirement ? `${actor.timeIn || actor.timeOut ? " · " : ""}${actor.requirement}` : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
-      </PreviewSection>
+      </SheetSection>
 
-      <PreviewSection title="Meals">
-        {mealsSelected(doc.meals) === 0 ? (
+      <SheetSection title="Meals">
+        {meals.length === 0 ? (
           <Dash />
         ) : (
-          <div className="text-[12.5px] leading-relaxed">
-            <p>
-              {(["breakfast", "lunch", "dinner", "snacks"] as const)
-                .filter((meal) => doc.meals[meal])
-                .map((meal) => meal[0].toUpperCase() + meal.slice(1))
-                .join(", ")}
+          <div className="text-[12px] leading-relaxed">
+            <p className="text-black">
+              {meals.map((meal) => meal[0].toUpperCase() + meal.slice(1)).join(" · ")}
             </p>
-            {total > 0 && (
-              <p className="text-[var(--color-ink-2)]">
-                {rupees(total)} estimated — {mealsSelected(doc.meals)} meals ×{" "}
-                {crewCount(doc.crew)} crew × {rupees(Number(doc.meals.costPerMeal) || 0)}
-              </p>
-            )}
-            {doc.meals.notes && (
-              <p className="text-[var(--color-ink-2)]">{doc.meals.notes}</p>
-            )}
+            {doc.meals.notes && <p className="text-neutral-700">{doc.meals.notes}</p>}
           </div>
         )}
-      </PreviewSection>
-    </Card>
+      </SheetSection>
+
+      <footer className="sheet-foot">
+        <span>Neuroid Creative Studio</span>
+        <span>studio.neuroidmedia.com</span>
+      </footer>
+    </article>
   );
 }
-
-/* ------------------------------------------------------------ small bits */
-
 function SectionHead({
   icon,
   title,
@@ -871,19 +881,20 @@ function SectionHead({
   );
 }
 
-function PreviewSection({ title, children }: { title: string; children: React.ReactNode }) {
+/** One block of the sheet, kept whole across a page break. */
+function SheetSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-4 break-inside-avoid">
-      <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-3)]">
+    <section className="mt-5 break-inside-avoid">
+      <h2 className="mb-1.5 border-b border-neutral-200 pb-1 text-[9.5px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
         {title}
-      </h3>
+      </h2>
       {children}
     </section>
   );
 }
 
 function Dash() {
-  return <p className="text-[12.5px] text-[var(--color-ink-3)]">—</p>;
+  return <p className="text-[12px] text-neutral-400">—</p>;
 }
 
 function Blank({ children }: { children: React.ReactNode }) {

@@ -587,6 +587,10 @@ export interface Shoot {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  /** When the sheet was last emailed out, and to whom it actually went. */
+  sent_at: string | null;
+  sent_by: string | null;
+  sent_to: string[];
 }
 
 export interface ShootDoc {
@@ -625,6 +629,12 @@ export interface CrewMember {
   id: string;
   name: string;
   reportingTime: string;
+  /**
+   * Optional. Only needed to send them the sheet — anyone on the Neuroid team
+   * is reached through their account, so this is for the freelancers and the
+   * client-side people who don't have one.
+   */
+  email: string;
 }
 
 export interface ShootActor {
@@ -636,12 +646,16 @@ export interface ShootActor {
   timeOut: string;
 }
 
+/**
+ * Which meals the shoot provides. Deliberately no money in here — a call
+ * sheet is handed to a crew standing in a car park, and what they need from
+ * it is whether lunch is coming, not what it costs the company.
+ */
 export interface ShootMeals {
   breakfast: boolean;
   lunch: boolean;
   dinner: boolean;
   snacks: boolean;
-  costPerMeal: string;
   notes: string;
 }
 
