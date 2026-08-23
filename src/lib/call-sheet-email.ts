@@ -16,14 +16,19 @@ import { crewCount, mealsSelected } from "@/lib/shoot";
  * on the colour, the mark and the voice instead of the typeface.
  */
 
-const INK = "#111111";
+const INK = "#0c0c0c";
 const MUTED = "#6b7280";
 const LINE = "#e5e7eb";
-const BRAND = "#fcef24";
+const BRAND = "#feef24";
+const GREY = "#333333";
+const RED = "#ff2600";
 
 const SANS =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const SERIF = "Georgia,'Times New Roman',Times,serif";
+/* The letterhead's address and footer voice. No webfonts in email, so this is
+   the nearest thing every client already has. */
+const MONO = "Menlo,Consolas,'Courier New',monospace";
 
 function esc(value: string): string {
   return value
@@ -145,19 +150,37 @@ export function buildCallSheetEmail(shoot: Shoot, sentBy: string): string {
   return `<div style="margin:0;padding:24px 12px;background:#f6f7fb;font-family:${SANS}">
   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid ${LINE};border-radius:12px;overflow:hidden">
 
-    <tr><td style="background:${INK};padding:18px 24px">
-      <span style="display:inline-block;width:22px;height:22px;background:${BRAND};border-radius:5px;color:${INK};font:700 13px/22px ${SANS};text-align:center">N</span>
-      <span style="color:#ffffff;font:600 15px ${SANS};margin-left:10px">Neuroid Creative Studio</span>
-      <div style="color:rgba(255,255,255,0.55);font:12px ${SANS};margin-top:6px">Call sheet${
-        shoot.brand ? ` · ${esc(shoot.brand)}` : ""
-      }</div>
+    <!-- The letterhead: the yellow band across the head, the wordmark and the
+         address, and the heavy rule under both. The logo is set as type rather
+         than fetched as an image on purpose — most clients block remote images
+         until you ask them not to, and a call sheet whose masthead is a broken
+         picture icon is worse than one set in bold. -->
+    <tr><td style="height:8px;background:${BRAND};font-size:0;line-height:0">&nbsp;</td></tr>
+
+    <tr><td style="padding:18px 24px 0">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="vertical-align:top;font:700 21px/1 ${SANS};letter-spacing:-0.02em;color:${INK}">Neuroid</td>
+          <td style="vertical-align:top;text-align:right;font:10px/1.7 ${MONO};color:${GREY}">
+            <span style="font-weight:700;letter-spacing:0.3em;color:${INK}">NEUROID</span><br>
+            3rd Floor, 315/274, Westend Marg<br>
+            Saiyad Ul Ajaib Extension, Butterfly Park,<br>
+            Saket, New Delhi, Delhi 110030
+          </td>
+        </tr>
+      </table>
     </td></tr>
 
-    <tr><td style="height:3px;background:${BRAND};font-size:0;line-height:0">&nbsp;</td></tr>
+    <tr><td style="padding:16px 24px 0">
+      <div style="height:2px;background:${INK};font-size:0;line-height:0">&nbsp;</div>
+    </td></tr>
 
-    <tr><td style="padding:22px 24px 0">
-      <div style="font:italic 300 26px/1.15 ${SERIF};color:${INK}">${esc(shoot.title || "Untitled shoot")}</div>
-      <div style="font:12.5px ${SANS};color:${MUTED};margin-top:6px">${esc(callSheetWhen(shoot))}</div>
+    <tr><td style="padding:18px 24px 0">
+      <div style="font:10px ${MONO};letter-spacing:0.2em;text-transform:uppercase;color:${GREY}">Call sheet${
+        shoot.brand ? ` · ${esc(shoot.brand)}` : ""
+      }</div>
+      <div style="font:italic 300 27px/1.1 ${SERIF};color:${INK};margin-top:8px">${esc(shoot.title || "Untitled shoot")}</div>
+      <div style="font:10.5px ${MONO};color:${GREY};margin-top:8px">${esc(callSheetWhen(shoot))}</div>
     </td></tr>
 
     ${section("Locations", locations)}
@@ -178,8 +201,26 @@ export function buildCallSheetEmail(shoot: Shoot, sentBy: string): string {
       </div>
     </td></tr>
 
-    <tr><td style="padding:12px 24px;border-top:1px solid ${LINE};font:9.5px ${SANS};letter-spacing:0.14em;text-transform:uppercase;color:#9ca3af">
-      Neuroid Creative Studio
+    <!-- And the foot of the letterhead: the rule, the tagline in its yellow
+         block with the red full stop, and the credit line. -->
+    <tr><td style="padding:0 24px">
+      <div style="height:2px;background:${INK};font-size:0;line-height:0">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:14px 24px 20px">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <!-- The yellow is the cell's background rather than the text's, so a
+               narrow phone that wraps the line still gets one solid block
+               instead of two ragged highlighter strokes. -->
+          <td width="1%" style="background:${BRAND};padding:4px 8px;white-space:nowrap;font:italic 300 15px/1.25 ${SERIF};color:${INK}">
+            Rebuilding neural pathways<span style="color:${RED}">.</span>
+          </td>
+          <td style="vertical-align:middle;text-align:right;font:8.5px ${MONO};letter-spacing:0.1em;text-transform:uppercase;color:${GREY};white-space:nowrap">
+            www.neuroidmedia.com
+          </td>
+        </tr>
+      </table>
     </td></tr>
   </table>
 </div>`;

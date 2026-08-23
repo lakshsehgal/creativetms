@@ -36,8 +36,18 @@ export function rowId(): string {
 
 /* -------------------------------------------------------------- defaults */
 
+/**
+ * When the studio calls, unless somebody says otherwise.
+ *
+ * Every sheet was starting empty and being filled in with the same number, so
+ * the blank was costing a decision it never earned. It fills in as a default,
+ * on the shoot's call time and on every crew row, and it is an ordinary
+ * editable field — a 6am call is typed over it in one keystroke.
+ */
+export const DEFAULT_CALL_TIME = "10:30";
+
 export function blankMember(): CrewMember {
-  return { id: rowId(), name: "", reportingTime: "", email: "" };
+  return { id: rowId(), name: "", reportingTime: DEFAULT_CALL_TIME, email: "" };
 }
 
 export function defaultCrew(): CrewGroup[] {
@@ -55,7 +65,7 @@ export function defaultMeals(): ShootMeals {
 export function blankDoc(): ShootDoc {
   return {
     days: 1,
-    callTime: "",
+    callTime: DEFAULT_CALL_TIME,
     locations: [],
     scripts: [],
     crew: defaultCrew(),

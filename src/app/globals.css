@@ -264,77 +264,235 @@ h1, h2, h3 {
 }
 
 /* ---------------------------------------------------------------------------
-   The call sheet, as stationery
+   The call sheet, as Neuroid stationery
 
-   Printed and handed to a crew in a car park, so it is set as a piece of
-   Neuroid paper rather than as a screen: DM Sans throughout, the display face
-   on the shoot's name, and white regardless of the app's theme — paper is
-   white, and a dark-mode call sheet is a wasted cartridge or an unreadable
-   page depending on the printer.
+   Set from the studio's letterhead rather than approximated from it: the
+   measurements below are lifted off Neuroid_Letterhead.pdf — an 18mm measure,
+   a 5.3mm yellow bleed across the head of every page, the lockup and the
+   address at the top, a hairline-thin-it-is-not 0.55mm rule above and below
+   the body, and the tagline sitting in a yellow block with its red full stop.
+
+   White regardless of the app's theme. Paper is white, and a dark-mode call
+   sheet is either a wasted cartridge or an unreadable page depending on the
+   printer.
 --------------------------------------------------------------------------- */
 .sheet {
+  --sheet-yellow: #feef24;
+  --sheet-ink: #0c0c0c;
+  --sheet-grey: #333333;
+  --sheet-red: #ff2600;
+  --sheet-hair: #d6d6d6;
+  --sheet-margin: 18mm;
+  --sheet-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
   background: #ffffff;
-  color: #111111;
+  color: var(--sheet-ink);
   font-family: var(--font-sans);
-  padding: 22px 26px 18px;
-  border-radius: var(--radius-lg);
-  border: 1px solid #e5e7eb;
-  /* A4 minus the print margins, so the screen shows the real measure rather
-     than a wider one that reflows the moment it goes to paper. */
-  max-width: 182mm;
+  /* A full sheet of A4, bleed included — the yellow band has to be able to
+     reach the paper's edge, so the margins live inside the document rather
+     than around it. */
+  width: 210mm;
+  max-width: 100%;
   margin: 0 auto;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/*
+  The running head and foot are a <thead> and a <tfoot>.
+
+  This is the one arrangement Chrome both repeats on every printed page and
+  reserves the space for. position: fixed repeats but reserves nothing, so page
+  two's crew list prints straight over the footer; a plain div at the top
+  appears once and page two comes out on blank paper. Letterhead stock repeats
+  on every sheet, so this matches the real thing.
+*/
+.sheet-page {
+  width: 100%;
+  border-collapse: collapse;
+  /* A page's worth. On a table `height` behaves as a minimum, so a short call
+     sheet still fills a sheet of A4 and the footer sits where the letterhead
+     puts it rather than floating up under the last section — and a long one
+     simply runs on, taking the head and foot with it. */
+  height: 297mm;
+}
+.sheet-page td { padding: 0; }
+.sheet-page > tbody > tr > td { vertical-align: top; }
+
+.sheet-band { height: 5mm; background: var(--sheet-yellow); }
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10mm;
+  padding: 9mm var(--sheet-margin) 0;
+}
+.sheet-logo { display: block; height: 10.8mm; width: auto; }
+
+.sheet-address {
+  text-align: right;
+  font-family: var(--sheet-mono);
+  font-size: 8pt;
+  line-height: 1.7;
+  color: var(--sheet-grey);
+}
+.sheet-address strong {
+  display: block;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  color: var(--sheet-ink);
 }
 
 .sheet-rule {
-  height: 3px;
-  background: #fcef24;
-  margin: 14px 0 12px;
+  height: 0.55mm;
+  background: var(--sheet-ink);
+  margin: 7.45mm var(--sheet-margin) 0;
 }
 
+.sheet-body { padding: 7mm var(--sheet-margin) 0; }
+
+/* ------------------------------------------------------------ the title */
+
+.sheet-kicker {
+  font-family: var(--sheet-mono);
+  font-size: 7.5pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sheet-grey);
+}
 .sheet-title {
+  margin-top: 2.5mm;
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 300;
-  font-size: 30px;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
-  color: #111111;
+  font-size: 26pt;
+  line-height: 1.06;
+  letter-spacing: -0.012em;
+  color: var(--sheet-ink);
+}
+.sheet-when {
+  margin-top: 2.5mm;
+  font-family: var(--sheet-mono);
+  font-size: 8pt;
+  color: var(--sheet-grey);
 }
 
+/* --------------------------------------------------------- the sections */
+
+.sheet-sec { margin-top: 6.5mm; break-inside: avoid; }
+.sheet-sec > h2 {
+  margin-bottom: 2.2mm;
+  padding-bottom: 1.2mm;
+  border-bottom: 0.2mm solid var(--sheet-hair);
+  font-family: var(--sheet-mono);
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sheet-grey);
+}
+
+/* ----------------------------------------------------------- the footer */
+
+.sheet-foot-rule {
+  height: 0.55mm;
+  background: var(--sheet-ink);
+  margin: 8mm var(--sheet-margin) 0;
+}
 .sheet-foot {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 22px;
-  padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
-  font-size: 9.5px;
+  gap: 8mm;
+  /* 4.7mm under the rule and 12.1mm of paper below the tagline: where they sit
+     on the letterhead, measured off it. */
+  padding: 4.7mm var(--sheet-margin) 11.85mm;
+}
+.sheet-tag {
+  background: var(--sheet-yellow);
+  padding: 0.85mm 2.4mm;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13.5pt;
+  line-height: 1.15;
+  color: var(--sheet-ink);
+  white-space: nowrap;
+}
+/* The full stop of "pathways", which is red on the letterhead and is the one
+   piece of the identity that looks like a mistake if you drop it. */
+.sheet-tag i {
+  display: inline-block;
+  width: 1.2mm;
+  height: 1.2mm;
+  margin-left: 0.7mm;
+  background: var(--sheet-red);
+}
+/*
+  On screen the flowed footer is the real one and the fixed copy is not there.
+  On paper they swap jobs: the flowed one holds the space open at the foot of
+  every page, and the fixed one — which Chrome paints once per page — is what
+  you actually see, pinned to the bottom of the paper.
+*/
+.sheet-foot-fixed { display: none; }
+
+.sheet-cred {
+  font-family: var(--sheet-mono);
+  font-size: 7.5pt;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #9ca3af;
+  color: var(--sheet-grey);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   The sheet on paper
+--------------------------------------------------------------------------- */
+@page {
+  size: A4;
+  /* Zero, because the letterhead's yellow band bleeds to the paper's edge and
+     a page margin would leave a white gutter above it. The document carries
+     its own 18mm measure instead. */
+  margin: 0;
 }
 
 @media print {
-  @page {
-    size: A4;
-    margin: 14mm;
-  }
-
   .sheet {
+    width: auto;
+    max-width: none;
     border: 0;
     border-radius: 0;
-    padding: 0;
-    max-width: none;
+    overflow: visible;
   }
 
-  /* The app's canvas grey has no business on paper. Scoped to the ancestors
-     of a sheet so it can't repaint anything else that happens to print. */
-  body:has(.sheet), body:has(.sheet) main, body:has(.sheet) main * {
-    background-color: transparent !important;
+  /* Every wrapper between the page and the sheet stops contributing a padding,
+     a margin or a measure of its own — on paper the sheet is the page. */
+  main:has(.sheet),
+  main :has(.sheet) {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
   }
 
-  /* Without this Chrome drops the brand rule and the mark's fill to save ink,
-     which is exactly the half of the letterhead that makes it letterhead. */
+  /* And anything in the shell that isn't on the way to it. Printed at 6am and
+     handed to a crew: the tab strip, the shoot banner and the page title are
+     all somebody else's furniture. */
+  main:has(.sheet) > *:not(:has(.sheet)) { display: none !important; }
+
+  .sheet-foot-flow { visibility: hidden; }
+  .sheet-foot-fixed {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  /* Without this Chrome drops the yellow to save ink, which is exactly the
+     half of the letterhead that makes it letterhead. */
   .sheet, .sheet * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

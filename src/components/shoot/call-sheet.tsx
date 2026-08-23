@@ -654,9 +654,14 @@ function Editor({
  * The call sheet as a document.
  *
  * This is the thing that gets printed and handed to a crew standing in a car
- * park at 6am, so it's laid out as a piece of Neuroid stationery rather than
- * as a screen: a masthead, the shoot's name set in the display face, and rules
- * that give the eye somewhere to land when it's being read at arm's length.
+ * park at 6am, so it is set on the studio's actual letterhead rather than on
+ * something reminiscent of it: the yellow bleed, the lockup and address, the
+ * two heavy rules, and the tagline in its yellow block with the red full stop.
+ * Measurements come off Neuroid_Letterhead.pdf; the CSS says which.
+ *
+ * The head and foot are a thead and a tfoot because a call sheet with a big
+ * crew runs to two pages, and that is the only arrangement Chrome repeats on
+ * every page AND reserves the space for.
  *
  * Screen and paper are the same artifact deliberately. Two renderings of one
  * document is two things to keep in step, and the one nobody looks at is the
@@ -710,154 +715,204 @@ function Preview({
 
   return (
     <article className="sheet">
-      {/* ------------------------------------------------------- masthead */}
-      <header className="sheet-head">
-        <div className="flex items-end justify-between gap-6">
-          <span className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/neuroid-mark.svg" alt="" width={26} height={26} />
-            <span className="text-[17px] font-bold tracking-[-0.02em] text-black">Neuroid</span>
-          </span>
-          <span className="text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-            Call sheet
-            {brand && <span className="block text-black">{brand}</span>}
-          </span>
-        </div>
-
-        <div className="sheet-rule" />
-
-        <h1 className="sheet-title">{title || "Untitled shoot"}</h1>
-        <p className="mt-1.5 text-[11.5px] tracking-wide text-neutral-600">{when}</p>
-      </header>
-
-      <SheetSection title="Locations">
-        {doc.locations.length === 0 ? (
-          <Dash />
-        ) : (
-          <ul className="space-y-2">
-            {doc.locations.map((place) => (
-              <li key={place.id} className="text-[12px] leading-relaxed">
-                <span className="font-semibold text-black">{place.name || "Location"}</span>
-                {place.address && <span className="text-neutral-700"> — {place.address}</span>}
-                {place.mapUrl && (
-                  <>
-                    {" "}
-                    <a href={place.mapUrl} className="underline decoration-neutral-400">
-                      map
-                    </a>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </SheetSection>
-
-      <SheetSection title="Scripts">
-        {scriptsByDay.length === 0 ? (
-          <Dash />
-        ) : (
-          <div className="space-y-2.5">
-            {scriptsByDay.map(([day, scripts]) => (
-              <div key={day}>
-                <p className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                  Day {day}
+      <table className="sheet-page">
+        {/* ------------------------------------------ the letterhead itself */}
+        <thead>
+          <tr>
+            <td>
+              <div className="sheet-band" />
+              <div className="sheet-head">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="sheet-logo" src="/neuroid-logo-light.svg" alt="Neuroid" />
+                <p className="sheet-address">
+                  <strong>NEUROID</strong>
+                  3rd Floor, 315/274, Westend Marg
+                  <br />
+                  Saiyad Ul Ajaib Extension, Butterfly Park,
+                  <br />
+                  Saket, New Delhi, Delhi 110030
                 </p>
-                <ul className="mt-1 space-y-0.5">
-                  {scripts.map((script) => (
-                    <li key={script.id} className="text-[12px]">
-                      <span className="font-semibold text-black">{script.name || "Script"}</span>
-                      <span className="text-neutral-700">
-                        {script.versions ? ` · ${script.versions}` : ""}
-                        {script.hours ? ` · ${script.hours}h` : ""}
-                      </span>
-                      {script.link && (
-                        <>
-                          {" "}
-                          <a href={script.link} className="underline decoration-neutral-400">
-                            open
-                          </a>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
               </div>
-            ))}
-          </div>
-        )}
-      </SheetSection>
+              <div className="sheet-rule" />
+            </td>
+          </tr>
+        </thead>
 
-      <SheetSection title="Crew">
-        {crewCount(doc.crew) === 0 ? (
-          <Dash />
-        ) : (
-          <table className="w-full border-collapse text-[12px]">
-            <tbody>
-              {doc.crew
-                .filter((group) => group.members.some((member) => member.name.trim()))
-                .map((group) => (
-                  <tr key={group.id} className="align-top">
-                    <td className="w-[34%] py-1 pr-3 text-neutral-500">{group.role}</td>
-                    <td className="py-1 text-black">
-                      {group.members
-                        .filter((member) => member.name.trim())
-                        .map(
-                          (member) =>
-                            `${member.name}${member.reportingTime ? ` (${member.reportingTime})` : ""}`,
-                        )
-                        .join(", ")}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        )}
-      </SheetSection>
+        {/*
+          The tfoot's job on paper is to reserve the strip at the foot of every
+          page. What paints there is the fixed copy below, because a tfoot sits
+          at the end of the table rather than at the bottom of the paper — fine
+          on a sheet that fills its page, wrong on the last page of a long one,
+          where the tagline would float up under the crew list.
+        */}
+        <tfoot>
+          <tr>
+            <td>
+              <div className="sheet-foot-flow">
+                <SheetFoot />
+              </div>
+            </td>
+          </tr>
+        </tfoot>
 
-      <SheetSection title="Actors">
-        {doc.actors.length === 0 ? (
-          <Dash />
-        ) : (
-          <table className="w-full border-collapse text-[12px]">
-            <tbody>
-              {doc.actors.map((actor) => (
-                <tr key={actor.id} className="align-top">
-                  <td className="w-[34%] py-1 pr-3 font-semibold text-black">
-                    {actor.name || "Actor"}
-                    {actor.age && <span className="font-normal text-neutral-500"> · {actor.age}</span>}
-                  </td>
-                  <td className="py-1 text-neutral-700">
-                    {actor.timeIn || actor.timeOut
-                      ? `${actor.timeIn || "?"}–${actor.timeOut || "?"}`
-                      : ""}
-                    {actor.requirement ? `${actor.timeIn || actor.timeOut ? " · " : ""}${actor.requirement}` : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </SheetSection>
+        <tbody>
+          <tr>
+            <td>
+              <div className="sheet-body">
+                <p className="sheet-kicker">Call sheet{brand ? ` · ${brand}` : ""}</p>
+                <h1 className="sheet-title">{title || "Untitled shoot"}</h1>
+                <p className="sheet-when">{when}</p>
 
-      <SheetSection title="Meals">
-        {meals.length === 0 ? (
-          <Dash />
-        ) : (
-          <div className="text-[12px] leading-relaxed">
-            <p className="text-black">
-              {meals.map((meal) => meal[0].toUpperCase() + meal.slice(1)).join(" · ")}
-            </p>
-            {doc.meals.notes && <p className="text-neutral-700">{doc.meals.notes}</p>}
-          </div>
-        )}
-      </SheetSection>
+                <SheetSection title="Locations">
+                  {doc.locations.length === 0 ? (
+                    <Dash />
+                  ) : (
+                    <ul className="space-y-2">
+                      {doc.locations.map((place) => (
+                        <li key={place.id} className="text-[12px] leading-relaxed">
+                          <span className="font-semibold text-black">{place.name || "Location"}</span>
+                          {place.address && <span className="text-neutral-700"> — {place.address}</span>}
+                          {place.mapUrl && (
+                            <>
+                              {" "}
+                              <a href={place.mapUrl} className="underline decoration-neutral-400">
+                                map
+                              </a>
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </SheetSection>
 
-      <footer className="sheet-foot">
-        <span>Neuroid Creative Studio</span>
-        <span>studio.neuroidmedia.com</span>
-      </footer>
+                <SheetSection title="Scripts">
+                  {scriptsByDay.length === 0 ? (
+                    <Dash />
+                  ) : (
+                    <div className="space-y-2.5">
+                      {scriptsByDay.map(([day, scripts]) => (
+                        <div key={day}>
+                          <p className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                            Day {day}
+                          </p>
+                          <ul className="mt-1 space-y-0.5">
+                            {scripts.map((script) => (
+                              <li key={script.id} className="text-[12px]">
+                                <span className="font-semibold text-black">{script.name || "Script"}</span>
+                                <span className="text-neutral-700">
+                                  {script.versions ? ` · ${script.versions}` : ""}
+                                  {script.hours ? ` · ${script.hours}h` : ""}
+                                </span>
+                                {script.link && (
+                                  <>
+                                    {" "}
+                                    <a href={script.link} className="underline decoration-neutral-400">
+                                      open
+                                    </a>
+                                  </>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </SheetSection>
+
+                <SheetSection title="Crew">
+                  {crewCount(doc.crew) === 0 ? (
+                    <Dash />
+                  ) : (
+                    <table className="w-full border-collapse text-[12px]">
+                      <tbody>
+                        {doc.crew
+                          .filter((group) => group.members.some((member) => member.name.trim()))
+                          .map((group) => (
+                            <tr key={group.id} className="align-top">
+                              <td className="w-[34%] py-1 pr-3 text-neutral-500">{group.role}</td>
+                              <td className="py-1 text-black">
+                                {group.members
+                                  .filter((member) => member.name.trim())
+                                  .map(
+                                    (member) =>
+                                      `${member.name}${member.reportingTime ? ` (${member.reportingTime})` : ""}`,
+                                  )
+                                  .join(", ")}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  )}
+                </SheetSection>
+
+                <SheetSection title="Actors">
+                  {doc.actors.length === 0 ? (
+                    <Dash />
+                  ) : (
+                    <table className="w-full border-collapse text-[12px]">
+                      <tbody>
+                        {doc.actors.map((actor) => (
+                          <tr key={actor.id} className="align-top">
+                            <td className="w-[34%] py-1 pr-3 font-semibold text-black">
+                              {actor.name || "Actor"}
+                              {actor.age && <span className="font-normal text-neutral-500"> · {actor.age}</span>}
+                            </td>
+                            <td className="py-1 text-neutral-700">
+                              {actor.timeIn || actor.timeOut
+                                ? `${actor.timeIn || "?"}–${actor.timeOut || "?"}`
+                                : ""}
+                              {actor.requirement ? `${actor.timeIn || actor.timeOut ? " · " : ""}${actor.requirement}` : ""}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </SheetSection>
+
+                <SheetSection title="Meals">
+                  {meals.length === 0 ? (
+                    <Dash />
+                  ) : (
+                    <div className="text-[12px] leading-relaxed">
+                      <p className="text-black">
+                        {meals.map((meal) => meal[0].toUpperCase() + meal.slice(1)).join(" · ")}
+                      </p>
+                      {doc.meals.notes && <p className="text-neutral-700">{doc.meals.notes}</p>}
+                    </div>
+                  )}
+                </SheetSection>
+
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Print only, and repeated by the browser on every page. */}
+      <div className="sheet-foot-fixed">
+        <SheetFoot />
+      </div>
     </article>
+  );
+}
+
+/** The foot of the letterhead. One definition, painted in two places. */
+function SheetFoot() {
+  return (
+    <>
+      <div className="sheet-foot-rule" />
+      <div className="sheet-foot">
+        <span className="sheet-tag">
+          Rebuilding neural pathways
+          <i />
+        </span>
+        <span className="sheet-cred">www.neuroidmedia.com &nbsp;·&nbsp; New Delhi, India</span>
+      </div>
+    </>
   );
 }
 function SectionHead({
@@ -881,13 +936,17 @@ function SectionHead({
   );
 }
 
-/** One block of the sheet, kept whole across a page break. */
+/**
+ * One block of the sheet, kept whole across a page break.
+ *
+ * The heading is set in the letterhead's mono voice — the same face the
+ * address block and the footer use — so the sections read as part of the
+ * stationery rather than as an app's section titles printed onto it.
+ */
 function SheetSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-5 break-inside-avoid">
-      <h2 className="mb-1.5 border-b border-neutral-200 pb-1 text-[9.5px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-        {title}
-      </h2>
+    <section className="sheet-sec">
+      <h2>{title}</h2>
       {children}
     </section>
   );
