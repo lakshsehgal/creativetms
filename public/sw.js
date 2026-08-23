@@ -11,6 +11,13 @@
  * There is deliberately no fetch handler. Caching the app would mean shipping
  * a second, stale copy of a tool people make scheduling decisions in, and
  * every cache bug looks like a data bug to whoever hits it.
+ *
+ * Nor is there a message handler any more. The page used to post the worker a
+ * "show this" message, which is fire-and-forget: it succeeded whether or not
+ * the worker did anything, so a broken worker reported delivery and nobody
+ * found out. The page now calls showNotification on the registration directly
+ * and can tell when that fails. What's left here is the click, which only the
+ * worker can handle.
  */
 
 self.addEventListener("install", () => {
@@ -20,30 +27,6 @@ self.addEventListener("install", () => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
-});
-
-/**
- * The page asks the worker to show a notification, because only the worker
- * can make one that outlives the tab's attention.
- */
-self.addEventListener("message", (event) => {
-  const data = event.data;
-  if (!data || data.type !== "notify") return;
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: "/neuroid-mark.svg",
-      badge: "/neuroid-mark.svg",
-      // Same tag replaces rather than stacks, so ten updates on one ticket
-      // don't bury the desktop.
-      tag: data.tag,
-      renotify: true,
-      // Something a colleague is waiting on stays until it's acknowledged.
-      requireInteraction: Boolean(data.requireInteraction),
-      data: { url: data.url || "/board" },
-    }),
-  );
 });
 
 self.addEventListener("notificationclick", (event) => {

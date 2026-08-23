@@ -123,15 +123,12 @@ export async function showDesktopAlert(alert: DesktopAlert): Promise<boolean> {
   const reg = await ensureWorker();
   if (!reg) return false;
 
-  // Prefer the controller — it's the worker actually driving this page — and
-  // fall back to showing straight off the registration when the page loaded
-  // before the worker took control.
-  const worker = navigator.serviceWorker.controller;
-  if (worker) {
-    worker.postMessage({ type: "notify", ...alert });
-    return true;
-  }
-
+  // Always through the registration, never by posting a message to the
+  // controller. Both end up showing the same kind of notification, but
+  // postMessage is fire-and-forget: it resolves whether or not the worker did
+  // anything, so a stale or broken worker reported success and the "nothing
+  // appeared" warning never fired. Reporting a delivery that didn't happen is
+  // worse than not delivering.
   try {
     await reg.showNotification(alert.title, {
       body: alert.body,
@@ -145,4 +142,98 @@ export async function showDesktopAlert(alert: DesktopAlert): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/* ----------------------------------------------------------- diagnosis */
+
+export interface AlertCheck {
+  key: string;
+  label: string;
+  ok: boolean;
+  detail: string;
+}
+
+/**
+ * Why nothing is appearing.
+ *
+ * Desktop notifications fail at five different points and four of them are
+ * invisible — a blocked permission, a worker that never registered because the
+ * file 404s behind deployment protection, an insecure origin, an OS with Do
+ * Not Disturb on. Without this the only signal anybody gets is silence, and
+ * silence is indistinguishable from "nobody sent me anything".
+ */
+export async function diagnose(): Promise<AlertCheck[]> {
+  const checks: AlertCheck[] = [];
+
+  const secure = typeof window !== "undefined" && window.isSecureContext;
+  checks.push({
+    key: "secure",
+    label: "Secure connection",
+    ok: secure,
+    detail: secure
+      ? "This origin counts as secure, which notifications require."
+      : "Notifications only work on a secure origin. On a link without a certificate the browser switches them off, not this app.",
+  });
+
+  const supported = alertsSupported();
+  checks.push({
+    key: "supported",
+    label: "Browser can do this",
+    ok: supported,
+    detail: supported
+      ? "Service workers and notifications are both available."
+      : "This browser doesn't offer notifications — Safari in a private window and some in-app browsers don't.",
+  });
+
+  const permission = typeof Notification === "undefined" ? "default" : Notification.permission;
+  checks.push({
+    key: "permission",
+    label: "You allowed them",
+    ok: permission === "granted",
+    detail:
+      permission === "granted"
+        ? "Allowed for this site."
+        : permission === "denied"
+          ? "Blocked for this site. The app can't ask again — open the padlock menu beside the address bar, set Notifications to Allow, then reload."
+          : "Not asked yet. Turn them on below.",
+  });
+
+  checks.push({
+    key: "preferred",
+    label: "Switched on here",
+    ok: alertsPreferred(),
+    detail: alertsPreferred()
+      ? "On for this browser."
+      : "Off. This is per browser, so turning it on at the office doesn't turn it on at home.",
+  });
+
+  // The worker file itself. Deployment protection returning a login page for
+  // /sw.js is the failure that looks exactly like nothing being wrong.
+  let fileOk = false;
+  let fileDetail = "Couldn't reach /sw.js at all.";
+  try {
+    const response = await fetch("/sw.js", { cache: "no-store" });
+    const type = response.headers.get("content-type") ?? "";
+    fileOk = response.ok && /javascript|ecmascript/i.test(type);
+    fileDetail = response.ok
+      ? fileOk
+        ? "Served correctly."
+        : `Served as ${type || "an unknown type"} rather than JavaScript — usually a login or preview page standing in front of it.`
+      : `The server answered ${response.status}. If this deployment is password-protected, that protection also blocks the worker.`;
+  } catch (error) {
+    fileDetail = error instanceof Error ? error.message : fileDetail;
+  }
+  checks.push({ key: "file", label: "Worker file reachable", ok: fileOk, detail: fileDetail });
+
+  const registration = supported ? await ensureWorker() : null;
+  checks.push({
+    key: "worker",
+    label: "Worker registered",
+    ok: Boolean(registration),
+    detail: registration
+      ? "Registered and active."
+      : "Registration failed. Almost always the line above.",
+  });
+
+  return checks;
 }

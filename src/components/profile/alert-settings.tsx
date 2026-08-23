@@ -1,40 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, BellOff, BellRing } from "lucide-react";
+import { Bell, BellOff, BellRing, Check, RefreshCw, Wifi, X } from "lucide-react";
 import {
   alertState,
+  diagnose,
   disableAlerts,
   enableAlerts,
   showDesktopAlert,
+  type AlertCheck,
   type AlertState,
 } from "@/lib/desktop-alerts";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
 
 /**
- * Turning desktop popups on, off, and proving they work.
+ * Turning desktop popups on, off, and finding out why they aren't appearing.
  *
- * The test button matters more than it looks. Notification permission fails
- * in ways nobody can see — the browser blocked it at the site level, the OS
- * has Do Not Disturb on, focus assist is swallowing everything — and without
- * a way to fire one on demand, the first time anyone finds out is the day
- * they miss a handoff.
+ * The diagnosis matters more than the toggle. Notifications fail at five
+ * separate points and four of them are silent — a permission blocked at the
+ * site level, a worker file sitting behind deployment protection, an insecure
+ * origin, an OS with Do Not Disturb on, a realtime channel that never
+ * connected. Every one of those looks identical from a designer's chair:
+ * nothing happens. A row of ticks turns "it doesn't work" into a sentence
+ * somebody can act on.
  */
+
+type Live = "checking" | "connected" | "failed";
+
 export function AlertSettings() {
   const [state, setState] = useState<AlertState>("unsupported");
+  const [checks, setChecks] = useState<AlertCheck[] | null>(null);
+  const [live, setLive] = useState<Live>("checking");
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  // Read after mount: the answer depends on browser APIs and localStorage,
+  const run = useCallback(async () => {
+    setState(alertState());
+    setChecks(await diagnose());
+  }, []);
+
+  // Read after mount: every answer depends on browser APIs and localStorage,
   // neither of which the server can know.
-  useEffect(() => setState(alertState()), []);
+  useEffect(() => {
+    void run();
+  }, [run]);
+
+  /**
+   * Whether the channel that carries notifications is actually up.
+   *
+   * The popup can be perfectly configured and still never fire, because the
+   * rows arrive over Supabase realtime and that's a separate thing to be
+   * broken. Subscribing to the same table the popups use answers it directly.
+   */
+  useEffect(() => {
+    const supabase = supabaseBrowser();
+    const channel = supabase
+      .channel("alert-settings-probe")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {})
+      .subscribe((status: string) => {
+        if (status === "SUBSCRIBED") setLive("connected");
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setLive("failed");
+        }
+      });
+
+    // A channel that never calls back at all is also a failure.
+    const giveUp = setTimeout(() => setLive((current) => (current === "checking" ? "failed" : current)), 8000);
+
+    return () => {
+      clearTimeout(giveUp);
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   async function turnOn() {
     setBusy(true);
     const next = await enableAlerts();
-    setState(next);
     setBusy(false);
+    await run();
 
     if (next === "on") {
       toast.success("Desktop alerts on");
@@ -48,12 +94,13 @@ export function AlertSettings() {
         description: "Open the padlock menu next to the address bar and allow them.",
         duration: 12_000,
       });
+      setOpen(true);
     }
   }
 
   function turnOff() {
     disableAlerts();
-    setState("off");
+    void run();
     toast.success("Desktop alerts off");
   }
 
@@ -64,14 +111,23 @@ export function AlertSettings() {
       tag: "neuroid-test",
       requireInteraction: true,
     });
-    if (!shown) {
-      toast.error("Nothing appeared", {
+    if (shown) {
+      toast.success("Sent. If nothing appeared on your desktop, it's your OS holding it back", {
         description:
-          "Your browser or your operating system is holding it back — check Do Not Disturb, and that this site is allowed to notify you.",
-        duration: 12_000,
+          "Check Do Not Disturb, Focus, and your notification settings for this browser.",
+        duration: 10_000,
       });
+      return;
     }
+    toast.error("The browser refused it", {
+      description: "Open the checks below — one of them will say why.",
+      duration: 12_000,
+    });
+    setOpen(true);
+    void run();
   }
+
+  const failing = (checks ?? []).filter((check) => !check.ok);
 
   return (
     <Card>
@@ -108,30 +164,113 @@ export function AlertSettings() {
         </p>
       )}
 
-      {(state === "off" || state === "on") && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {state === "on" ? (
-            <>
-              <Button size="sm" variant="secondary" onClick={() => void test()}>
-                Send a test
-              </Button>
-              <Button size="sm" variant="ghost" onClick={turnOff}>
-                Turn off
-              </Button>
-              <span className="text-[11.5px] text-[var(--color-good)]">On for this browser</span>
-            </>
-          ) : (
-            <>
-              <Button size="sm" variant="primary" loading={busy} onClick={() => void turnOn()}>
-                Turn on
-              </Button>
-              <span className="text-[11.5px] text-[var(--color-ink-3)]">
-                Off — you&apos;ll only see the bell and in-app toasts
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {state === "on" ? (
+          <>
+            <Button size="sm" variant="secondary" onClick={() => void test()}>
+              Send a test
+            </Button>
+            <Button size="sm" variant="ghost" onClick={turnOff}>
+              Turn off
+            </Button>
+            <span className="text-[11.5px] text-[var(--color-good)]">On for this browser</span>
+          </>
+        ) : state !== "unsupported" ? (
+          <>
+            <Button size="sm" variant="primary" loading={busy} onClick={() => void turnOn()}>
+              Turn on
+            </Button>
+            <span className="text-[11.5px] text-[var(--color-ink-3)]">
+              Off — you&apos;ll only see the bell and in-app toasts
+            </span>
+          </>
+        ) : null}
+      </div>
+
+      {/* ------------------------------------------------------ the checks */}
+
+      <div className="mt-4 border-t border-[var(--color-line)] pt-3">
+        <button
+          onClick={() => setOpen((value) => !value)}
+          className="flex w-full items-center gap-2 text-[11.5px] text-[var(--color-ink-2)] hover:text-[var(--color-ink)]"
+        >
+          <span
+            className="inline-flex items-center gap-1.5 font-medium"
+            style={{
+              color:
+                failing.length > 0 || live === "failed"
+                  ? "var(--color-critical)"
+                  : "var(--color-ink-2)",
+            }}
+          >
+            {failing.length > 0 || live === "failed" ? (
+              <X size={12} />
+            ) : (
+              <Check size={12} />
+            )}
+            {checks === null
+              ? "Checking…"
+              : failing.length === 0 && live !== "failed"
+                ? "Everything that has to be true, is"
+                : `${failing.length + (live === "failed" ? 1 : 0)} thing${
+                    failing.length + (live === "failed" ? 1 : 0) === 1 ? "" : "s"
+                  } stopping these from arriving`}
+          </span>
+          <span className="ml-auto text-[var(--color-ink-3)]">{open ? "Hide" : "Show"}</span>
+        </button>
+
+        {open && (
+          <ul className="mt-2.5 space-y-2">
+            {(checks ?? []).map((check) => (
+              <li key={check.key} className="flex items-start gap-2 text-[11.5px] leading-relaxed">
+                <span
+                  className="mt-0.5 shrink-0"
+                  style={{ color: check.ok ? "var(--color-good)" : "var(--color-critical)" }}
+                >
+                  {check.ok ? <Check size={12} /> : <X size={12} />}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-medium">{check.label}</span>
+                  <span className="text-[var(--color-ink-2)]"> — {check.detail}</span>
+                </span>
+              </li>
+            ))}
+
+            <li className="flex items-start gap-2 text-[11.5px] leading-relaxed">
+              <span
+                className="mt-0.5 shrink-0"
+                style={{
+                  color:
+                    live === "connected"
+                      ? "var(--color-good)"
+                      : live === "failed"
+                        ? "var(--color-critical)"
+                        : "var(--color-ink-3)",
+                }}
+              >
+                {live === "connected" ? <Check size={12} /> : live === "failed" ? <X size={12} /> : <Wifi size={12} />}
               </span>
-            </>
-          )}
-        </div>
-      )}
+              <span className="min-w-0">
+                <span className="font-medium">Live channel</span>
+                <span className="text-[var(--color-ink-2)]">
+                  {" — "}
+                  {live === "connected"
+                    ? "Connected. Notifications arrive the moment they're written."
+                    : live === "failed"
+                      ? "Not connected, so nothing arrives until you reload. Realtime may be switched off for the notifications table in Supabase, or a network is blocking websockets."
+                      : "Checking…"}
+                </span>
+              </span>
+            </li>
+
+            <li className="pt-1">
+              <Button size="sm" variant="ghost" onClick={() => void run()}>
+                <RefreshCw size={12} /> Check again
+              </Button>
+            </li>
+          </ul>
+        )}
+      </div>
 
       <p className="mt-3 text-[11px] leading-relaxed text-[var(--color-ink-3)]">
         This is per browser, so turning it on here doesn&apos;t turn it on at
