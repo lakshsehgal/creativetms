@@ -155,7 +155,33 @@ npm install
 npm run dev
 ```
 
-### 6. Deploy
+### 6. A domain of its own
+
+Optional, and worth doing before the team settles in.
+
+1. **Vercel → Project → Settings → Domains** → add `ctms.neuroidmedia.com`.
+2. **DNS**, wherever `neuroidmedia.com` is hosted → a `CNAME` record,
+   name `ctms`, value `cname.vercel-dns.com`. Vercel issues the certificate
+   once it resolves.
+3. **Supabase → Authentication → URL Configuration** → set **Site URL** to
+   `https://ctms.neuroidmedia.com` and add `https://ctms.neuroidmedia.com/**`
+   to **Redirect URLs**. Sign-in links are built from these, so a stale Site
+   URL sends everyone back to the old address.
+4. **Vercel → Environment Variables** → `CANONICAL_HOST=ctms.neuroidmedia.com`,
+   then redeploy.
+5. **Google Cloud Console**, if Google sign-in is on: the **Authorized
+   redirect URI** stays the *Supabase* callback
+   (`https://<project-ref>.supabase.co/auth/v1/callback`) — Google redirects to
+   Supabase, not to the app. Add the new domain under **Authorized JavaScript
+   origins** if you like; don't put it in redirect URIs in place of Supabase's.
+
+Everyone signs in again afterwards, and everyone re-grants desktop alerts and
+re-installs the app: cookies, notification permission, the service worker and
+localStorage are all scoped to the origin and none of it follows the domain.
+`CANONICAL_HOST` is what stops half the team drifting back to the old address
+and quietly running on a second set of all of it.
+
+### 7. Deploy
 
 Push to a Vercel project and set the same four variables in **Settings →
 Environment Variables**. `vercel.json` already registers the two cron jobs:

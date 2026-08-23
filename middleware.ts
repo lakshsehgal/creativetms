@@ -2,10 +2,44 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 /**
+ * One address, for real.
+ *
+ * A Vercel project answers on its .vercel.app name forever, even after a
+ * custom domain is added, and that is worse than untidy here. Notification
+ * permission, the service worker, the installed app and everything in
+ * localStorage are all scoped to the origin — so a designer who keeps the old
+ * link bookmarked has their own separate set of permissions, has to sign in
+ * again, and quietly stops getting alerts on the copy everyone else is using.
+ * Nothing about that announces itself.
+ *
+ * Set CANONICAL_HOST and production traffic to any other host is moved here
+ * permanently. Unset, nothing happens. Preview deployments are never touched,
+ * because their whole point is to be reachable at their own address.
+ */
+function canonicalRedirect(request: NextRequest): NextResponse | null {
+  const canonical = process.env.CANONICAL_HOST?.trim();
+  if (!canonical || process.env.VERCEL_ENV !== "production") return null;
+
+  const host = request.headers.get("host");
+  if (!host || host === canonical) return null;
+
+  const url = request.nextUrl.clone();
+  url.host = canonical;
+  url.port = "";
+  url.protocol = "https:";
+  // 308 rather than 307: this is permanent, and it keeps the method, which
+  // matters for anything posted to an old bookmark.
+  return NextResponse.redirect(url, 308);
+}
+
+/**
  * Keeps the auth cookie fresh and bounces signed-out visitors to /login before
  * any page work happens, so protected routes never flash their shell.
  */
 export async function middleware(request: NextRequest) {
+  const moved = canonicalRedirect(request);
+  if (moved) return moved;
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
