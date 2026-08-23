@@ -1,0 +1,56 @@
+<!-- Supabase → Authentication → Emails → Templates → Invite user
+     Subject: You've been added to Neuroid Creative Studio
+
+     Inline styles only — see the note in sign-in-code.html.
+
+     This one lands cold: the person has never seen the tool and may not know
+     it exists. So it says what it is in a sentence before it asks for
+     anything, and the button is the only thing to do. -->
+<div style="margin:0;padding:24px;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
+  <div style="max-width:460px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+
+    <div style="background:#111111;padding:20px 24px">
+      <span style="display:inline-block;width:22px;height:22px;background:#fcef24;border-radius:5px;color:#111111;font-weight:700;text-align:center;line-height:22px;font-size:13px">N</span>
+      <span style="color:#ffffff;font-size:15px;font-weight:600;margin-left:10px">Neuroid Creative Studio</span>
+    </div>
+
+    <div style="padding:28px 24px">
+      <p style="margin:0;font-size:17px;font-weight:600;color:#111827">You've been added to the studio</p>
+      <p style="margin:8px 0 0;font-size:13.5px;line-height:1.65;color:#4b5563">
+        This is where Neuroid runs its creative work — every brief, every
+        brand and every round in one place, so nothing lives in a DM.
+      </p>
+
+      <!-- A table wrapper, because Outlook ignores padding on an anchor and
+           renders the button as bare text without it. -->
+      <table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0">
+        <tr>
+          <td align="center" style="background:#fcef24;border-radius:8px">
+            <a href="{{ .ConfirmationURL }}"
+               style="display:inline-block;padding:12px 26px;font-size:14px;font-weight:600;color:#111111;text-decoration:none">
+              Set up your account
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin:0;font-size:12.5px;line-height:1.6;color:#6b7280">
+        There's no password to pick — you'll get a code by email each time you
+        sign in, or you can use Google.
+      </p>
+
+      <!-- break-all only on the URL. Applied to the paragraph it chops the
+           sentence mid-word ("browse / r:"), which reads as a rendering bug. -->
+      <p style="margin:14px 0 0;font-size:11.5px;line-height:1.6;color:#9ca3af">
+        If the button doesn't work, paste this into your browser:<br/>
+        <span style="word-break:break-all">{{ .ConfirmationURL }}</span>
+      </p>
+    </div>
+
+    <div style="padding:14px 24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11.5px;line-height:1.6">
+      Sent to {{ .Email }} because someone at Neuroid invited you. Not
+      expecting it? You can ignore this — nothing happens until you open the
+      link.
+    </div>
+  </div>
+</div>

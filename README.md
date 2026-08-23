@@ -363,6 +363,22 @@ The estimate never touches the due date. Only the designer on the ticket (or
 an admin) can set one; only staff can ask for one. Both halves are enforced in
 the database.
 
+## Email
+
+Three emails, and only one of them is sent by this app.
+
+| Email | Sent by | Branding lives in |
+|---|---|---|
+| Daily scorecard | This app, via Resend | `src/lib/scorecard-email.ts` |
+| Sign-in code | Supabase Auth | Supabase dashboard template |
+| Invite | Supabase Auth | Supabase dashboard template |
+
+The two Supabase ones are rendered from templates stored in Supabase, so the
+codebase can't brand them. `supabase/emails/` holds what should be pasted in,
+along with where each one goes and where the sender name is set — the sender
+name comes from the SMTP settings, not the template, and it's the part people
+actually read in an inbox.
+
 ## Shoots
 
 Several of the designers shoot as well, and a day on set is a day gone. The

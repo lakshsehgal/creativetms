@@ -88,8 +88,8 @@ export function buildScorecardEmail({
   <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
     <div style="background:#111111;padding:20px 24px">
       <span style="display:inline-block;width:22px;height:22px;background:#fcef24;border-radius:5px;color:#111;font-weight:700;text-align:center;line-height:22px;font-size:13px">N</span>
-      <span style="color:#ffffff;font-size:15px;font-weight:600;margin-left:10px">Studio scorecard</span>
-      <div style="color:rgba(255,255,255,0.55);font-size:12.5px;margin-top:6px">${day}</div>
+      <span style="color:#ffffff;font-size:15px;font-weight:600;margin-left:10px">Neuroid Creative Studio</span>
+      <div style="color:rgba(255,255,255,0.55);font-size:12.5px;margin-top:6px">Daily scorecard · ${day}</div>
     </div>
 
     <div style="padding:18px 24px;border-bottom:1px solid #e5e7eb">
@@ -157,7 +157,7 @@ export async function sendScorecardEmail({
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from: `Neuroid Studio <${from}>`, to, subject, html }),
+      body: JSON.stringify({ from: `Neuroid Creative Studio <${from}>`, to, subject, html }),
     });
 
     if (!response.ok) {

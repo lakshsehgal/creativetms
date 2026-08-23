@@ -84,7 +84,7 @@ async function sendDigest(
 
   const result = await sendScorecardEmail({
     to: recipients.map((person) => person.email),
-    subject: `Studio scorecard — ${target}`,
+    subject: `Daily scorecard — ${target}`,
     html,
   });
 
