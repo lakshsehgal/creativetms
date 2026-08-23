@@ -255,6 +255,15 @@ export function TeamClient({
                       </span>
                       {FORMATS[format].label}
                     </p>
+
+                    {/* Why this format costs what it costs, from the people who
+                        do it. Whoever sets the bar usually isn't one of them. */}
+                    {FORMATS[format].drives && (
+                      <p className="mt-1 text-[11px] leading-relaxed text-[var(--color-ink-3)]">
+                        {FORMATS[format].drives}
+                      </p>
+                    )}
+
                     <div className="mt-2 flex items-center gap-1.5">
                       <TextInput
                         type="number"

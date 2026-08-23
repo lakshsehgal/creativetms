@@ -281,12 +281,54 @@ export interface DailyScorecard {
  */
 export const FORMATS: Record<
   CreativeFormat,
-  { label: string; short: string; series: string; icon: string }
+  {
+    label: string;
+    short: string;
+    series: string;
+    icon: string;
+    /**
+     * What actually drives the time, in the designers' own words.
+     *
+     * It sits beside the benchmark input, because whoever sets that number is
+     * usually not the person who does the work — and the four sentences below
+     * are the difference between a bar the floor recognises and one it
+     * quietly ignores. Only the formats the studio has actually spoken about
+     * carry a line; inventing the others would be worse than the gap.
+     */
+    drives?: string;
+  }
 > = {
-  video: { label: "Video", short: "VID", series: "var(--color-series-1)", icon: "▶" },
-  static: { label: "Static", short: "STA", series: "var(--color-series-2)", icon: "■" },
-  carousel: { label: "Carousel", short: "CAR", series: "var(--color-series-3)", icon: "▤" },
-  gif: { label: "GIF", short: "GIF", series: "var(--color-series-4)", icon: "◐" },
+  video: {
+    label: "Video",
+    short: "VID",
+    series: "var(--color-series-1)",
+    icon: "▶",
+    drives:
+      "Fast when every asset is already in hand. What makes a video slow is waiting on footage, not the edit — so this number describes the good case, and Awaiting Assets is where the bad one goes.",
+  },
+  static: {
+    label: "Static",
+    short: "STA",
+    series: "var(--color-series-2)",
+    icon: "■",
+    drives: "One frame. The most predictable thing the studio makes, and the floor everything else is judged against.",
+  },
+  carousel: {
+    label: "Carousel",
+    short: "CAR",
+    series: "var(--color-series-3)",
+    icon: "▤",
+    drives:
+      "A static, times the number of slides — long rather than hard. Set this per carousel and a three-slider costs the same as a ten; count slides in How many and it doesn't.",
+  },
+  gif: {
+    label: "GIF",
+    short: "GIF",
+    series: "var(--color-series-4)",
+    icon: "◐",
+    drives:
+      "The heaviest of the four: frame by frame, and the idea has to be invented before any of it can be built. The least predictable, too — worth the most generous bar here.",
+  },
   ugc: { label: "UGC — 1 min", short: "UGC60", series: "var(--color-series-5)", icon: "◉" },
   ugc_30s: { label: "UGC — 30s", short: "UGC30", series: "var(--color-series-6)", icon: "◎" },
 };
