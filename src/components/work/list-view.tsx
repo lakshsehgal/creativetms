@@ -4,10 +4,10 @@ import { memo, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Link2, RotateCcw } from "lucide-react";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
-import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canSeeOwnTime } from "@/lib/types";
+import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canAssignWork, canSeeOwnTime } from "@/lib/types";
 import type { Group } from "@/lib/grouping";
 import { dueLabel, dueState, humanDuration, shortName } from "@/lib/format";
-import { Avatar, FormatBadge } from "@/components/ui/primitives";
+import { AiFlag, Avatar, FormatBadge } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
 
@@ -258,7 +258,10 @@ const Row = memo(function Row({
       </td>
 
       <td className="px-2 py-1.5">
-        <FormatBadge format={ticket.format} quantity={ticket.quantity} />
+        <span className="flex items-center gap-1.5">
+          <FormatBadge format={ticket.format} quantity={ticket.quantity} />
+          <AiFlag on={ticket.needs_ai} />
+        </span>
       </td>
 
       {/* The coloured status cell doubles as the control that changes it. */}
@@ -313,7 +316,7 @@ const Row = memo(function Row({
       </td>
 
       <td className="px-2 py-1.5">
-        {isStaff ? (
+        {canAssignWork(viewer) ? (
           <select
             value={ticket.assigned_to ?? ""}
             onChange={(event) =>

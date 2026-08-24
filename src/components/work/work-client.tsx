@@ -15,7 +15,13 @@ import type {
 import { benchmarkMap } from "@/lib/planning";
 import { GROUPINGS, groupTickets, isDraggable, type GroupKey } from "@/lib/grouping";
 import { positionBetween, queryKeys } from "@/lib/queries";
-import { applyFilters, filtersFromParams, filtersToParams, type TicketFilters } from "@/lib/filters";
+import {
+  applyFilters,
+  filtersFromParams,
+  filtersFromStored,
+  filtersToParams,
+  type TicketFilters,
+} from "@/lib/filters";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { useLiveTickets } from "@/hooks/use-live-tickets";
@@ -185,8 +191,7 @@ export function WorkClient({
   );
 
   function applyView(view: SavedView) {
-    const next = filtersFromParams(new URLSearchParams(view.filters as Record<string, string>));
-    setFilters(next, view.layout);
+    setFilters(filtersFromStored(view.filters), view.layout);
   }
 
   const live = tickets.filter((ticket) => ticket.status === "in_progress").length;

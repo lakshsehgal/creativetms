@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clapperboard, ShieldCheck, UserPlus } from "lucide-react";
+import { Clapperboard, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import type { FormatBenchmark, Profile, UserRole } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 import { humanDuration, isoDay, minutesToHuman } from "@/lib/format";
@@ -16,8 +16,10 @@ import { RemovedTickets } from "./removed-tickets";
 import {
   inviteTeammate,
   setActive,
+  setAiExtra,
   setBenchmark,
   setCapacity,
+  setDesignLead,
   setRole,
   setShootOps,
   type ActionResult,
@@ -157,6 +159,41 @@ export function TeamClient({
                         </label>
                       )}
 
+                      {/* The design lead. Only offered to designers — a
+                          strategist can already assign, so the flag would be a
+                          power that does nothing, which is the sort of thing
+                          somebody eventually reads the wrong way. */}
+                      {role === "designer" && (
+                        <label
+                          title="Lets this designer hand work to other designers. Nothing else changes."
+                          className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[11.5px] ${
+                            person.is_design_lead
+                              ? "font-medium text-[var(--color-ink)]"
+                              : "text-[var(--color-ink-3)]"
+                          }`}
+                          style={
+                            person.is_design_lead
+                              ? {
+                                  background:
+                                    "color-mix(in srgb, var(--color-series-1) 14%, transparent)",
+                                }
+                              : undefined
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={person.is_design_lead}
+                            disabled={pending}
+                            onChange={(event) =>
+                              run(() => setDesignLead(person.id, event.target.checked))
+                            }
+                            aria-label={`Design lead for ${person.full_name || person.email}`}
+                          />
+                          <UsersRound size={12} />
+                          Design lead
+                        </label>
+                      )}
+
                       {/* Shoot ops. Only offered to strategists: admins and
                           operators already run shoots by virtue of the role,
                           and a flag they never read is a flag that surprises
@@ -234,6 +271,14 @@ export function TeamClient({
                   them to something the team agrees is fair — a bar nobody
                   believes in is a bar nobody works to.
                 </p>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
+                  The <span className="font-medium">+ AI</span> line is what
+                  generating one costs on top: prompting, waiting on the render,
+                  throwing most of it away. It only applies to tickets marked as
+                  needing generation, and only where a base is set — half a
+                  number is worse than none. Leave it blank until somebody has
+                  actually watched it.
+                </p>
               </div>
             </div>
 
@@ -283,6 +328,35 @@ export function TeamClient({
                         className="!w-24 !px-2 !py-1 !text-[13px]"
                       />
                       <span className="text-[11.5px] text-[var(--color-ink-3)]">min / unit</span>
+                    </div>
+
+                    {/* What generating it costs on top.
+                        Set from the same place and by the same people as the
+                        base, because the two are only meaningful together —
+                        and left blank until somebody has actually watched it,
+                        like every other number here. */}
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <span className="text-[11.5px] text-[var(--color-ink-3)]">+ AI</span>
+                      <TextInput
+                        type="number"
+                        min={1}
+                        max={2000}
+                        placeholder="not set"
+                        defaultValue={row?.ai_extra_minutes_per_unit ?? ""}
+                        disabled={pending}
+                        onBlur={(event) => {
+                          const raw = event.target.value.trim();
+                          const minutes = raw === "" ? null : Number(raw);
+                          if (minutes === (row?.ai_extra_minutes_per_unit ?? null)) return;
+                          if (minutes !== null && !minutes) return;
+                          run(() => setAiExtra(format, minutes));
+                        }}
+                        aria-label={`Generation allowance for ${FORMATS[format].label}`}
+                        className="!w-20 !px-2 !py-1 !text-[13px]"
+                      />
+                      <span className="text-[11.5px] text-[var(--color-ink-3)]">
+                        min / unit extra
+                      </span>
                     </div>
 
                     {/* What the team has actually taken. This is the number to

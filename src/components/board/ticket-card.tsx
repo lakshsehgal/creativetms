@@ -7,7 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Link2, Play, RotateCcw, Timer } from "lucide-react";
 import type { TicketWithRefs } from "@/lib/types";
 import { dueLabel, dueState, humanDuration, shortName } from "@/lib/format";
-import { Avatar, FormatBadge, PriorityFlag } from "@/components/ui/primitives";
+import { AiFlag, Avatar, FormatBadge, PriorityFlag } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
 
@@ -70,6 +70,7 @@ function TicketCardInner({
       <div className="flex items-center gap-1.5">
         <FormatBadge format={ticket.format} quantity={ticket.quantity} />
         <PriorityFlag priority={ticket.priority} />
+        <AiFlag on={ticket.needs_ai} />
       </div>
 
       <Link

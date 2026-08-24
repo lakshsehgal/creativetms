@@ -28,6 +28,7 @@ interface DraftTicket {
   references: string;
   /** Set only when someone deliberately breaks the noon rule. */
   rush: boolean;
+  needsAi: boolean;
   rushReason: string;
 }
 
@@ -42,6 +43,7 @@ const EMPTY: DraftTicket = {
   dueAt: "",
   references: "",
   rush: false,
+  needsAi: false,
   rushReason: "",
 };
 
@@ -81,7 +83,7 @@ export function NewTicketDialog({
   const field = <K extends keyof DraftTicket>(key: K, value: DraftTicket[K]) =>
     draft.set((previous) => ({ ...previous, [key]: value }));
 
-  const { title, brief, format, quantity, priority, brandId, assignee, dueAt, references, rush, rushReason } =
+  const { title, brief, format, quantity, priority, brandId, assignee, dueAt, references, rush, rushReason, needsAi } =
     form;
 
   const setTitle = (value: string) => field("title", value);
@@ -142,6 +144,7 @@ export function NewTicketDialog({
         assigned_to: assignee || null,
         status: "new_request",
         due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        needs_ai: needsAi,
         // The database decides what this means: it holds the designer back,
         // routes it for approval, and auto-approves an admin's own.
         rush_state: needsApproval ? "pending" : null,
@@ -307,6 +310,26 @@ export function NewTicketDialog({
             </Field>
           </div>
         </div>
+
+        {/* Generation. Ticking it changes what this is expected to cost, so
+            the designer isn't measured against a bar for work made by hand.
+            They can tick it themselves later too — usually they are the ones
+            who find out a brief needs generating, because it rarely says so. */}
+        <label className="mt-3.5 flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-line)] px-3 py-2.5 text-[12.5px]">
+          <input
+            type="checkbox"
+            checked={needsAi}
+            onChange={(event) => field("needsAi", event.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="font-medium">Needs AI generation</span>
+            <span className="mt-0.5 block text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
+              The imagery or footage has to be generated before it can be built.
+              It takes longer, and this is what makes the expected time say so.
+            </span>
+          </span>
+        </label>
 
         {/* ------------------------------------------------- the exception */}
         {pastNoon && (

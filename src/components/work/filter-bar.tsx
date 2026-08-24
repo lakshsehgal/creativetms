@@ -11,6 +11,7 @@ import {
   type TicketFilters,
 } from "@/lib/filters";
 import { Select, TextInput } from "@/components/ui/form";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 export function FilterBar({
   filters,
@@ -53,89 +54,75 @@ export function FilterBar({
 
       <SlidersHorizontal size={13} className="ml-1 shrink-0 text-[var(--color-ink-3)]" />
 
-      <Chip label="Status">
-        <Select
-          value={filters.status}
-          onChange={(event) => set("status", event.target.value)}
-          aria-label="Filter by status"
-          className="!w-auto !border-0 !bg-transparent !py-1 !pl-1 !text-[12.5px]"
-        >
-          <option value="all">All</option>
-          <option value="open">Anything open</option>
-          {STATUS_ORDER.map((status) => (
-            <option key={status} value={status}>
-              {STATUSES[status].label}
-            </option>
-          ))}
-        </Select>
-      </Chip>
+      <MultiSelect
+        label="Status"
+        value={filters.status}
+        onChange={(next) => set("status", next)}
+        options={[
+          { value: "open", label: "Anything open" },
+          ...STATUS_ORDER.map((status) => ({
+            value: status,
+            label: STATUSES[status].label,
+            tone: STATUSES[status].fill,
+            group: "Or pick statuses",
+          })),
+        ]}
+      />
 
-      <Chip label="Brand">
-        <Select
-          value={filters.brand}
-          onChange={(event) => set("brand", event.target.value)}
-          aria-label="Filter by brand"
-          className="!w-auto !border-0 !bg-transparent !py-1 !pl-1 !text-[12.5px]"
-        >
-          <option value="all">All</option>
-          {brands.map((brand) => (
-            <option key={brand.id} value={brand.id}>
-              {brand.name}
-            </option>
-          ))}
-        </Select>
-      </Chip>
+      <MultiSelect
+        label="Brand"
+        value={filters.brand}
+        onChange={(next) => set("brand", next)}
+        options={brands.map((brand) => ({
+          value: brand.id,
+          label: brand.name,
+          tone: brand.color,
+        }))}
+      />
 
-      <Chip label="Format">
-        <Select
-          value={filters.format}
-          onChange={(event) => set("format", event.target.value)}
-          aria-label="Filter by format"
-          className="!w-auto !border-0 !bg-transparent !py-1 !pl-1 !text-[12.5px]"
-        >
-          <option value="all">All</option>
-          {FORMAT_ORDER.map((format) => (
-            <option key={format} value={format}>
-              {FORMATS[format].label}
-            </option>
-          ))}
-        </Select>
-      </Chip>
+      <MultiSelect
+        label="Format"
+        value={filters.format}
+        onChange={(next) => set("format", next)}
+        options={FORMAT_ORDER.map((format) => ({
+          value: format,
+          label: FORMATS[format].label,
+          tone: FORMATS[format].series,
+        }))}
+      />
 
-      <Chip label="Designer">
-        <Select
-          value={filters.designer}
-          onChange={(event) => set("designer", event.target.value)}
-          aria-label="Filter by designer"
-          className="!w-auto !border-0 !bg-transparent !py-1 !pl-1 !text-[12.5px]"
-        >
-          <option value="all">Everyone</option>
-          {viewer.role === "designer" && <option value="me">Just mine</option>}
-          <option value="unassigned">Unassigned</option>
-          {designers.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.full_name || person.email}
-            </option>
-          ))}
-        </Select>
-      </Chip>
+      <MultiSelect
+        label="Designer"
+        value={filters.designer}
+        onChange={(next) => set("designer", next)}
+        allLabel="Everyone"
+        options={[
+          ...(viewer.role === "designer"
+            ? [{ value: "me", label: "Just mine" }]
+            : []),
+          { value: "unassigned", label: "Unassigned" },
+          ...designers.map((person) => ({
+            value: person.id,
+            label: person.full_name || person.email,
+            group: "The team",
+          })),
+        ]}
+      />
 
-      <Chip label="Raised by">
-        <Select
-          value={filters.strategist}
-          onChange={(event) => set("strategist", event.target.value)}
-          aria-label="Filter by who raised it"
-          className="!w-auto !border-0 !bg-transparent !py-1 !pl-1 !text-[12.5px]"
-        >
-          <option value="all">Anyone</option>
-          {viewer.role !== "designer" && <option value="me">Me</option>}
-          {strategists.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.full_name || person.email}
-            </option>
-          ))}
-        </Select>
-      </Chip>
+      <MultiSelect
+        label="Raised by"
+        value={filters.strategist}
+        onChange={(next) => set("strategist", next)}
+        allLabel="Anyone"
+        options={[
+          ...(viewer.role !== "designer" ? [{ value: "me", label: "Me" }] : []),
+          ...strategists.map((person) => ({
+            value: person.id,
+            label: person.full_name || person.email,
+            group: "The team",
+          })),
+        ]}
+      />
 
       {/* Period, plus which date it applies to — "due in the next week" and
           "raised in the last week" are different questions. */}

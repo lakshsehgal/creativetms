@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import type { CreativeFormat, TicketPriority, TicketStatus } from "@/lib/types";
 import { FORMATS, PRIORITIES, STATUSES, formatMeta, statusMeta } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
@@ -168,6 +169,31 @@ export function PriorityFlag({ priority }: { priority: TicketPriority }) {
       style={{ background: `color-mix(in srgb, ${meta.tone} 16%, transparent)`, color: meta.tone }}
     >
       {meta.label}
+    </span>
+  );
+}
+
+/**
+ * This one had to be generated before it could be built.
+ *
+ * Quiet on purpose — it is a fact about the work, not a warning. It earns its
+ * place on the card because it explains why a ticket that looks like four
+ * statics is taking a day and a half, which is otherwise the sort of thing
+ * people conclude something unkind about.
+ */
+export function AiFlag({ on }: { on: boolean }) {
+  if (!on) return null;
+  return (
+    <span
+      title="Has to be generated before it can be built — its expected time allows for that"
+      className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
+      style={{
+        background: "color-mix(in srgb, var(--color-series-6) 16%, transparent)",
+        color: "var(--color-series-6)",
+      }}
+    >
+      <Sparkles size={9} />
+      AI
     </span>
   );
 }

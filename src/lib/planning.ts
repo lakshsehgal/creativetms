@@ -112,12 +112,22 @@ export function dayOf(iso: string): string {
  * Effort
  * ------------------------------------------------------------------ */
 
-export type BenchmarkMap = Partial<Record<CreativeFormat, number | null>>;
+export interface FormatTarget {
+  /** Minutes per unit for work made by hand. null = not measured yet. */
+  base: number | null;
+  /** Minutes per unit ON TOP, when the creative has to be generated first. */
+  aiExtra: number | null;
+}
+
+export type BenchmarkMap = Partial<Record<CreativeFormat, FormatTarget>>;
 
 export function benchmarkMap(rows: FormatBenchmark[]): BenchmarkMap {
   const map: BenchmarkMap = {};
   rows.forEach((row) => {
-    map[row.format] = row.target_minutes_per_unit;
+    map[row.format] = {
+      base: row.target_minutes_per_unit,
+      aiExtra: row.ai_extra_minutes_per_unit,
+    };
   });
   return map;
 }
@@ -132,14 +142,21 @@ export function benchmarkMap(rows: FormatBenchmark[]): BenchmarkMap {
  * must carry the unknowns through rather than defaulting them.
  */
 export function estimateMinutes(
-  ticket: Pick<TicketWithRefs, "estimated_minutes" | "format" | "quantity">,
+  ticket: Pick<TicketWithRefs, "estimated_minutes" | "format" | "quantity" | "needs_ai">,
   benchmarks: BenchmarkMap,
 ): number | null {
   if (ticket.estimated_minutes != null && ticket.estimated_minutes > 0) {
     return ticket.estimated_minutes;
   }
-  const perUnit = benchmarks[ticket.format];
-  if (perUnit == null || perUnit <= 0) return null;
+  const target = benchmarks[ticket.format];
+  if (target?.base == null || target.base <= 0) return null;
+
+  // The generation allowance only applies where a base exists — a fraction of
+  // an unknown number, shown as a whole one, is worse than admitting we don't
+  // know. The scorecard refuses the same case, and the two must agree.
+  const perUnit =
+    target.base + (ticket.needs_ai ? Math.max(0, target.aiExtra ?? 0) : 0);
+
   return perUnit * Math.max(1, ticket.quantity);
 }
 

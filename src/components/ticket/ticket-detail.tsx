@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
 import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
-import { formatMeta, PRIORITIES, STATUSES, canSeeAllTime, canSeeOwnTime } from "@/lib/types";
+import {
+  canAssignWork,
+  canSeeAllTime,
+  canSeeOwnTime,
+  formatMeta,
+  PRIORITIES,
+  STATUSES,
+} from "@/lib/types";
 import { dueLabel, dueState, relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { withRetry, reportWriteFailure } from "@/lib/write";
@@ -53,6 +60,9 @@ export function TicketDetail({
 
   const data = ticket.data;
   const isStaff = profile.role === "admin" || profile.role === "strategist";
+  // The design lead hands work out too — that is the whole of their extra
+  // power, and it is only the Designer row that widens for them.
+  const canAssign = canAssignWork(profile);
   const isOwner = data.assigned_to === profile.id;
 
   // Only the person whose clock is running needs to send beats.
@@ -326,8 +336,32 @@ export function TicketDetail({
 
             <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3.5">
               <dl className="space-y-3">
+                {/* Whoever is doing the work can set this. They are usually
+                    the one who finds out a brief needs generating — briefs
+                    rarely say so — and making them ask somebody to record it
+                    is how the honest version ends up in nobody's system. */}
+                <Row label="AI">
+                  <label className="flex items-center gap-2 text-[12.5px]">
+                    <input
+                      type="checkbox"
+                      checked={data.needs_ai}
+                      onChange={(event) =>
+                        void patch(
+                          { needs_ai: event.target.checked },
+                          event.target.checked
+                            ? "Marked as needing generation"
+                            : "No longer marked as generated",
+                        )
+                      }
+                    />
+                    <span className={data.needs_ai ? "" : "text-[var(--color-ink-3)]"}>
+                      {data.needs_ai ? "Has to be generated" : "Made by hand"}
+                    </span>
+                  </label>
+                </Row>
+
                 <Row label="Designer">
-                  {isStaff ? (
+                  {canAssign ? (
                     <Select
                       value={data.assigned_to ?? ""}
                       onChange={(event) =>

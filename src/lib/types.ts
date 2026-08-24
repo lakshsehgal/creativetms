@@ -46,6 +46,12 @@ export interface Profile {
    * being handed the whole floor.
    */
   has_shoot_ops: boolean;
+  /**
+   * The design lead. One designer who can hand work to other designers,
+   * because they are the person who actually knows who has capacity for what.
+   * Everything else about being a designer is unchanged.
+   */
+  is_design_lead: boolean;
 }
 
 export interface Brand {
@@ -99,6 +105,14 @@ export interface Ticket {
    */
   review_url_edited_at: string | null;
   review_url_edited_by: string | null;
+  /**
+   * This one has to be generated before it can be built.
+   *
+   * It is still a static or still a film when it ships — the format is right —
+   * but it costs materially more, and measured against the plain benchmark the
+   * designer looks slow when they were doing more work.
+   */
+  needs_ai: boolean;
   format: CreativeFormat;
   quantity: number;
   status: TicketStatus;
@@ -286,6 +300,13 @@ export interface FormatBenchmark {
   format: CreativeFormat;
   /** null = not measured yet. Pace comparisons sit out until it's set. */
   target_minutes_per_unit: number | null;
+  /**
+   * Minutes ON TOP of the base, per unit, when a ticket has to be generated
+   * before it can be built. Additive rather than a multiplier because that is
+   * the shape of the real cost: prompting, waiting on the render, throwing
+   * most of it away — and it repeats for every output.
+   */
+  ai_extra_minutes_per_unit: number | null;
   updated_at: string;
 }
 
@@ -773,4 +794,14 @@ export interface SavedView {
   layout: "board" | "list" | "workload" | "timeline";
   is_shared: boolean;
   created_at: string;
+}
+
+/**
+ * Who may put a ticket on somebody other than themselves.
+ *
+ * Staff by role, plus the one designer an admin has made the design lead.
+ * Operators read the numbers; they don't hand work out.
+ */
+export function canAssignWork(viewer: Profile): boolean {
+  return viewer.role === "admin" || viewer.role === "strategist" || viewer.is_design_lead;
 }

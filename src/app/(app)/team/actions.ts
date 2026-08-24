@@ -225,3 +225,71 @@ export async function setShootOps(userId: string, granted: boolean): Promise<Act
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
   }
 }
+
+/**
+ * The generation allowance — minutes on top, per unit, when a creative has to
+ * be generated before it can be built.
+ *
+ * Separate from the base on purpose. The base is what the format costs; this
+ * is what the generator costs, and the two get measured from different things
+ * and move at different times.
+ */
+export async function setAiExtra(
+  format: string,
+  minutes: number | null,
+): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+
+    if (minutes !== null && (!Number.isFinite(minutes) || minutes < 1)) {
+      return { ok: false, error: "The allowance has to be at least a minute" };
+    }
+
+    const supabase = await supabaseServer();
+    const { error } = await supabase
+      .from("format_benchmarks")
+      .update({
+        ai_extra_minutes_per_unit: minutes === null ? null : Math.round(minutes),
+        updated_by: admin.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("format", format);
+
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/team");
+    revalidatePath("/analytics");
+    return {
+      ok: true,
+      message: minutes === null ? "Generation allowance cleared" : "Generation allowance updated",
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
+  }
+}
+
+/**
+ * The design lead.
+ *
+ * One power: they can hand work to other designers. Granted by an admin, and
+ * only meaningful on a designer — the database clears it if somebody moves off
+ * the design floor.
+ */
+export async function setDesignLead(userId: string, on: boolean): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+
+    const supabase = await supabaseServer();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_design_lead: on })
+      .eq("id", userId);
+
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/team");
+    return { ok: true, message: on ? "Design lead granted" : "Design lead removed" };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
+  }
+}
