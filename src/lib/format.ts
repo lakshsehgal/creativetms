@@ -12,16 +12,6 @@ export function humanDuration(seconds: number | null | undefined): string {
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
 }
 
-/** "01:42:07" — for a clock that's ticking in front of you. */
-export function stopwatch(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
-}
-
 export function minutesToHuman(minutes: number | null | undefined): string {
   return humanDuration(minutes == null ? null : minutes * 60);
 }
@@ -103,25 +93,6 @@ export function dayLabel(day: string): string {
   return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 
-/**
- * Minutes per unit — the headline productivity number. Divides by quantity so
- * a ticket for five statics is comparable with a ticket for one.
- */
-export function secondsPerUnit(totalSeconds: number, quantity: number): number {
-  return quantity > 0 ? Math.round(totalSeconds / quantity) : totalSeconds;
-}
-
-/**
- * How a designer tracked against the benchmark. Below 100 means faster than
- * the bar. Returned as a plain ratio so callers choose their own wording.
- */
-export function paceRatio(
-  actualSecondsPerUnit: number,
-  benchmarkMinutes: number,
-): number | null {
-  if (!benchmarkMinutes || !actualSecondsPerUnit) return null;
-  return Math.round((actualSecondsPerUnit / (benchmarkMinutes * 60)) * 100);
-}
 
 export function formatCount(units: Partial<Record<CreativeFormat, number>>): number {
   return Object.values(units).reduce<number>((sum, n) => sum + (n ?? 0), 0);

@@ -20,7 +20,6 @@ export function Column({
   canStart,
   onStart,
   onOpen,
-  showTime,
   draggableIds,
   empty,
 }: {
@@ -29,7 +28,6 @@ export function Column({
   canStart: (ticket: TicketWithRefs) => boolean;
   onStart: (ticket: TicketWithRefs) => void;
   onOpen: (ticketId: string) => void;
-  showTime: boolean;
   draggableIds: Set<string>;
   /** What to say when the lane is empty — only the status lanes have one. */
   empty?: string;
@@ -85,7 +83,6 @@ export function Column({
               canStart={canStart(ticket)}
               onStart={onStart}
               onOpen={onOpen}
-              showTime={showTime}
             />
           ))}
         </SortableContext>

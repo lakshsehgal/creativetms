@@ -297,8 +297,6 @@ export function buildWorkload({
     daily_capacity_minutes: 0,
     timezone: "",
     created_at: "",
-    break_started_at: null,
-    break_ticket_id: null,
   } as Profile;
   const unassigned = make(unassignedPerson);
 

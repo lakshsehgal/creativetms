@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { fetchBoardTickets, fetchTicketTime, queryKeys, TICKET_SELECT } from "@/lib/queries";
+import { fetchBoardTickets, queryKeys, TICKET_SELECT } from "@/lib/queries";
 import type { TicketWithRefs } from "@/lib/types";
 
 /**
@@ -23,17 +23,6 @@ export function useLiveTickets(initial: TicketWithRefs[]) {
     queryKey: queryKeys.tickets,
     queryFn: () => fetchBoardTickets(supabase),
     initialData: initial,
-  });
-
-  const ticketIds = (tickets.data ?? []).map((ticket) => ticket.id);
-
-  const times = useQuery({
-    // Keyed on the id set so it refetches when the board's contents change,
-    // not on every render.
-    queryKey: [...queryKeys.ticketTime, ticketIds.length],
-    queryFn: () => fetchTicketTime(supabase, ticketIds),
-    enabled: ticketIds.length > 0,
-    refetchInterval: 60_000,
   });
 
   useEffect(() => {
@@ -81,14 +70,8 @@ export function useLiveTickets(initial: TicketWithRefs[]) {
     };
   }, [queryClient, supabase]);
 
-  const timeById = new Map(times.data?.map((row) => [row.ticket_id, row]) ?? []);
-
   return {
-    tickets: (tickets.data ?? []).map((ticket) => ({
-      ...ticket,
-      total_seconds: timeById.get(ticket.id)?.total_seconds ?? 0,
-      is_running: timeById.get(ticket.id)?.is_running ?? false,
-    })),
+    tickets: tickets.data ?? [],
     isLoading: tickets.isLoading,
   };
 }

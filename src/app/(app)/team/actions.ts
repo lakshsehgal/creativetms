@@ -151,7 +151,7 @@ export async function setBenchmark(
     const admin = await requireAdmin();
 
     // null clears it. A format nobody has measured yet is better left blank
-    // than pinned to a guess — the scorecard just sits the pace figure out.
+    // than pinned to a guess — planning just shows it as unsized.
     if (minutes !== null && (!Number.isFinite(minutes) || minutes < 1)) {
       return { ok: false, error: "Benchmark has to be at least a minute" };
     }

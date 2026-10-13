@@ -162,11 +162,6 @@ export function WorkClient({
         });
         return;
       }
-
-      // A status change may have started or stopped a clock.
-      if (fields.status) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.ticketTime });
-      }
     },
     [queryClient, supabase, profile.id],
   );

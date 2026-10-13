@@ -22,8 +22,8 @@ export type TicketStatus =
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
 /**
- * What kind of work a session was. Original build, a revision round, or a
- * resize — three different questions that used to share one number.
+ * What kind of work a ticket is in. Original build, a revision round, or a
+ * resize — it labels each submitted version.
  */
 export type WorkPhase = "initial" | "revision" | "size_change";
 
@@ -37,9 +37,6 @@ export interface Profile {
   daily_capacity_minutes: number;
   timezone: string;
   created_at: string;
-  /** Set while this person is on a break; the clock is stopped. */
-  break_started_at: string | null;
-  break_ticket_id: string | null;
   /**
    * Shoot ops. An admin can hand this to a strategist who effectively runs
    * production, so they get the Shoot section and can block bandwidth without
@@ -204,9 +201,6 @@ export interface TicketWithRefs extends Ticket {
   brand: Pick<Brand, "id" | "name" | "color"> | null;
   assignee: PersonRef | null;
   author: PersonRef | null;
-  /** Merged in from the `ticket_time` view. */
-  total_seconds?: number;
-  is_running?: boolean;
 }
 
 export interface Deliverable {
@@ -228,25 +222,6 @@ export interface AppNotification {
   body: string;
   read_at: string | null;
   created_at: string;
-}
-
-export interface PhaseTime {
-  ticket_id: string;
-  phase: WorkPhase;
-  total_seconds: number;
-  sessions: number;
-}
-
-export interface WorkSession {
-  id: string;
-  ticket_id: string;
-  designer_id: string;
-  started_at: string;
-  last_heartbeat_at: string;
-  ended_at: string | null;
-  end_reason: string | null;
-  duration_seconds: number | null;
-  phase: WorkPhase;
 }
 
 export interface TicketComment {
@@ -298,7 +273,7 @@ export interface TicketEvent {
 
 export interface FormatBenchmark {
   format: CreativeFormat;
-  /** null = not measured yet. Pace comparisons sit out until it's set. */
+  /** null = not set yet. Planning shows the format as unsized until it is. */
   target_minutes_per_unit: number | null;
   /**
    * Minutes ON TOP of the base, per unit, when a ticket has to be generated
@@ -314,17 +289,13 @@ export interface DailyScorecard {
   id: string;
   designer_id: string;
   day: string;
-  active_seconds: number;
-  tickets_touched: number;
   tickets_completed: number;
   units_completed: number;
   units_by_format: Partial<Record<CreativeFormat, number>>;
-  seconds_by_format: Partial<Record<CreativeFormat, number>>;
   first_pass_count: number;
   revision_rounds: number;
   on_time_count: number;
   late_count: number;
-  efficiency_pct: number | null;
   generated_at: string;
 }
 
@@ -406,8 +377,8 @@ export const STATUSES: Record<
     hint: string;
     /** Solid fill for the status cell — Monday-style, readable on white. */
     fill: string;
-    /** Whether the clock runs here. Exactly one status says yes. */
-    clockRuns: boolean;
+    /** Somebody is actively on it. Exactly one status says yes. */
+    active: boolean;
     /** Counts as work still owed to the client. */
     open: boolean;
   }
@@ -416,63 +387,63 @@ export const STATUSES: Record<
     label: "New Request",
     hint: "Raised, nobody has started",
     fill: "#7b8794",
-    clockRuns: false,
+    active: false,
     open: true,
   },
   in_progress: {
     label: "In Progress",
-    hint: "Being worked on — the clock is running",
+    hint: "Being worked on",
     fill: "#0f7fd4",
-    clockRuns: true,
+    active: true,
     open: true,
   },
   size_changes: {
     label: "Size Changes",
     hint: "Resizes requested, waiting to be picked up",
     fill: "#a259d9",
-    clockRuns: false,
+    active: false,
     open: true,
   },
   ready_for_approval: {
     label: "Ready for Approval",
     hint: "Submitted, with the strategist",
     fill: "#f0a202",
-    clockRuns: false,
+    active: false,
     open: true,
   },
   sent_to_client: {
     label: "Sent to Client",
     hint: "Out for client review",
     fill: "#0b9d78",
-    clockRuns: false,
+    active: false,
     open: true,
   },
   needs_edit: {
     label: "Needs Edit",
     hint: "Came back with notes",
     fill: "#e8590c",
-    clockRuns: false,
+    active: false,
     open: true,
   },
   approved: {
     label: "Approved",
     hint: "Signed off",
     fill: "#2f9e44",
-    clockRuns: false,
+    active: false,
     open: false,
   },
   awaiting_assets: {
     label: "Awaiting Assets",
     hint: "Blocked on someone else",
     fill: "#c2255c",
-    clockRuns: false,
+    active: false,
     open: true,
   },
   on_hold: {
     label: "On Hold",
     hint: "Parked deliberately",
     fill: "#5c6270",
-    clockRuns: false,
+    active: false,
     open: true,
   },
 };
@@ -545,40 +516,13 @@ export function phaseMeta(phase: string | null | undefined) {
   );
 }
 
-/** Rows returned by designer_phase_breakdown(). */
-export interface DesignerPhaseRow {
-  designer_id: string;
-  designer_name: string;
-  phase: WorkPhase;
-  total_seconds: number;
-  sessions: number;
-  tickets: number;
-}
-
-/** Rows returned by designer_format_phase(). */
-export interface FormatPhaseRow {
-  designer_id: string;
-  format: CreativeFormat;
-  phase: WorkPhase;
-  total_seconds: number;
-  tickets: number;
-  units: number;
-}
-
-/** Rows returned by studio_phase_daily(). */
-export interface PhaseDayRow {
-  day: string;
-  phase: WorkPhase;
-  total_seconds: number;
-}
-
 export function statusMeta(status: string | null | undefined) {
   return (
     STATUSES[status as TicketStatus] ?? {
       label: status ?? "Unknown",
       hint: "",
       fill: "#7b8794",
-      clockRuns: false,
+      active: false,
       open: true,
     }
   );
@@ -595,23 +539,9 @@ export function formatMeta(format: string | null | undefined) {
   );
 }
 
-/**
- * Timing data is management information, not a scoreboard.
- *   - admin & operator: everything, including live clocks
- *   - designer: their own finished totals, never a ticking timer
- *   - strategist: nothing — they get delivery status
- */
-export function canSeeAllTime(role: UserRole): boolean {
+/** Admins and operators read every designer's numbers; others see their own. */
+export function canSeeAllNumbers(role: UserRole): boolean {
   return role === "admin" || role === "operator";
-}
-
-export function canSeeOwnTime(role: UserRole): boolean {
-  return role === "designer" || canSeeAllTime(role);
-}
-
-/** Only admins and operators watch a clock move. */
-export function canSeeLiveTimer(role: UserRole): boolean {
-  return canSeeAllTime(role);
 }
 
 export type BlockKind = "shoot" | "leave" | "holiday" | "other";

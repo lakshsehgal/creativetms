@@ -4,9 +4,9 @@ import { memo, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Link2, RotateCcw } from "lucide-react";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
-import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canAssignWork, canSeeOwnTime } from "@/lib/types";
+import { ALLOWED_TARGETS, STATUSES, STATUS_ORDER, canAssignWork } from "@/lib/types";
 import type { Group } from "@/lib/grouping";
-import { dueLabel, dueState, humanDuration, shortName } from "@/lib/format";
+import { dueLabel, dueState, shortName } from "@/lib/format";
 import { AiFlag, Avatar, FormatBadge } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
@@ -19,7 +19,7 @@ const DUE_TONE: Record<string, string> = {
   none: "var(--color-ink-3)",
 };
 
-type SortKey = "due" | "number" | "title" | "time";
+type SortKey = "due" | "number" | "title";
 
 /**
  * The spreadsheet view. Grouped with a coloured rail down the left, the way
@@ -47,9 +47,6 @@ export function ListView({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortKey>("due");
 
-  // Strategists never see timing; designers see their own finished totals.
-  const showTime = canSeeOwnTime(viewer.role);
-
   /**
    * The grouping is decided above — this only sorts inside each one, and drops
    * the empties, because an empty heading in a table is a line of noise where
@@ -64,7 +61,6 @@ export function ListView({
           tickets: [...group.tickets].sort((a, b) => {
             if (sort === "number") return b.number - a.number;
             if (sort === "title") return a.title.localeCompare(b.title);
-            if (sort === "time") return (b.total_seconds ?? 0) - (a.total_seconds ?? 0);
             // Undated work sinks rather than pretending to be urgent.
             return (a.due_at ?? "9999").localeCompare(b.due_at ?? "9999");
           }),
@@ -84,10 +80,7 @@ export function ListView({
     <div className="min-w-[900px] px-5 py-4">
       <div className="mb-2 flex items-center gap-2 pl-1 text-[11px] text-[var(--color-ink-3)]">
         Sort
-        {(showTime
-          ? (["due", "number", "title", "time"] as SortKey[])
-          : (["due", "number", "title"] as SortKey[])
-        ).map((key) => (
+        {(["due", "number", "title"] as SortKey[]).map((key) => (
           <button
             key={key}
             onClick={() => setSort(key)}
@@ -97,7 +90,7 @@ export function ListView({
                 : "hover:text-[var(--color-ink-2)]"
             }`}
           >
-            {{ due: "Due", number: "Newest", title: "Title", time: "Time spent" }[key]}
+            {{ due: "Due", number: "Newest", title: "Title" }[key]}
           </button>
         ))}
       </div>
@@ -150,9 +143,6 @@ export function ListView({
                       <th className="px-2 py-1.5 text-left font-medium">Raised by</th>
                       <th className="px-2 py-1.5 text-left font-medium">Designer</th>
                       <th className="px-2 py-1.5 text-left font-medium">Due</th>
-                      {showTime && (
-                        <th className="px-3 py-1.5 text-right font-medium">Time</th>
-                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -164,7 +154,6 @@ export function ListView({
                         designers={designers}
                         onPatch={onPatch}
                         onOpen={onOpen}
-                        showTime={showTime}
                       />
                     ))}
                   </tbody>
@@ -184,14 +173,12 @@ const Row = memo(function Row({
   designers,
   onPatch,
   onOpen,
-  showTime,
 }: {
   ticket: TicketWithRefs;
   viewer: Profile;
   designers: Profile[];
   onPatch: (ticket: TicketWithRefs, fields: Record<string, unknown>) => void;
   onOpen: (ticketId: string) => void;
-  showTime: boolean;
 }) {
   const due = dueState(ticket);
   const isStaff = viewer.role !== "designer";
@@ -272,7 +259,7 @@ const Row = memo(function Row({
             className="flex h-[30px] items-center justify-center gap-1.5 text-[11.5px] font-semibold text-white"
             style={{ background: STATUSES[ticket.status].fill }}
           >
-            {STATUSES[ticket.status].clockRuns && (
+            {STATUSES[ticket.status].active && (
               <span className="breathe h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
             )}
             {STATUSES[ticket.status].label}
@@ -363,12 +350,6 @@ const Row = memo(function Row({
           <EtaChip ticket={ticket} />
         </span>
       </td>
-
-      {showTime && (
-        <td className="tabular px-3 py-1.5 text-right text-[11.5px] text-[var(--color-ink-2)]">
-          {(ticket.total_seconds ?? 0) > 0 ? humanDuration(ticket.total_seconds) : "—"}
-        </td>
-      )}
     </tr>
   );
 });

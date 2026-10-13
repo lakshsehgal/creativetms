@@ -44,7 +44,6 @@ export type Anchor =
   | "nav-shoot"
   | "nav-guide"
   | "bell"
-  | "break"
   | "profile-link"
   // work
   | "layouts"
@@ -74,7 +73,7 @@ export type Anchor =
   | "shoot-tabs";
 
 /** A drawn explanation, for the few things the live screen can't be pointed at. */
-export type Illustration = "clock" | "rush" | "noon" | "eta";
+export type Illustration = "rush" | "noon" | "eta";
 
 export interface TourStep {
   id: string;
@@ -119,14 +118,7 @@ const DESIGNER: Track = {
       path: "/tickets",
       title: "Two minutes, then you're set",
       body:
-        "This is where the studio's work lives. Before anything else, the one promise the tool makes to you: you will never be asked to log time, fill a timesheet, or account for your day. Not once. The rest of this explains how that works.",
-    },
-    {
-      id: "clock",
-      art: "clock",
-      title: "The clock runs itself",
-      body:
-        "Moving a card to In Progress starts it. Moving it out stops it. That's the whole mechanism — there is no timer to remember, no button to forget, and nothing to fill in at 7pm. If you take a break, it pauses. If you forget a card overnight, it's swept rather than left running against you.",
+        "This is where the studio's work lives. You will never be asked to log time, fill a timesheet, or account for your day — you move cards, and that's it. The rest of this explains how.",
     },
     {
       id: "work",
@@ -155,7 +147,7 @@ const DESIGNER: Track = {
       target: "col-in_progress",
       title: "Picking something up",
       body:
-        "Drag a card into In Progress, or press the play button on it. That single move assigns it to you and starts the clock. When you're done, move it to Ready for Approval — and that's the entire ritual.",
+        "Drag a card into In Progress, or press the play button on it. That single move assigns it to you. When you're done, move it to Ready for Approval — and that's the entire ritual.",
     },
     {
       id: "rush",
@@ -169,14 +161,14 @@ const DESIGNER: Track = {
       target: "col-ready_for_approval",
       title: "Handing it back",
       body:
-        "Moving a card here asks you for the Frame.io link, and the clock stops. Every round gets its own link — v1, v2, v3 — so when somebody asks what changed between two versions, the answer is on the ticket rather than in a chat.",
+        "Moving a card here asks you for the Frame.io link. Every round gets its own link — v1, v2, v3 — so when somebody asks what changed between two versions, the answer is on the ticket rather than in a chat.",
     },
     {
       id: "edits",
       target: "col-needs_edit",
       title: "When it comes back",
       body:
-        "Notes from the strategist or the client land here. Pick it up the same way and the clock starts again — but as a revision round, counted separately from the original build. That split is why nobody has to argue about whether a brand is expensive.",
+        "Notes from the strategist or the client land here. Pick it up the same way — it's counted as a revision round, separately from the original build, and each round's link sits alongside the others on the ticket.",
     },
     {
       id: "my-day",
@@ -203,13 +195,6 @@ const DESIGNER: Track = {
         "Sometimes a strategist needs a date on a specific piece. It appears here. Give a rough answer — it can change later, and changing it tells them automatically. Answer once and the chasing stops.",
     },
     {
-      id: "break",
-      target: "break",
-      title: "Stepping away",
-      body:
-        "Lunch, a call, a cigarette. Press this and everything stops; press it again when you're back. It exists so the numbers stay honest without you having to think about them.",
-    },
-    {
       id: "bell",
       target: "bell",
       title: "What needs you",
@@ -222,13 +207,13 @@ const DESIGNER: Track = {
       target: "nav-scorecards",
       title: "Yesterday, in your own words",
       body:
-        "What you shipped and how long it took, worked out from the cards you moved. It's a mirror, not a league table — nobody is ranked against anybody here.",
+        "What you shipped, how much landed first time and how much was on time, worked out from the cards you moved. It's a mirror, not a league table — nobody is ranked against anybody here.",
     },
     {
       id: "done",
       title: "That's the whole tool",
       body:
-        "Move cards, add review links, keep My Day roughly honest. Everything else — the timing, the reporting, the chasing — happens because of those three things rather than in addition to them. The guide is in the sidebar whenever you want it again.",
+        "Move cards, add review links, keep My Day roughly honest. Everything else — the reporting, the chasing — happens because of those three things rather than in addition to them. The guide is in the sidebar whenever you want it again.",
     },
   ],
 };
@@ -375,7 +360,7 @@ const STRATEGIST: Track = {
       id: "done",
       title: "That's the whole tool",
       body:
-        "Raise briefs, check workload before you promise, ask for an ETA when it matters. Everything else the tool does — the timing, the reporting, the notifying — falls out of that. The guide is in the sidebar whenever you want it again.",
+        "Raise briefs, check workload before you promise, ask for an ETA when it matters. Everything else the tool does — the reporting, the notifying — falls out of that. The guide is in the sidebar whenever you want it again.",
     },
   ],
 };

@@ -11,7 +11,6 @@ import type {
   TicketEvent,
   TicketRevision,
   TicketWithRefs,
-  WorkSession,
 } from "@/lib/types";
 
 /**
@@ -106,21 +105,6 @@ export function useTicketData(id: string, initial: TicketWithRefs) {
     },
   });
 
-  /** Sessions this viewer is allowed to see: their own, or all if admin. */
-  const sessions = useQuery({
-    queryKey: ["sessions", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("work_sessions")
-        .select("*")
-        .eq("ticket_id", id)
-        .order("started_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as WorkSession[];
-    },
-    refetchInterval: 60_000,
-  });
-
   useEffect(() => {
     const channel = supabase
       .channel(`ticket:${id}`)
@@ -135,7 +119,6 @@ export function useTicketData(id: string, initial: TicketWithRefs) {
         () => {
           queryClient.invalidateQueries({ queryKey: queryKeys.ticket(id) });
           queryClient.invalidateQueries({ queryKey: queryKeys.events(id) });
-          queryClient.invalidateQueries({ queryKey: ["sessions", id] });
         },
       )
       .subscribe();
@@ -145,5 +128,5 @@ export function useTicketData(id: string, initial: TicketWithRefs) {
     };
   }, [id, queryClient, supabase]);
 
-  return { ticket, comments, events, revisions, attachments, sessions, deliverables };
+  return { ticket, comments, events, revisions, attachments, deliverables };
 }

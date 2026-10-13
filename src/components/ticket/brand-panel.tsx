@@ -9,7 +9,7 @@ import { BRAND_LINKS } from "@/lib/types";
  *
  * The Brands page isn't in a designer's sidebar and doesn't need to be — what
  * they need is the logo folder and the one line about what this client hates,
- * at the moment they've picked the ticket up and the clock is running. Asking
+ * at the moment they've picked the ticket up. Asking
  * in a group chat where the brand kit lives is a five-minute tax on every first
  * ticket for a client, paid by the person least able to answer it.
  *

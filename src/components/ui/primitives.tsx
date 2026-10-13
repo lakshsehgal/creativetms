@@ -132,7 +132,7 @@ export function StatusPill({
       }`}
       style={{ background: meta.fill }}
     >
-      {meta.clockRuns && (
+      {meta.active && (
         <span className="breathe h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
       )}
       {meta.label}
@@ -152,7 +152,7 @@ export function StatusCell({ status }: { status: TicketStatus }) {
       className="flex h-full min-h-[30px] w-full items-center justify-center gap-1.5 px-2 text-[11.5px] font-semibold text-white"
       style={{ background: meta.fill }}
     >
-      {meta.clockRuns && (
+      {meta.active && (
         <span className="breathe h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
       )}
       {meta.label}

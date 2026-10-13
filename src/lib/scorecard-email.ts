@@ -1,16 +1,12 @@
-import type { DailyScorecard, FormatBenchmark } from "@/lib/types";
+import type { DailyScorecard } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 
 type CardWithDesigner = DailyScorecard & {
   designer?: { full_name: string; email: string } | null;
 };
 
-function minutes(seconds: number): string {
-  if (!seconds) return "—";
-  const total = Math.round(seconds / 60);
-  const hours = Math.floor(total / 60);
-  const rest = total % 60;
-  return hours ? `${hours}h ${rest}m` : `${rest}m`;
+function percent(part: number, whole: number): string {
+  return whole ? `${Math.round((part / whole) * 100)}%` : "—";
 }
 
 /**
@@ -23,62 +19,46 @@ function minutes(seconds: number): string {
 export function buildScorecardEmail({
   day,
   cards,
-  benchmarks,
 }: {
   day: string;
   cards: CardWithDesigner[];
-  benchmarks: FormatBenchmark[];
 }): string {
-  const rows = [...cards].sort((a, b) => b.active_seconds - a.active_seconds);
+  const rows = [...cards].sort((a, b) => b.units_completed - a.units_completed);
 
   const totals = rows.reduce(
     (acc, card) => ({
-      seconds: acc.seconds + card.active_seconds,
       units: acc.units + card.units_completed,
       tickets: acc.tickets + card.tickets_completed,
       firstPass: acc.firstPass + card.first_pass_count,
+      onTime: acc.onTime + card.on_time_count,
+      dated: acc.dated + card.on_time_count + card.late_count,
     }),
-    { seconds: 0, units: 0, tickets: 0, firstPass: 0 },
+    { units: 0, tickets: 0, firstPass: 0, onTime: 0, dated: 0 },
   );
-
-  const benchmarkLine = FORMAT_ORDER.map((format) => {
-    const target = benchmarks.find((row) => row.format === format)?.target_minutes_per_unit;
-    return `${FORMATS[format].label} ${target ? `${target}m` : "—"}`;
-  }).join(" &middot; ");
 
   const body =
     rows.length === 0
-      ? `<tr><td colspan="6" style="padding:18px;text-align:center;color:#6b7280;font-size:13px">
-           Nothing tracked on this day.
+      ? `<tr><td colspan="5" style="padding:18px;text-align:center;color:#6b7280;font-size:13px">
+           Nothing signed off on this day.
          </td></tr>`
       : rows
           .map((card) => {
             const perFormat = FORMAT_ORDER.map((format) => {
               const units = card.units_by_format?.[format] ?? 0;
-              const seconds = card.seconds_by_format?.[format] ?? 0;
-              if (!units || !seconds) return null;
-              return `${FORMATS[format].label} ${minutes(Math.round(seconds / units))}/unit`;
+              return units ? `${units} ${FORMATS[format].label}` : null;
             })
               .filter(Boolean)
               .join(" &middot; ");
-
-            const pace = card.efficiency_pct;
-            const paceColour = pace == null ? "#9ca3af" : pace >= 100 ? "#2f9e44" : "#e8590c";
 
             return `<tr style="border-top:1px solid #e5e7eb">
               <td style="padding:10px 12px;font-size:13px;color:#111827">
                 <strong>${card.designer?.full_name || card.designer?.email || "Unknown"}</strong>
                 ${perFormat ? `<div style="color:#6b7280;font-size:11.5px;margin-top:3px">${perFormat}</div>` : ""}
               </td>
-              <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">${minutes(card.active_seconds)}</td>
               <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">${card.units_completed}</td>
               <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">${card.tickets_completed}</td>
-              <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">
-                ${card.tickets_completed ? `${Math.round((card.first_pass_count / card.tickets_completed) * 100)}%` : "—"}
-              </td>
-              <td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;color:${paceColour}">
-                ${pace ?? "—"}
-              </td>
+              <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">${percent(card.first_pass_count, card.tickets_completed)}</td>
+              <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">${percent(card.on_time_count, card.on_time_count + card.late_count)}</td>
             </tr>`;
           })
           .join("");
@@ -95,10 +75,10 @@ export function buildScorecardEmail({
     <div style="padding:18px 24px;border-bottom:1px solid #e5e7eb">
       <table width="100%" cellpadding="0" cellspacing="0"><tr>
         ${[
-          ["Tracked", minutes(totals.seconds)],
           ["Units", String(totals.units)],
           ["Tickets", String(totals.tickets)],
-          ["First pass", totals.tickets ? `${Math.round((totals.firstPass / totals.tickets) * 100)}%` : "—"],
+          ["First pass", percent(totals.firstPass, totals.tickets)],
+          ["On time", percent(totals.onTime, totals.dated)],
         ]
           .map(
             ([label, value]) => `<td style="text-align:center">
@@ -113,20 +93,13 @@ export function buildScorecardEmail({
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr style="background:#f9fafb">
         <th align="left"  style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Designer</th>
-        <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Tracked</th>
         <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Units</th>
         <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Tickets</th>
         <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">1st pass</th>
-        <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Pace</th>
+        <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">On time</th>
       </tr>
       ${body}
     </table>
-
-    <div style="padding:14px 24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11.5px;line-height:1.6">
-      Pace compares benchmark minutes earned against minutes tracked; 100 is on the bar.
-      <br/>Benchmarks: ${benchmarkLine}
-      <br/>Breaks are excluded — time only accrues while a ticket is In Progress.
-    </div>
   </div>
 </body></html>`;
 }

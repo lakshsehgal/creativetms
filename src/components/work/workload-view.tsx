@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CircleHelp, Users } from "lucide-react";
 import type { Profile, TicketWithRefs } from "@/lib/types";
-import { canSeeAllTime } from "@/lib/types";
 import {
   dayRange,
   buildWorkload,
@@ -362,10 +361,7 @@ export function WorkloadView({
         <span className="font-medium text-[var(--color-ink-2)]">+n?</span>{" "}
         rather than as free time. The week is full Monday to Friday, half on
         Saturday, and Sunday off — so a Saturday fills at half the hours, and
-        anything booked on a Sunday is flagged rather than absorbed.{" "}
-        {canSeeAllTime(viewer.role) && (
-          <>Actual time spent lives in Analytics and Scorecards.</>
-        )}
+        anything booked on a Sunday is flagged rather than absorbed.
       </p>
     </div>
   );

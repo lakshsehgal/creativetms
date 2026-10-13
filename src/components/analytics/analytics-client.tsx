@@ -3,15 +3,14 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { DailyScorecard, FormatBenchmark, Profile } from "@/lib/types";
-import { FORMAT_ORDER, FORMATS, canSeeAllTime } from "@/lib/types";
-import { humanDuration, isoDay, minutesToHuman, pct } from "@/lib/format";
+import { FORMAT_ORDER, FORMATS, canSeeAllNumbers } from "@/lib/types";
+import { isoDay, minutesToHuman, pct } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Card, PageHeader, StatTile } from "@/components/ui/primitives";
 import { BarChart, type BarDatum } from "@/components/charts/bar-chart";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { DesignerTable } from "./designer-table";
-import { PhasePanel } from "./phase-panel";
 
 const RANGES = [
   { key: "7", label: "7 days" },
@@ -23,8 +22,6 @@ interface FormatStat {
   format: keyof typeof FORMATS;
   tickets: number;
   units: number;
-  total_seconds: number;
-  seconds_per_unit: number | null;
   first_pass_tickets: number;
   on_time_tickets: number;
   dated_tickets: number;
@@ -42,7 +39,7 @@ export function AnalyticsClient({
 }) {
   const supabase = supabaseBrowser();
   const [range, setRange] = useState("30");
-  const isAdmin = canSeeAllTime(profile.role);
+  const isAdmin = canSeeAllNumbers(profile.role);
 
   const { from, to } = useMemo(() => {
     const end = new Date();
@@ -71,7 +68,7 @@ export function AnalyticsClient({
         p_to: to,
       });
       if (error) throw error;
-      return (data ?? []) as { day: string; units: number; tickets: number; active_seconds: number }[];
+      return (data ?? []) as { day: string; units: number; tickets: number }[];
     },
   });
 
@@ -95,30 +92,13 @@ export function AnalyticsClient({
     (acc, row) => ({
       units: acc.units + row.units,
       tickets: acc.tickets + row.tickets,
-      seconds: acc.seconds + Number(row.total_seconds ?? 0),
       firstPass: acc.firstPass + row.first_pass_tickets,
       onTime: acc.onTime + row.on_time_tickets,
       dated: acc.dated + row.dated_tickets,
       revisions: acc.revisions + row.revision_rounds,
     }),
-    { units: 0, tickets: 0, seconds: 0, firstPass: 0, onTime: 0, dated: 0, revisions: 0 },
+    { units: 0, tickets: 0, firstPass: 0, onTime: 0, dated: 0, revisions: 0 },
   );
-
-  const paceBars: BarDatum[] = FORMAT_ORDER.map((format) => {
-    const row = rows.find((item) => item.format === format);
-    const benchmark = benchmarks.find((item) => item.format === format);
-    return {
-      key: format,
-      label: FORMATS[format].label,
-      value: row?.seconds_per_unit ?? 0,
-      color: FORMATS[format].series,
-      // An unmeasured format shows its real time with no target line.
-      benchmark: benchmark?.target_minutes_per_unit
-        ? benchmark.target_minutes_per_unit * 60
-        : null,
-      note: row ? `${row.units} unit${row.units === 1 ? "" : "s"}` : "—",
-    };
-  });
 
   const volumeBars: BarDatum[] = FORMAT_ORDER.map((format) => {
     const row = rows.find((item) => item.format === format);
@@ -195,37 +175,23 @@ export function AnalyticsClient({
               hint={`${totals.dated} tickets had a deadline`}
             />
             <StatTile
-              label="Tracked time"
-              value={humanDuration(totals.seconds)}
+              label="Revision rounds"
+              value={totals.revisions}
               hint="Across everything signed off"
             />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <h2 className="text-[13px] font-semibold tracking-tight">Time per unit</h2>
-              <p className="mb-4 mt-0.5 text-[11.5px] text-[var(--color-ink-3)]">
-                Actual against the benchmark line. Shorter is faster.
-              </p>
-              <BarChart
-                data={paceBars}
-                formatValue={(seconds) => humanDuration(seconds)}
-                emptyLabel="Nothing signed off in this window yet"
-              />
-            </Card>
-
-            <Card>
-              <h2 className="text-[13px] font-semibold tracking-tight">Volume by format</h2>
-              <p className="mb-4 mt-0.5 text-[11.5px] text-[var(--color-ink-3)]">
-                Units signed off in the last {range} days.
-              </p>
-              <BarChart
-                data={volumeBars}
-                formatValue={(units) => `${units}`}
-                emptyLabel="Nothing signed off in this window yet"
-              />
-            </Card>
-          </div>
+          <Card>
+            <h2 className="text-[13px] font-semibold tracking-tight">Volume by format</h2>
+            <p className="mb-4 mt-0.5 text-[11.5px] text-[var(--color-ink-3)]">
+              Units signed off in the last {range} days.
+            </p>
+            <BarChart
+              data={volumeBars}
+              formatValue={(units) => `${units}`}
+              emptyLabel="Nothing signed off in this window yet"
+            />
+          </Card>
 
           <Card>
             <h2 className="text-[13px] font-semibold tracking-tight">Output over time</h2>
@@ -235,30 +201,21 @@ export function AnalyticsClient({
             <TrendChart series={trend} formatValue={(value) => String(value)} />
           </Card>
 
-          {/* The phase split is the detailed view, and it is per-person
-              timing, so it sits behind the same gate as the designer table. */}
-          {isAdmin && (
-            <PhasePanel from={from} to={to} range={range} designers={designers} />
-          )}
-
           {isAdmin ? (
             <DesignerTable
               designers={designers}
               scorecards={scorecards.data ?? []}
-              benchmarks={benchmarks}
               loading={scorecards.isLoading}
             />
           ) : (
             <Card>
               <p className="text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
-                Per-designer timing is for admins and operators. These team figures are the
-                planning numbers — what a{" "}
-                {FORMATS.static.label.toLowerCase()} or{" "}
-                {FORMATS.video.label.toLowerCase()} actually costs in hours, so
-                you can quote a deadline you can keep.
+                Per-designer numbers are for admins and operators. These team figures
+                show what the studio is delivering, how much of it lands first time,
+                and how much of it lands when it was promised.
               </p>
               <p className="mt-2 text-[12px] text-[var(--color-ink-3)]">
-                Current benchmarks:{" "}
+                Planning estimates per unit:{" "}
                 {FORMAT_ORDER.map((format) => {
                   const target = benchmarks.find((item) => item.format === format)
                     ?.target_minutes_per_unit;

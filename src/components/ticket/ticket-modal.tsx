@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
+import type { Brand, Profile, TicketWithRefs } from "@/lib/types";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { TICKET_SELECT, queryKeys } from "@/lib/queries";
 import { TicketDetail } from "./ticket-detail";
@@ -56,16 +56,6 @@ export function TicketModal({
     },
   });
 
-  const benchmarks = useQuery({
-    queryKey: queryKeys.benchmarks,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("format_benchmarks").select("*");
-      if (error) throw error;
-      return (data ?? []) as FormatBenchmark[];
-    },
-  });
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/45 p-4 backdrop-blur-[2px] sm:p-8"
@@ -90,7 +80,6 @@ export function TicketModal({
             onClose={onClose}
             profile={profile}
             initialTicket={ticket.data}
-            benchmarks={benchmarks.data ?? []}
             designers={designers}
             brands={brands}
           />

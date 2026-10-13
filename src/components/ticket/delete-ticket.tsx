@@ -13,23 +13,22 @@ import { Button } from "@/components/ui/form";
 /**
  * Removing a ticket.
  *
- * The row is stamped rather than destroyed. A real DELETE would take the work
- * sessions, the comments and the activity trail with it, and there is no
- * getting an afternoon of someone's tracked time back once it's gone — so the
- * ticket leaves every list and stops counting, and can be put back.
+ * The row is stamped rather than destroyed. A real DELETE would take the
+ * comments, the versions and the activity trail with it — so the ticket
+ * leaves every list and stops counting, and can be put back.
  *
  * Who may: an admin or an operator, always — they run the floor and shouldn't
  * have to find each other to clear a duplicate. Anyone else, a brief they
- * raised themselves, as long as no clock has ever run against it. A removal
- * stops time counting, and a designer's day quietly changing because somebody
- * tidied up a brief is the one outcome worth a guard.
+ * raised themselves, as long as nobody has started it. A designer's day
+ * quietly changing because somebody tidied up a brief is the one outcome
+ * worth a guard.
  *
  * The database enforces all of this in delete_ticket(); this only decides
  * whether to draw the button.
  */
 export function canRemove(ticket: TicketWithRefs, viewer: Profile): boolean {
   if (viewer.role === "admin" || viewer.role === "operator") return true;
-  return ticket.created_by === viewer.id && (ticket.total_seconds ?? 0) === 0;
+  return ticket.created_by === viewer.id && !ticket.started_at;
 }
 
 export function DeleteTicket({
@@ -48,7 +47,7 @@ export function DeleteTicket({
 
   if (!canRemove(ticket, profile)) return null;
 
-  const tracked = (ticket.total_seconds ?? 0) > 0;
+  const started = Boolean(ticket.started_at);
 
   async function restore() {
     const { error } = await supabase.rpc("restore_ticket", { p_ticket_id: ticket.id });
@@ -102,14 +101,14 @@ export function DeleteTicket({
         width={440}
       >
         <ul className="space-y-1.5 text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
-          {tracked && (
+          {started && (
             <li className="flex gap-2">
               <span aria-hidden style={{ color: "var(--color-warning)" }}>
                 •
               </span>
               <span>
                 <span className="font-medium text-[var(--color-ink)]">
-                  Time logged against it stops counting
+                  Work has already started on it
                 </span>{" "}
                 — it comes out of the scorecards and the analytics.
               </span>
@@ -120,8 +119,8 @@ export function DeleteTicket({
               •
             </span>
             <span>
-              Nothing is destroyed. The comments, the activity and any tracked
-              time stay on the row, so restoring puts it all back.
+              Nothing is destroyed. The comments, the versions and the activity
+              stay on the row, so restoring puts it all back.
             </span>
           </li>
         </ul>

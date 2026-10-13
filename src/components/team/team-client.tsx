@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Clapperboard, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 import type { FormatBenchmark, Profile, UserRole } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
-import { humanDuration, isoDay, minutesToHuman } from "@/lib/format";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { minutesToHuman } from "@/lib/format";
 import { Avatar, Card, PageHeader } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
@@ -26,8 +24,8 @@ import {
 } from "@/app/(app)/team/actions";
 
 const ROLE_BLURB: Record<UserRole, string> = {
-  admin: "Everything, including timing data and this page",
-  operator: "Reads all analytics, scorecards and timing — doesn't run the board",
+  admin: "Everything, including analytics, scorecards and this page",
+  operator: "Reads all analytics and scorecards — doesn't run the board",
   strategist: "Raises tickets, reviews work, sees team analytics — plus shoots, with shoot ops",
   designer: "Works tickets, sees their own scorecard",
 };
@@ -44,31 +42,6 @@ export function TeamClient({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [inviting, setInviting] = useState(false);
-
-  /**
-   * What each format has actually cost over the last 90 days. Shown beside the
-   * benchmark input so a target gets set from evidence rather than a guess —
-   * which matters most for a format like UGC, where the work is grade,
-   * line-up and hand-placed clips and the spread is wide.
-   */
-  const actuals = useQuery({
-    queryKey: ["format-actuals"],
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const since = new Date();
-      since.setDate(since.getDate() - 90);
-      const { data, error } = await supabaseBrowser().rpc("team_format_stats", {
-        p_from: isoDay(since),
-        p_to: isoDay(),
-      });
-      if (error) throw error;
-      return (data ?? []) as {
-        format: string;
-        units: number;
-        seconds_per_unit: number | null;
-      }[];
-    },
-  });
 
   /** Every action returns the same shape, so one handler covers all of them. */
   function run(action: () => Promise<ActionResult>) {
@@ -266,10 +239,9 @@ export function TeamClient({
               <div>
                 <h2 className="text-[13px] font-semibold tracking-tight">Format benchmarks</h2>
                 <p className="mt-0.5 max-w-xl text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
-                  The minutes one unit of each format is expected to take. Every
-                  pace figure on a scorecard is measured against these, so set
-                  them to something the team agrees is fair — a bar nobody
-                  believes in is a bar nobody works to.
+                  The minutes one unit of each format is expected to take. These
+                  size the work in the Workload view and in each designer&apos;s
+                  day plan, so set them to something the team agrees is fair.
                 </p>
                 <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
                   The <span className="font-medium">+ AI</span> line is what
@@ -285,7 +257,6 @@ export function TeamClient({
             <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {FORMAT_ORDER.map((format) => {
                 const row = benchmarks.find((item) => item.format === format);
-                const measured = actuals.data?.find((item) => item.format === format);
                 return (
                   <li
                     key={format}
@@ -359,22 +330,10 @@ export function TeamClient({
                       </span>
                     </div>
 
-                    {/* What the team has actually taken. This is the number to
-                        set the benchmark from once there's enough of it. */}
                     <p className="mt-1.5 text-[11px] text-[var(--color-ink-3)]">
-                      {measured ? (
-                        <>
-                          Measured{" "}
-                          <span className="tabular font-medium text-[var(--color-ink-2)]">
-                            {humanDuration(measured.seconds_per_unit)}
-                          </span>{" "}
-                          / unit over {measured.units} unit{measured.units === 1 ? "" : "s"}
-                        </>
-                      ) : row?.target_minutes_per_unit ? (
-                        `${minutesToHuman(row.target_minutes_per_unit)} per unit`
-                      ) : (
-                        "No target, no data yet"
-                      )}
+                      {row?.target_minutes_per_unit
+                        ? `${minutesToHuman(row.target_minutes_per_unit)} per unit`
+                        : "No estimate set"}
                     </p>
                   </li>
                 );
@@ -444,7 +403,7 @@ function InviteDialog({
             <option value="designer">Designer — works tickets, sees own scorecard</option>
             <option value="strategist">Strategist — raises and reviews tickets</option>
             <option value="operator">Operator — reads all analytics and scorecards</option>
-            <option value="admin">Admin — full access including timing data</option>
+            <option value="admin">Admin — full access</option>
           </Select>
         </Field>
 

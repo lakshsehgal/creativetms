@@ -10,9 +10,8 @@ export const maxDuration = 60;
  *
  * Writes one immutable scorecard per designer per day, then emails the whole
  * floor's numbers to every admin and operator. Runs late enough that the day
- * is over in the team's timezone, and closes any session still hanging open
- * first so nothing is counted twice tomorrow. Re-running a day overwrites
- * rather than duplicating, so a retry is always safe.
+ * is over in the team's timezone. Re-running a day overwrites rather than
+ * duplicating, so a retry is always safe.
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -23,14 +22,6 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = supabaseAdmin();
-
-  // Anything still open at this hour is somebody's forgotten tab.
-  const { data: closed, error: sweepError } = await supabase.rpc("close_stale_sessions", {
-    p_grace_minutes: 10,
-  });
-  if (sweepError) {
-    return NextResponse.json({ error: sweepError.message }, { status: 500 });
-  }
 
   const day = request.nextUrl.searchParams.get("day");
   const { data: written, error } = await supabase.rpc("generate_daily_scorecards", {
@@ -45,7 +36,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    sessions_closed: closed,
     scorecards_written: written,
     ...digest,
   });
@@ -74,12 +64,9 @@ async function sendDigest(
     .select("*, designer:profiles!daily_scorecards_designer_id_fkey ( full_name, email )")
     .eq("day", target);
 
-  const { data: benchmarks } = await supabase.from("format_benchmarks").select("*");
-
   const html = buildScorecardEmail({
     day: target,
     cards: cards ?? [],
-    benchmarks: benchmarks ?? [],
   });
 
   const result = await sendScorecardEmail({

@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { CalendarCheck, CalendarPlus, Timer, X } from "lucide-react";
+import { CalendarCheck, CalendarPlus, X } from "lucide-react";
 import type { Profile, TicketWithRefs } from "@/lib/types";
-import { STATUSES, canSeeOwnTime } from "@/lib/types";
-import { dueLabel, humanDuration, isoDay } from "@/lib/format";
+import { dueLabel, isoDay } from "@/lib/format";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
@@ -112,7 +111,6 @@ export function TodayView({
             const rows = byDesigner.get(person.id) ?? [];
             if (rows.length === 0) return null;
 
-            const tracked = rows.reduce((sum, row) => sum + (row.total_seconds ?? 0), 0);
             const live = rows.find((row) => row.status === "in_progress");
 
             return (
@@ -143,12 +141,6 @@ export function TodayView({
                         style={{ background: "var(--color-accent)" }}
                       />
                       on “{live.title}”
-                    </span>
-                  )}
-                  {tracked > 0 && canSeeOwnTime(viewer.role) && (
-                    <span className="tabular ml-2 flex items-center gap-1 text-[11.5px] text-[var(--color-ink-3)]">
-                      <Timer size={11} />
-                      {humanDuration(tracked)}
                     </span>
                   )}
                 </header>
@@ -208,9 +200,7 @@ export function TodayView({
       )}
 
       <p className="mt-6 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
-        A ticket lands here when a designer adds it or starts working on it.{" "}
-        {STATUSES.in_progress.label} is the only status where the clock runs, so
-        the timings above are hands-on minutes, not elapsed time.
+        A ticket lands here when a designer adds it or starts working on it.
       </p>
     </div>
   );

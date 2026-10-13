@@ -20,7 +20,6 @@ import { canRunShoots } from "@/lib/types";
 import { avatarTint, initials } from "@/lib/format";
 import { Logo } from "@/components/ui/logo";
 import { TourLauncher } from "@/components/tour/tour-launcher";
-import { BreakMode } from "./break-mode";
 import { SignOutButton } from "./sign-out-button";
 import { NotificationBell } from "./notification-bell";
 
@@ -148,7 +147,6 @@ export function Sidebar({ profile }: { profile: Profile }) {
       </div>
 
       <div className="space-y-2 border-t border-[var(--color-line)] p-2.5">
-        {profile.role === "designer" && !collapsed && <BreakMode profile={profile} />}
         <Link
           href="/profile"
           data-tour="profile-link"

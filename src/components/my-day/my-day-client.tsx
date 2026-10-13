@@ -5,13 +5,11 @@ import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Inbox, Play } from "lucide-react";
-import type { DailyScorecard, FormatBenchmark, Profile, TicketWithRefs, WorkSession } from "@/lib/types";
-import { FORMAT_ORDER, FORMATS, canSeeLiveTimer } from "@/lib/types";
-import { dueLabel, dueState, humanDuration, isoDay, stopwatch } from "@/lib/format";
+import type { DailyScorecard, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
+import { FORMAT_ORDER, FORMATS } from "@/lib/types";
+import { dueLabel, dueState, isoDay } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
-import { useHeartbeat } from "@/hooks/use-heartbeat";
-import { secondsSince, useTicking } from "@/hooks/use-ticking";
 import { useLiveTickets } from "@/hooks/use-live-tickets";
 import { Card, FormatBadge, PageHeader, StatTile } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
@@ -44,32 +42,6 @@ export function MyDayClient({
     (ticket) => ticket.status === "new_request" && !ticket.assigned_to,
   );
 
-  useHeartbeat(running?.id ?? null, Boolean(running));
-  /**
-   * A designer's totals move at the pace they're written in — minutes — so the
-   * page re-renders once a minute rather than once a second. Hiding the
-   * stopwatch while "Tracked today" still counted up in front of them would
-   * have moved the surveillance feeling rather than removed it, and it saves
-   * fifty-nine renders a minute besides.
-   */
-  useTicking(Boolean(running), canSeeLiveTimer(profile.role) ? 1000 : 60_000);
-
-  /** Today's own sessions — the number the designer sees before anyone else does. */
-  const today = useQuery({
-    queryKey: ["my-day", isoDay()],
-    refetchInterval: 60_000,
-    queryFn: async () => {
-      const start = new Date(`${isoDay()}T00:00:00`);
-      const { data, error } = await supabase
-        .from("work_sessions")
-        .select("*")
-        .eq("designer_id", profile.id)
-        .gte("started_at", start.toISOString());
-      if (error) throw error;
-      return (data ?? []) as WorkSession[];
-    },
-  });
-
   const history = useQuery({
     queryKey: ["my-history"],
     queryFn: async () => {
@@ -86,24 +58,15 @@ export function MyDayClient({
     },
   });
 
-  const trackedToday = useMemo(() => {
-    return (today.data ?? []).reduce((sum, session) => {
-      if (session.duration_seconds != null) return sum + session.duration_seconds;
-      return sum + secondsSince(session.started_at);
-    }, 0);
-  }, [today.data]);
-
-  const capacityPct = Math.round((trackedToday / (profile.daily_capacity_minutes * 60)) * 100);
-
   const trend = useMemo(
     () => [
       {
-        key: "hours",
-        label: "Hours tracked",
+        key: "units",
+        label: "Units signed off",
         color: "var(--color-series-1)",
         points: (history.data ?? []).map((card) => ({
           x: new Date(card.day).toLocaleDateString(undefined, { day: "numeric", month: "short" }),
-          y: Math.round((card.active_seconds / 3600) * 10) / 10,
+          y: card.units_completed,
         })),
       },
     ],
@@ -119,9 +82,7 @@ export function MyDayClient({
       return;
     }
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
-    queryClient.invalidateQueries({ queryKey: queryKeys.ticketTime });
-    queryClient.invalidateQueries({ queryKey: ["my-day", isoDay()] });
-    toast.success("Clock started");
+    toast.success("Started");
   }
 
   const firstName = (profile.full_name || profile.email).split(/[\s@]/)[0];
@@ -161,45 +122,21 @@ export function MyDayClient({
                     {running.brand?.name}
                   </p>
                 </div>
-                {/*
-                  No ticking clock. A designer watching their own seconds count
-                  up is the surveillance feeling this tool exists to avoid —
-                  the timing is a by-product of the board, not a stopwatch
-                  anyone is being held to. Admins and operators see the live
-                  figure in Analytics.
-                */}
-                {canSeeLiveTimer(profile.role) ? (
-                  <p className="tabular text-[34px] font-semibold leading-none tracking-tight">
-                    {stopwatch(sessionElapsed(today.data, running.id))}
-                  </p>
-                ) : (
-                  <p
-                    className="flex items-center gap-1.5 text-[12.5px] font-medium"
-                    style={{ color: "var(--color-accent)" }}
-                  >
-                    <span
-                      className="breathe h-1.5 w-1.5 rounded-full"
-                      style={{ background: "var(--color-accent)" }}
-                    />
-                    Clock running
-                  </p>
-                )}
               </div>
             </Card>
           ) : (
             <Card>
               <p className="text-[13px] text-[var(--color-ink-2)]">
-                Nothing running. Starting a ticket below starts the clock — you
-                don&apos;t have to log anything by hand.
+                Nothing in progress. Start a ticket below when you pick it up.
               </p>
             </Card>
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <StatTile
-              label="Tracked today"
-              value={humanDuration(trackedToday)}
-              hint={`${capacityPct}% of your ${Math.round(profile.daily_capacity_minutes / 60)}h day`}
+              label="In progress"
+              value={mine.filter((ticket) => ticket.status === "in_progress").length}
+              hint="Started and not yet submitted"
             />
             <StatTile
               label="Picked for today"
@@ -240,42 +177,25 @@ export function MyDayClient({
             <Card>
               <h2 className="text-[13px] font-semibold tracking-tight">Your last two weeks</h2>
               <p className="mb-3 mt-0.5 text-[11.5px] text-[var(--color-ink-3)]">
-                Hours tracked per day. Only you and the admin see this.
+                Units signed off per day. Only you and the admin see this.
               </p>
-              <TrendChart series={trend} formatValue={(value) => `${value}h`} />
+              <TrendChart series={trend} formatValue={(value) => String(value)} />
 
               <ul className="mt-4 flex flex-wrap gap-2 border-t border-[var(--color-line)] pt-3">
                 {FORMAT_ORDER.map((format) => {
-                  const totals = (history.data ?? []).reduce(
-                    (acc, card) => ({
-                      units: acc.units + (card.units_by_format?.[format] ?? 0),
-                      seconds: acc.seconds + (card.seconds_by_format?.[format] ?? 0),
-                    }),
-                    { units: 0, seconds: 0 },
+                  const units = (history.data ?? []).reduce(
+                    (sum, card) => sum + (card.units_by_format?.[format] ?? 0),
+                    0,
                   );
-                  if (!totals.units) return null;
-                  const perUnit = Math.round(totals.seconds / totals.units);
-                  const target =
-                    (benchmarks.find((row) => row.format === format)?.target_minutes_per_unit ?? 0) *
-                    60;
+                  if (!units) return null;
                   return (
                     <li
                       key={format}
                       className="rounded-[var(--radius-md)] border border-[var(--color-line)] px-2.5 py-1.5 text-[11.5px]"
                     >
                       <span style={{ color: FORMATS[format].series }}>{FORMATS[format].label}</span>{" "}
-                      <span className="tabular font-medium">{humanDuration(perUnit)}</span>
-                      <span className="text-[var(--color-ink-3)]"> / unit</span>
-                      {target > 0 && (
-                        <span
-                          className="tabular ml-1.5"
-                          style={{
-                            color: perUnit <= target ? "var(--color-good)" : "var(--color-serious)",
-                          }}
-                        >
-                          {perUnit <= target ? "under" : "over"} {humanDuration(target)}
-                        </span>
-                      )}
+                      <span className="tabular font-medium">{units}</span>
+                      <span className="text-[var(--color-ink-3)]"> signed off</span>
                     </li>
                   );
                 })}
@@ -336,16 +256,6 @@ function QueueRow({
       </Button>
     </li>
   );
-}
-
-function sessionElapsed(sessions: WorkSession[] | undefined, ticketId: string): number {
-  return (sessions ?? [])
-    .filter((session) => session.ticket_id === ticketId)
-    .reduce(
-      (sum, session) =>
-        sum + (session.duration_seconds ?? secondsSince(session.started_at)),
-      0,
-    );
 }
 
 function greeting(timezone: string): string {

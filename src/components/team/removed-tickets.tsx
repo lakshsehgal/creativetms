@@ -63,8 +63,8 @@ export function RemovedTickets() {
       ) : rows.length === 0 ? (
         <p className="px-4 py-8 text-center text-[12.5px] text-[var(--color-ink-3)]">
           Nothing has been removed. When something is, it lands here rather
-          than disappearing — the comments, activity and any tracked time come
-          back with it.
+          than disappearing — the comments, versions and activity come back
+          with it.
         </p>
       ) : (
         <ul>

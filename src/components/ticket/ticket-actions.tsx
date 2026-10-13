@@ -56,7 +56,6 @@ export function TicketActions({
       return;
     }
     queryClient.invalidateQueries({ queryKey: queryKeys.ticket(ticket.id) });
-    queryClient.invalidateQueries({ queryKey: ["sessions", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
     toast.success(label);
   }
@@ -109,7 +108,6 @@ export function TicketActions({
     setReviewUrl("");
     queryClient.invalidateQueries({ queryKey: ["deliverables", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.ticket(ticket.id) });
-    queryClient.invalidateQueries({ queryKey: ["sessions", ticket.id] });
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
     toast.success(
       ticket.work_phase === "size_change"
@@ -172,8 +170,8 @@ export function TicketActions({
   const actions: React.ReactNode[] = [];
 
   /* ---------------------------------------------------------------- designer
-   * Their side of the handoff. Starting work is the only thing that starts
-   * the clock, and submitting is the only thing that hands it back.
+   * Their side of the handoff. Starting work picks it up, and submitting is
+   * the only thing that hands it back.
    * -------------------------------------------------------------------- */
   if (profile.role === "designer" && (isOwner || unclaimed)) {
     const pickUpFrom: TicketStatus[] = [
@@ -191,7 +189,7 @@ export function TicketActions({
           variant="primary"
           size="sm"
           loading={busy === "start"}
-          onClick={() => move("in_progress", "Clock started", "start")}
+          onClick={() => move("in_progress", "Started", "start")}
         >
           <Play size={13} fill="currentColor" />
           {ticket.status === "new_request" ? "Start working" : "Pick back up"}
@@ -205,8 +203,8 @@ export function TicketActions({
           key="hold"
           size="sm"
           loading={busy === "hold"}
-          onClick={() => move("on_hold", "Paused — clock stopped", "hold")}
-          title="Stops the clock and keeps the ticket yours"
+          onClick={() => move("on_hold", "Paused", "hold")}
+          title="Parks it and keeps the ticket yours"
         >
           <Pause size={13} /> Pause
         </Button>,
@@ -215,7 +213,7 @@ export function TicketActions({
           size="sm"
           loading={busy === "blocked"}
           onClick={() => move("awaiting_assets", "Flagged as waiting on assets", "blocked")}
-          title="Stops the clock — you're blocked on someone else"
+          title="You're blocked on someone else"
         >
           Awaiting assets
         </Button>,

@@ -15,7 +15,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import type { Profile, TicketStatus, TicketWithRefs } from "@/lib/types";
-import { ALLOWED_TARGETS, STATUSES, canSeeOwnTime } from "@/lib/types";
+import { ALLOWED_TARGETS, STATUSES } from "@/lib/types";
 import { isDraggable, type Group, type GroupKey } from "@/lib/grouping";
 import { positionBetween } from "@/lib/queries";
 import { Column } from "@/components/board/column";
@@ -156,7 +156,6 @@ export function BoardView({
             canStart={canStart}
             onStart={onStart}
             onOpen={onOpen}
-            showTime={canSeeOwnTime(profile.role)}
             draggableIds={draggableIds}
             empty={dragEnabled ? lane.hint : undefined}
           />

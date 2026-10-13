@@ -1,31 +1,27 @@
 "use client";
 
-import type { DailyScorecard, FormatBenchmark, Profile } from "@/lib/types";
+import type { DailyScorecard, Profile } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
-import { humanDuration, pct } from "@/lib/format";
+import { pct } from "@/lib/format";
 import { Avatar } from "@/components/ui/primitives";
 import { totalUnits } from "./compute";
 
 /**
  * One designer, one day.
  *
- * Written to be readable by the person it describes: the capacity bar is the
- * headline, the format breakdown explains it, and pace is shown against the
- * benchmark with the benchmark spelled out — no bare score, no ranking.
+ * Written to be readable by the person it describes: what was signed off is
+ * the headline, the format breakdown explains it, and quality sits underneath
+ * — no bare score, no ranking.
  */
 export function ScorecardCard({
   card,
   designer,
-  benchmarks,
   live,
 }: {
   card: DailyScorecard;
   designer: Profile;
-  benchmarks: FormatBenchmark[];
   live?: boolean;
 }) {
-  const capacitySeconds = designer.daily_capacity_minutes * 60;
-  const usedPct = capacitySeconds > 0 ? Math.min(150, (card.active_seconds / capacitySeconds) * 100) : 0;
   const units = totalUnits(card);
 
   return (
@@ -37,7 +33,7 @@ export function ScorecardCard({
             {designer.full_name || designer.email}
           </p>
           <p className="text-[11px] leading-tight text-[var(--color-ink-3)]">
-            {card.tickets_completed} signed off · {card.tickets_touched} worked on
+            {card.tickets_completed} ticket{card.tickets_completed === 1 ? "" : "s"} signed off
           </p>
         </div>
         {live && (
@@ -51,35 +47,11 @@ export function ScorecardCard({
         )}
       </header>
 
-      <div className="mt-4">
-        <div className="flex items-baseline justify-between">
-          <span className="tabular text-[22px] font-semibold leading-none tracking-tight">
-            {humanDuration(card.active_seconds)}
-          </span>
-          <span className="text-[11px] text-[var(--color-ink-3)]">
-            of {Math.round(designer.daily_capacity_minutes / 60)}h
-          </span>
-        </div>
-        <div
-          className="mt-2 h-1.5 overflow-hidden rounded-full"
-          style={{ background: "var(--color-surface-3)" }}
-        >
-          <div
-            className="h-full rounded-full transition-[width] duration-500"
-            style={{
-              width: `${Math.min(100, usedPct)}%`,
-              background:
-                usedPct > 105
-                  ? "var(--color-warning)"
-                  : usedPct >= 55
-                    ? "var(--color-good)"
-                    : "var(--color-accent)",
-            }}
-          />
-        </div>
-        <p className="mt-1.5 text-[11px] text-[var(--color-ink-3)]">
-          {Math.round(usedPct)}% of the working day tracked
-        </p>
+      <div className="mt-4 flex items-baseline gap-1.5">
+        <span className="tabular text-[22px] font-semibold leading-none tracking-tight">{units}</span>
+        <span className="text-[11px] text-[var(--color-ink-3)]">
+          unit{units === 1 ? "" : "s"} signed off
+        </span>
       </div>
 
       {units > 0 && (
@@ -87,19 +59,9 @@ export function ScorecardCard({
           {FORMAT_ORDER.map((format) => {
             const count = card.units_by_format?.[format] ?? 0;
             if (!count) return null;
-            const seconds = card.seconds_by_format?.[format] ?? 0;
-            const perUnit = count > 0 && seconds > 0 ? Math.round(seconds / count) : null;
-            const target = benchmarks.find((row) => row.format === format);
             return (
               <li
                 key={format}
-                title={
-                  perUnit
-                    ? `${humanDuration(perUnit)} per unit · benchmark ${humanDuration(
-                        (target?.target_minutes_per_unit ?? 0) * 60,
-                      )}`
-                    : undefined
-                }
                 className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[11px]"
                 style={{
                   background: `color-mix(in srgb, ${FORMATS[format].series} 14%, transparent)`,
@@ -108,9 +70,6 @@ export function ScorecardCard({
               >
                 <span className="font-semibold">{count}</span>
                 {FORMATS[format].label}
-                {perUnit && (
-                  <span className="tabular opacity-75">· {humanDuration(perUnit)}</span>
-                )}
               </li>
             );
           })}
@@ -119,21 +78,14 @@ export function ScorecardCard({
 
       <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-[var(--color-line)] pt-3">
         <Metric
-          label="Pace"
-          value={card.efficiency_pct == null ? "—" : String(card.efficiency_pct)}
-          tone={
-            card.efficiency_pct == null
-              ? undefined
-              : card.efficiency_pct >= 100
-                ? "var(--color-good)"
-                : "var(--color-serious)"
-          }
-          hint="vs benchmark"
+          label="Revisions"
+          value={String(card.revision_rounds)}
+          hint="rounds on signed-off work"
         />
         <Metric
           label="1st pass"
           value={card.tickets_completed ? `${pct(card.first_pass_count, card.tickets_completed)}%` : "—"}
-          hint={`${card.revision_rounds} revisions`}
+          hint={`of ${card.tickets_completed} ticket${card.tickets_completed === 1 ? "" : "s"}`}
         />
         <Metric
           label="On time"

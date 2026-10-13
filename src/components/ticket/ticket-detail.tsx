@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
-import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
+import type { Brand, Profile, TicketWithRefs } from "@/lib/types";
 import {
   canAssignWork,
-  canSeeAllTime,
-  canSeeOwnTime,
   formatMeta,
   PRIORITIES,
   STATUSES,
@@ -18,13 +16,11 @@ import { dueLabel, dueState, relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { fetchTeam, queryKeys } from "@/lib/queries";
-import { useHeartbeat } from "@/hooks/use-heartbeat";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { Select } from "@/components/ui/form";
 import { useTicketData } from "./use-ticket-data";
 import { TicketActions } from "./ticket-actions";
 import { DeleteTicket } from "./delete-ticket";
-import { TimePanel } from "./time-panel";
 import { Activity } from "./activity";
 import { AttachmentsPanel } from "./attachments-panel";
 import { ReviewLink } from "./review-link";
@@ -35,7 +31,6 @@ import { BrandPanel } from "./brand-panel";
 export function TicketDetail({
   profile,
   initialTicket,
-  benchmarks,
   designers,
   brands,
   variant = "page",
@@ -43,7 +38,6 @@ export function TicketDetail({
 }: {
   profile: Profile;
   initialTicket: TicketWithRefs;
-  benchmarks: FormatBenchmark[];
   designers: Profile[];
   brands: Brand[];
   /** "modal" drops the page chrome and offers expand/close instead. */
@@ -53,7 +47,7 @@ export function TicketDetail({
   const router = useRouter();
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
-  const { ticket, comments, events, revisions, attachments, sessions, deliverables } = useTicketData(
+  const { ticket, comments, events, revisions, attachments, deliverables } = useTicketData(
     initialTicket.id,
     initialTicket,
   );
@@ -63,10 +57,6 @@ export function TicketDetail({
   // The design lead hands work out too — that is the whole of their extra
   // power, and it is only the Designer row that widens for them.
   const canAssign = canAssignWork(profile);
-  const isOwner = data.assigned_to === profile.id;
-
-  // Only the person whose clock is running needs to send beats.
-  useHeartbeat(data.id, data.status === "in_progress" && isOwner);
 
   const team = useQuery({
     queryKey: queryKeys.team,
@@ -323,17 +313,6 @@ export function TicketDetail({
 
           {/* ----------------------------------------------------- sidebar */}
           <aside className="space-y-4">
-            {/* A strategist gets delivery status, never the clock. */}
-            {canSeeOwnTime(profile.role) && (
-              <TimePanel
-                ticket={data}
-                sessions={sessions.data ?? []}
-                benchmarks={benchmarks}
-                canSeeDetail={isOwner || canSeeAllTime(profile.role)}
-                viewerRole={profile.role}
-              />
-            )}
-
             <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3.5">
               <dl className="space-y-3">
                 {/* Whoever is doing the work can set this. They are usually

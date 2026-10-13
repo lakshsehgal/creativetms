@@ -2,36 +2,11 @@
 
 Briefs, rounds and delivery for the Neuroid creative studio — one place for
 every brand and every round.
-Strategists raise tickets, designers work them on a board, and the time each
-piece takes is measured from that work rather than from anything anyone has to
-fill in.
+Strategists raise tickets, designers work them on a board, and delivery,
+first-pass and on-time numbers fall out of that work rather than from anything
+anyone has to fill in.
 
 Formats tracked: **Video · Static · Carousel · GIF**.
-
----
-
-## The idea behind the time tracking
-
-Designers push back on time tracking when it feels like surveillance, and
-they're usually right to — a stopwatch you have to remember is both annoying and
-inaccurate. So there isn't one.
-
-- Moving a ticket into **In Progress** opens a work session. Moving it out
-  closes one. That's the whole mechanism.
-- A designer can only have **one clock running at a time**. Starting a second
-  ticket parks the first back into *Assigned* automatically, so the board and
-  the timesheet can never disagree.
-- The open tab sends a heartbeat every 45 seconds. If it goes quiet — laptop
-  shut, tab buried — a sweep ends the session and **rewinds it to the last
-  heartbeat**, so lunch never gets billed as work.
-- Designers see their own numbers first, on **My Day** and their own scorecard.
-  Raw session logs are visible to the designer they belong to and to admins.
-  Strategists get delivery status and team-level planning figures, never an
-  individual's minute-by-minute log — that split is enforced in the database,
-  not just hidden in the UI.
-- Every pace figure is measured against a **format benchmark** the admin sets,
-  not against other designers. "This static took 40 minutes, the bar is 35" is a
-  conversation you can have. A leaderboard isn't.
 
 ---
 
@@ -56,13 +31,13 @@ or reference that should sit with the ticket. It isn't where finished work goes.
 | Approve, request revisions, send to client | ✅ | — | ✅ | — |
 | Work tickets, submit for review | ✅ | — | ✅ | ✅ |
 | Team analytics (volume, on-time, first-pass) | ✅ | ✅ | ✅ | — |
-| Per-designer timing and scorecards | ✅ | ✅ | — | own only |
+| Per-designer scorecards | ✅ | ✅ | — | own only |
 | Nightly scorecard email | ✅ | ✅ | — | — |
 | Invite people, set roles and benchmarks | ✅ | — | — | — |
 | Block bandwidth, write call sheets | ✅ | ✅ | with shoot ops | — |
 
-**Operator** reads the numbers without running the board — analytics,
-scorecards and timing, plus the nightly digest, but no ability to move work
+**Operator** reads the numbers without running the board — analytics and
+scorecards, plus the nightly digest, but no ability to move work
 through the pipeline. They also keep Brands and Team tidy, with one line they
 can't cross: an admin's role, an admin's access, and handing out shoot ops all
 stay with admins, enforced in the database rather than by a hidden button.
@@ -70,31 +45,6 @@ stay with admins, enforced in the database rather than by a hidden button.
 **Shoot ops** is a flag, not a role. An admin can give it to a strategist who
 effectively runs production, and it unlocks exactly two things — the Shoot
 section, and the ability to block a designer's day.
-
-## Who sees time, and how
-
-Timing is management information, not a scoreboard, and the visibility rules
-say so:
-
-- **Admins and operators** see everything, including clocks running live.
-- **Designers** see what a piece of work took, never a stopwatch ticking while
-  they do it. Watching your own seconds is pressure, not information — and the
-  final number is identical either way.
-- **Strategists** see no timing at all. They get delivery status.
-
-Enforced in row-level security as well as in the UI, so it holds over a direct
-database connection too.
-
-## Breaks
-
-A **Break** button sits in the sidebar for every designer. Taking one stops the
-clock, blanks the screen, and returns them to the same ticket where they left
-off — the total continues rather than restarting. The heartbeat is refused
-server-side while a break is open, so a tab left running in the background
-can't quietly restart it either.
-
-Lunch simply isn't in the numbers. Nobody should have to choose between taking
-a proper break and looking slow.
 
 Enforced by Postgres row-level security and by triggers on the tickets table —
 a designer can't edit a brief or approve their own work even with a direct
@@ -113,12 +63,12 @@ keys from **Project Settings → API**.
 
 Paste the files in `supabase/migrations/` into the **SQL Editor** and run them
 **in filename order**, one at a time. `0001_init.sql` creates every table, the
-RLS policies, the time-tracking triggers and the reporting functions; each later
+RLS policies, the triggers and the reporting functions; each later
 file adds what its name says. All of them are safe to run more than once, so
 re-running one you're unsure about costs nothing. Optionally run
 `supabase/seed.sql` for a few starter brands.
 
-Two notes on the order:
+Three notes on the order:
 
 - `0002_review_links.sql` is only needed if you ran an earlier copy of `0001`
   before review links existed. A fresh project gets everything from `0001`
@@ -126,6 +76,9 @@ Two notes on the order:
 - `0009` is split into `STEP-1` and `STEP-2` because Postgres won't let a new
   enum value be *used* in the same transaction that adds it. Run STEP-1, then
   STEP-2, as two separate statements.
+- `0026_remove_time_tracking.sql` drops the old time-tracking tables and
+  columns, including the historical session log. On a project that used time
+  tracking, export `work_sessions` first if you want to keep a copy.
 
 ### 3. Point the first admin at your email
 
@@ -185,14 +138,13 @@ and quietly running on a second set of all of it.
 ### 7. Deploy
 
 Push to a Vercel project and set the same four variables in **Settings →
-Environment Variables**. `vercel.json` already registers the two cron jobs:
+Environment Variables**. `vercel.json` already registers the cron job:
 
 | Job | Schedule | What it does |
 |---|---|---|
-| `/api/cron/sweep` | every 15 min | Ends sessions whose tab went quiet, rewound to the last heartbeat |
 | `/api/cron/scorecards` | 19:30 UTC daily | Writes the previous day's scorecard for every designer |
 
-Both are protected by `CRON_SECRET`. Move the scorecard schedule to whatever
+It is protected by `CRON_SECRET`. Move the scorecard schedule to whatever
 lands after your team's working day — it rolls up each designer against *their*
 local day, so a team spread across timezones still gets correct cards.
 
@@ -224,8 +176,7 @@ round trips:
   of why the whole app's shared bundle is ~103 kB.
 - **Float positions for board ordering**, so re-ordering a column is one `UPDATE`
   with a midpoint instead of renumbering every card.
-- **Indexes** on every hot path — status + position, assignee, due date, and the
-  partial unique index that enforces one open session per designer.
+- **Indexes** on every hot path — status + position, assignee, due date.
 
 ---
 
@@ -235,11 +186,11 @@ round trips:
 src/
   app/
     (app)/            board · my-day · tickets/[id] · analytics · scorecards · team · brands
-    api/cron/         idle sweep + nightly scorecard roll-up
+    api/cron/         nightly scorecard roll-up
     login/            six-digit email code
   components/
     board/            kanban, cards, ticket composer
-    ticket/           detail view, live clock, revisions, comments, attachments
+    ticket/           detail view, revisions, comments, attachments
     analytics/        team charts + per-designer table
     scorecards/       daily cards, live for today
     charts/           hand-built bar and trend charts
@@ -256,13 +207,12 @@ New Request → In Progress → Ready for Approval → Sent to Client → Approv
                    └── Needs Edit ───┴──────────────────┘
                    └── Size Changes ─┘
 
-Side states, none of which run the clock:
+Side states:
    Awaiting Assets · On Hold
 ```
 
-**In Progress is the only status where the clock runs.** Ready for Approval
-stops it; Needs Edit sends the work back, and the next In Progress adds to the
-same running total rather than starting a fresh one.
+Needs Edit sends the work back, and picking it up again moves it to In
+Progress as a revision round.
 
 Needs Edit increments the revision counter and clears any sign-off — that's
 what makes the first-pass approval rate worth reading. **Size Changes
@@ -270,13 +220,12 @@ deliberately does not**: a resize request isn't the designer missing the brief,
 and folding it in would make that number meaningless.
 
 A designer may hold several tickets In Progress at once — that's what a day's
-plan looks like. Only one of them has a running clock; starting a second stops
-the first's timer and leaves its status alone.
+plan looks like.
 
-## Time, split by kind of work
+## Kinds of work
 
-Every work session is stamped with what kind of work it was, so a ticket's
-total breaks down rather than sitting as one opaque number:
+Every ticket carries the kind of work it is in, and each submitted version is
+stamped with it:
 
 | Phase | When it applies |
 |---|---|
@@ -287,10 +236,6 @@ total breaks down rather than sitting as one opaque number:
 The phase lives on the ticket rather than being inferred from the previous
 status, so a designer who pauses mid-revision and resumes tomorrow is still
 doing revision work.
-
-This is what makes "how long does a static take us" answerable: the original
-build is the number to benchmark, and revisions and resizes are separate
-costs worth seeing on their own.
 
 ## Deliverables
 

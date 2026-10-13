@@ -4,9 +4,9 @@ import { memo } from "react";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Link2, Play, RotateCcw, Timer } from "lucide-react";
+import { Link2, Play, RotateCcw } from "lucide-react";
 import type { TicketWithRefs } from "@/lib/types";
-import { dueLabel, dueState, humanDuration, shortName } from "@/lib/format";
+import { dueLabel, dueState, shortName } from "@/lib/format";
 import { AiFlag, Avatar, FormatBadge, PriorityFlag } from "@/components/ui/primitives";
 import { EtaChip } from "@/components/ui/eta-chip";
 import { RushFlag } from "@/components/ui/rush-flag";
@@ -25,7 +25,6 @@ interface Props {
   canStart: boolean;
   onStart: (ticket: TicketWithRefs) => void;
   onOpen?: (ticketId: string) => void;
-  showTime?: boolean;
 }
 
 function TicketCardInner({
@@ -34,7 +33,6 @@ function TicketCardInner({
   canStart,
   onStart,
   onOpen,
-  showTime = false,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
@@ -151,16 +149,6 @@ function TicketCardInner({
           </a>
         )}
 
-        {showTime && (ticket.total_seconds ?? 0) > 0 && (
-          <span
-            className="tabular inline-flex items-center gap-1 text-[10.5px] text-[var(--color-ink-3)]"
-            title="Time tracked on this ticket"
-          >
-            <Timer size={10} />
-            {humanDuration(ticket.total_seconds)}
-          </span>
-        )}
-
         <span className="ml-auto flex items-center gap-1.5">
           {/* The designer's own read, next to the promise it may be about to
               break. Only present on briefs where somebody asked or answered. */}
@@ -183,7 +171,7 @@ function TicketCardInner({
             <button
               onPointerDown={(event) => event.stopPropagation()}
               onClick={() => onStart(ticket)}
-              title="Start working — this starts the clock"
+              title="Start working on this"
               aria-label={`Start working on ${ticket.title}`}
               className="grid h-6 w-6 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] opacity-0 transition-[opacity,color,background-color] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-accent)] focus-visible:opacity-100 group-hover:opacity-100"
             >
