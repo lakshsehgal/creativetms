@@ -19,7 +19,7 @@ export function SavedViews({
 }: {
   viewer: Profile;
   filters: TicketFilters;
-  layout: "board" | "list" | "today" | "workload" | "timeline";
+  layout: "board" | "list" | "today" | "timeline";
   onApply: (view: SavedView) => void;
 }) {
   const supabase = supabaseBrowser();

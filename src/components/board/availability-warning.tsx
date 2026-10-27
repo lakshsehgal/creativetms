@@ -4,8 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarOff } from "lucide-react";
 import type { AvailabilityBlock, Profile } from "@/lib/types";
 import { blockKindMeta } from "@/lib/types";
-import { isoDay, minutesToHuman } from "@/lib/format";
-import { dayCapacity } from "@/lib/planning";
+import { isoDay } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 /**
@@ -54,9 +53,6 @@ export function AvailabilityWarning({
   const person = designers.find((row) => row.id === designerId);
   const firstName = (person?.full_name || person?.email || "They").split(/[\s@]/)[0];
   const wholeDay = rows.some((row) => row.minutes == null);
-  const blockedMinutes = rows.reduce((sum, row) => sum + (row.minutes ?? 0), 0);
-  const capacity = person ? dayCapacity(person.daily_capacity_minutes, day) : 0;
-  const left = Math.max(0, capacity - blockedMinutes);
 
   const label = blockKindMeta(rows[0].kind).label.toLowerCase();
   const note = rows.find((row) => row.note)?.note;
@@ -82,9 +78,7 @@ export function AvailabilityWarning({
           {firstName} is {label} on {when}
           {wholeDay ? ", all day" : ""}.
         </span>{" "}
-        {wholeDay
-          ? "They have no hours that day."
-          : `About ${minutesToHuman(left)} left after it.`}
+        {wholeDay ? "They are not at their desk that day." : "It takes part of their day."}
         {note ? ` (${note})` : ""} You can still raise this — just worth
         knowing before you promise the date.
       </span>

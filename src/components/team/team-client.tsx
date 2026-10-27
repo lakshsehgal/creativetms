@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clapperboard, ShieldCheck, Trash2, UserPlus } from "lucide-react";
-import type { FormatBenchmark, Profile, UserRole } from "@/lib/types";
-import { FORMAT_ORDER, FORMATS } from "@/lib/types";
-import { humanDuration, isoDay, minutesToHuman } from "@/lib/format";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { Clapperboard, Trash2, UserPlus } from "lucide-react";
+import type { Profile, UserRole } from "@/lib/types";
+import { humanDuration } from "@/lib/format";
 import { Avatar, Card, PageHeader } from "@/components/ui/primitives";
 import { Button, Field, Select, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
@@ -17,8 +14,6 @@ import {
   deleteUser,
   inviteTeammate,
   setActive,
-  setAiExtra,
-  setBenchmark,
   setCapacity,
   setRole,
   setShootOps,
@@ -36,41 +31,14 @@ const ROLE_BLURB: Record<UserRole, string> = {
 export function TeamClient({
   profile,
   team,
-  benchmarks,
 }: {
   profile: Profile;
   team: Profile[];
-  benchmarks: FormatBenchmark[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [inviting, setInviting] = useState(false);
   const [deleting, setDeleting] = useState<Profile | null>(null);
-
-  /**
-   * What each format has actually cost over the last 90 days. Shown beside the
-   * benchmark input so a target gets set from evidence rather than a guess —
-   * which matters most for a format like UGC, where the work is grade,
-   * line-up and hand-placed clips and the spread is wide.
-   */
-  const actuals = useQuery({
-    queryKey: ["format-actuals"],
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const since = new Date();
-      since.setDate(since.getDate() - 90);
-      const { data, error } = await supabaseBrowser().rpc("team_format_stats", {
-        p_from: isoDay(since),
-        p_to: isoDay(),
-      });
-      if (error) throw error;
-      return (data ?? []) as {
-        format: string;
-        units: number;
-        seconds_per_unit: number | null;
-      }[];
-    },
-  });
 
   /** Every action returns the same shape, so one handler covers all of them. */
   function run(action: () => Promise<ActionResult>) {
@@ -241,129 +209,6 @@ export function TeamClient({
               )}
             </Card>
           ))}
-
-          {/* ------------------------------------------------- benchmarks */}
-          <Card>
-            <div className="flex items-start gap-2">
-              <ShieldCheck size={15} className="mt-0.5 shrink-0 text-[var(--color-ink-3)]" />
-              <div>
-                <h2 className="text-[13px] font-semibold tracking-tight">Format benchmarks</h2>
-                <p className="mt-0.5 max-w-xl text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
-                  The minutes one unit of each format is expected to take. Every
-                  pace figure on a scorecard is measured against these, so set
-                  them to something the team agrees is fair — a bar nobody
-                  believes in is a bar nobody works to.
-                </p>
-                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
-                  The <span className="font-medium">+ AI</span> line is what
-                  generating one costs on top: prompting, waiting on the render,
-                  throwing most of it away. It only applies to tickets marked as
-                  needing generation, and only where a base is set — half a
-                  number is worse than none. Leave it blank until somebody has
-                  actually watched it.
-                </p>
-              </div>
-            </div>
-
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {FORMAT_ORDER.map((format) => {
-                const row = benchmarks.find((item) => item.format === format);
-                const measured = actuals.data?.find((item) => item.format === format);
-                return (
-                  <li
-                    key={format}
-                    className="rounded-[var(--radius-md)] border border-[var(--color-line)] p-3"
-                  >
-                    <p
-                      className="flex items-center gap-1.5 text-[12px] font-medium"
-                      style={{ color: FORMATS[format].series }}
-                    >
-                      <span aria-hidden style={{ fontSize: 9 }}>
-                        {FORMATS[format].icon}
-                      </span>
-                      {FORMATS[format].label}
-                    </p>
-
-                    {/* Why this format costs what it costs, from the people who
-                        do it. Whoever sets the bar usually isn't one of them. */}
-                    {FORMATS[format].drives && (
-                      <p className="mt-1 text-[11px] leading-relaxed text-[var(--color-ink-3)]">
-                        {FORMATS[format].drives}
-                      </p>
-                    )}
-
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <TextInput
-                        type="number"
-                        min={1}
-                        max={2000}
-                        placeholder="not set"
-                        defaultValue={row?.target_minutes_per_unit ?? ""}
-                        disabled={pending}
-                        onBlur={(event) => {
-                          const raw = event.target.value.trim();
-                          const minutes = raw === "" ? null : Number(raw);
-                          if (minutes === (row?.target_minutes_per_unit ?? null)) return;
-                          if (minutes !== null && !minutes) return;
-                          run(() => setBenchmark(format, minutes));
-                        }}
-                        aria-label={`Benchmark minutes for ${FORMATS[format].label}`}
-                        className="!w-24 !px-2 !py-1 !text-[13px]"
-                      />
-                      <span className="text-[11.5px] text-[var(--color-ink-3)]">min / unit</span>
-                    </div>
-
-                    {/* What generating it costs on top.
-                        Set from the same place and by the same people as the
-                        base, because the two are only meaningful together —
-                        and left blank until somebody has actually watched it,
-                        like every other number here. */}
-                    <div className="mt-1.5 flex items-center gap-1.5">
-                      <span className="text-[11.5px] text-[var(--color-ink-3)]">+ AI</span>
-                      <TextInput
-                        type="number"
-                        min={1}
-                        max={2000}
-                        placeholder="not set"
-                        defaultValue={row?.ai_extra_minutes_per_unit ?? ""}
-                        disabled={pending}
-                        onBlur={(event) => {
-                          const raw = event.target.value.trim();
-                          const minutes = raw === "" ? null : Number(raw);
-                          if (minutes === (row?.ai_extra_minutes_per_unit ?? null)) return;
-                          if (minutes !== null && !minutes) return;
-                          run(() => setAiExtra(format, minutes));
-                        }}
-                        aria-label={`Generation allowance for ${FORMATS[format].label}`}
-                        className="!w-20 !px-2 !py-1 !text-[13px]"
-                      />
-                      <span className="text-[11.5px] text-[var(--color-ink-3)]">
-                        min / unit extra
-                      </span>
-                    </div>
-
-                    {/* What the team has actually taken. This is the number to
-                        set the benchmark from once there's enough of it. */}
-                    <p className="mt-1.5 text-[11px] text-[var(--color-ink-3)]">
-                      {measured ? (
-                        <>
-                          Measured{" "}
-                          <span className="tabular font-medium text-[var(--color-ink-2)]">
-                            {humanDuration(measured.seconds_per_unit)}
-                          </span>{" "}
-                          / unit over {measured.units} unit{measured.units === 1 ? "" : "s"}
-                        </>
-                      ) : row?.target_minutes_per_unit ? (
-                        `${minutesToHuman(row.target_minutes_per_unit)} per unit`
-                      ) : (
-                        "No target, no data yet"
-                      )}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
 
           {/* Whoever can remove a ticket can see the ones that were. */}
           {(profile.role === "admin" || profile.role === "operator") && <RemovedTickets />}

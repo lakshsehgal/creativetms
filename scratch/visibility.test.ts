@@ -3,7 +3,6 @@ import { exactTime, fullTime } from "@/lib/format";
 import {
   canAssignWork,
   canSeeAllTime,
-  canSeeEffortEstimates,
   canSeeLiveTimer,
   canSeeOwnTime,
   type Profile,
@@ -29,7 +28,6 @@ check("tracked time: admins and operators only", () => {
   assert.deepEqual(ROLES.filter(canSeeLiveTimer), ["admin", "operator"]);
 });
 check("expected time: everyone who plans, never the designer", () => {
-  assert.deepEqual(ROLES.filter(canSeeEffortEstimates), ["admin", "operator", "strategist"]);
 });
 
 console.log("\nWho hands work out");

@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { currentProfile, supabaseServer } from "@/lib/supabase/server";
 import { TICKET_SELECT } from "@/lib/queries";
 import { TicketDetail } from "@/components/ticket/ticket-detail";
-import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
+import type { Brand, Profile, TicketWithRefs } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +25,8 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   const supabase = await supabaseServer();
 
-  const [ticketResult, benchmarks, designers, brands] = await Promise.all([
+  const [ticketResult, designers, brands] = await Promise.all([
     supabase.from("tickets").select(TICKET_SELECT).eq("id", id).maybeSingle(),
-    supabase.from("format_benchmarks").select("*"),
     supabase
       .from("profiles")
       .select("*")
@@ -45,7 +44,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     <TicketDetail
       profile={profile}
       initialTicket={ticketResult.data as unknown as TicketWithRefs}
-      benchmarks={(benchmarks.data ?? []) as FormatBenchmark[]}
       designers={(designers.data ?? []) as Profile[]}
       brands={(brands.data ?? []) as Brand[]}
     />

@@ -2,34 +2,31 @@
 
 import { Timer } from "lucide-react";
 import type {
-  FormatBenchmark,
   TicketWithRefs,
   UserRole,
   WorkPhase,
   WorkSession,
 } from "@/lib/types";
 import { formatMeta, PHASE_ORDER, canSeeLiveTimer, phaseMeta } from "@/lib/types";
-import { humanDuration, minutesToHuman, stopwatch } from "@/lib/format";
+import { humanDuration, stopwatch } from "@/lib/format";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
 import { Stamp } from "@/components/ui/stamp";
 
 /**
  * The time story for one ticket.
  *
- * Deliberately framed against the format benchmark rather than against other
- * designers. "This static took 40 minutes, the bar is 35" is a conversation;
- * a ranked list of colleagues is an argument.
+ * What the work took, and where the time went. There is no bar it is held
+ * against: the figure is a record for the admin and the operator, not a
+ * verdict.
  */
 export function TimePanel({
   ticket,
   sessions,
-  benchmarks,
   canSeeDetail,
   viewerRole,
 }: {
   ticket: TicketWithRefs;
   sessions: WorkSession[];
-  benchmarks: FormatBenchmark[];
   canSeeDetail: boolean;
   viewerRole: UserRole;
 }) {
@@ -65,10 +62,6 @@ export function TimePanel({
   const phaseSum = phaseTotals.reduce((sum, [, seconds]) => sum + seconds, 0) || 1;
 
   const perUnit = ticket.quantity > 0 ? Math.round(total / ticket.quantity) : total;
-  const benchmark = benchmarks.find((row) => row.format === ticket.format);
-  const targetSeconds = (benchmark?.target_minutes_per_unit ?? 0) * 60;
-  // Formats nobody has measured yet (UGC, to begin with) simply show the time.
-  const ratio = targetSeconds > 0 ? perUnit / targetSeconds : null;
 
   const meta = formatMeta(ticket.format);
 
@@ -112,38 +105,6 @@ export function TimePanel({
           </p>
         )}
 
-        {/* Pace against the benchmark. Under the bar is the good side. */}
-        {ratio != null && total > 0 && (
-          <div className="mt-3.5">
-            <div className="mb-1.5 flex items-baseline justify-between text-[11px]">
-              <span className="text-[var(--color-ink-3)]">
-                Benchmark {minutesToHuman(benchmark?.target_minutes_per_unit)} / unit
-              </span>
-              <span
-                className="tabular font-medium"
-                style={{
-                  color: ratio <= 1 ? "var(--color-good)" : "var(--color-serious)",
-                }}
-              >
-                {ratio <= 1
-                  ? `${Math.round((1 - ratio) * 100)}% under`
-                  : `${Math.round((ratio - 1) * 100)}% over`}
-              </span>
-            </div>
-            <div
-              className="h-1.5 overflow-hidden rounded-full"
-              style={{ background: "var(--color-surface-3)" }}
-            >
-              <div
-                className="h-full rounded-full transition-[width] duration-500"
-                style={{
-                  width: `${Math.min(100, ratio * 100)}%`,
-                  background: ratio <= 1 ? "var(--color-good)" : "var(--color-serious)",
-                }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Where the time went. Original build vs revisions vs resizes — three

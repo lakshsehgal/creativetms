@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { CreativeFormat, DailyScorecard, FormatBenchmark, Profile } from "@/lib/types";
+import type { CreativeFormat, DailyScorecard, Profile } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 import { humanDuration, pct } from "@/lib/format";
 import { Avatar, Card } from "@/components/ui/primitives";
 
-type SortKey = "name" | "units" | "time" | "pace" | "firstPass";
+type SortKey = "name" | "units" | "time" | "firstPass";
 
 interface Row {
   designer: Profile;
@@ -18,34 +18,27 @@ interface Row {
   late: number;
   revisions: number;
   perFormat: Partial<Record<CreativeFormat, { units: number; seconds: number }>>;
-  paceIndex: number | null;
 }
 
 /**
  * Per-designer rollup for the admin.
  *
- * Sorted by output rather than by a score, and every timing cell carries the
- * benchmark next to it — the comparison that matters is against the bar for
- * the format, not against whoever happens to sit at the top of the list.
+ * Sorted by output rather than by a score. Timing cells show what each
+ * format actually took that person; there is no bar they are held to and no
+ * colour saying faster or slower.
  */
 export function DesignerTable({
   designers,
   scorecards,
-  benchmarks,
   loading,
 }: {
   designers: Profile[];
   scorecards: DailyScorecard[];
-  benchmarks: FormatBenchmark[];
   loading: boolean;
 }) {
   const [sort, setSort] = useState<SortKey>("units");
 
   const rows = useMemo<Row[]>(() => {
-    const benchmarkFor = new Map(
-      benchmarks.map((item) => [item.format, item.target_minutes_per_unit]),
-    );
-
     const built = designers.map((designer) => {
       const cards = scorecards.filter((card) => card.designer_id === designer.id);
 
@@ -74,18 +67,7 @@ export function DesignerTable({
         { activeSeconds: 0, units: 0, tickets: 0, firstPass: 0, onTime: 0, late: 0, revisions: 0 },
       );
 
-      // Benchmark minutes earned vs minutes spent. Above 100 = ahead of the bar.
-      const earnedMinutes = FORMAT_ORDER.reduce((sum, format) => {
-        const units = perFormat[format]?.units ?? 0;
-        return sum + units * (benchmarkFor.get(format) ?? 0);
-      }, 0);
-
-      const paceIndex =
-        totals.activeSeconds > 0 && earnedMinutes > 0
-          ? Math.round((earnedMinutes * 60 * 100) / totals.activeSeconds)
-          : null;
-
-      return { designer, ...totals, perFormat, paceIndex };
+      return { designer, ...totals, perFormat };
     });
 
     return built.sort((a, b) => {
@@ -95,11 +77,10 @@ export function DesignerTable({
         );
       }
       if (sort === "time") return b.activeSeconds - a.activeSeconds;
-      if (sort === "pace") return (b.paceIndex ?? -1) - (a.paceIndex ?? -1);
       if (sort === "firstPass") return pct(b.firstPass, b.tickets) - pct(a.firstPass, a.tickets);
       return b.units - a.units;
     });
-  }, [designers, scorecards, benchmarks, sort]);
+  }, [designers, scorecards, sort]);
 
   const active = rows.filter((row) => row.units > 0 || row.activeSeconds > 0);
 
@@ -109,8 +90,8 @@ export function DesignerTable({
         <div>
           <h2 className="text-[13px] font-semibold tracking-tight">Designers</h2>
           <p className="mt-0.5 text-[11.5px] text-[var(--color-ink-3)]">
-            Built from the nightly scorecards. Pace compares each person against
-            the format benchmark, not against each other.
+            Built from the nightly scorecards. Hours tracked and what was made
+            with them — nobody is ranked.
           </p>
         </div>
       </div>
@@ -146,9 +127,6 @@ export function DesignerTable({
                 <Th onClick={() => setSort("firstPass")} active={sort === "firstPass"}>
                   1st pass
                 </Th>
-                <Th onClick={() => setSort("pace")} active={sort === "pace"}>
-                  Pace
-                </Th>
               </tr>
             </thead>
             <tbody>
@@ -179,44 +157,22 @@ export function DesignerTable({
                     const bucket = row.perFormat[format];
                     const perUnit =
                       bucket && bucket.units > 0 ? Math.round(bucket.seconds / bucket.units) : null;
-                    const target =
-                      (benchmarks.find((item) => item.format === format)?.target_minutes_per_unit ??
-                        0) * 60;
-                    const over = perUnit != null && target > 0 && perUnit > target;
                     return (
                       <td
                         key={format}
                         className="tabular px-3 py-2.5 text-right"
                         style={{
-                          color: perUnit == null ? "var(--color-ink-3)" : over ? "var(--color-serious)" : "var(--color-good)",
+                          color: perUnit == null ? "var(--color-ink-3)" : "var(--color-ink-2)",
                         }}
-                        title={
-                          perUnit == null
-                            ? "No units of this format"
-                            : `Benchmark ${humanDuration(target)}`
-                        }
+                        title={perUnit == null ? "No units of this format" : undefined}
                       >
                         {perUnit == null ? "—" : humanDuration(perUnit)}
                       </td>
                     );
                   })}
 
-                  <td className="tabular px-3 py-2.5 text-right">
+                  <td className="tabular px-4 py-2.5 text-right">
                     {row.tickets > 0 ? `${pct(row.firstPass, row.tickets)}%` : "—"}
-                  </td>
-                  <td className="tabular px-4 py-2.5 text-right font-medium">
-                    {row.paceIndex == null ? (
-                      <span className="text-[var(--color-ink-3)]">—</span>
-                    ) : (
-                      <span
-                        style={{
-                          color:
-                            row.paceIndex >= 100 ? "var(--color-good)" : "var(--color-serious)",
-                        }}
-                      >
-                        {row.paceIndex}
-                      </span>
-                    )}
                   </td>
                 </tr>
               ))}

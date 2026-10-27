@@ -1,6 +1,5 @@
 import type { TicketWithRefs } from "@/lib/types";
 import { PRIORITIES } from "@/lib/types";
-import { estimateMinutes, type BenchmarkMap } from "@/lib/planning";
 
 /**
  * What to pick up next.
@@ -25,10 +24,6 @@ export interface Suggestion {
   score: number;
   /** The single strongest reason, in words. Never a bare number. */
   reason: string;
-  /** Estimated cost, when the format has a benchmark. */
-  minutes: number | null;
-  /** True once the running total has passed what's left of the day. */
-  beyondCapacity: boolean;
 }
 
 /** Whole days from today until the due date. Negative means overdue. */
@@ -135,24 +130,18 @@ export function scoreTicket(ticket: TicketWithRefs, now: number): number {
 /**
  * Rank what this designer could pick up today.
  *
- * `capacityMinutes` is what's left of their day. Suggestions past that point
- * are still listed — a designer may well know something is quicker than the
- * benchmark says — but they're marked, so "your day is full" is visible
- * rather than something you discover at six o'clock.
+ * Ordered by urgency alone: what is due soonest, what is rushed, what has
+ * been waiting. Nothing here guesses how long anything takes.
  */
 export function suggestForToday({
   tickets,
   today,
   now = Date.now(),
-  benchmarks = {},
-  capacityMinutes = null,
   limit = 5,
 }: {
   tickets: TicketWithRefs[];
   today: string;
   now?: number;
-  benchmarks?: BenchmarkMap;
-  capacityMinutes?: number | null;
   limit?: number;
 }): Suggestion[] {
   const candidates = tickets
@@ -172,9 +161,7 @@ export function suggestForToday({
     .map((ticket) => ({
       ticket,
       score: scoreTicket(ticket, now),
-      minutes: estimateMinutes(ticket, benchmarks),
       reason: reasonFor(ticket, daysUntilDue(ticket.due_at, now)),
-      beyondCapacity: false,
     }))
     .sort(
       (a, b) =>
@@ -186,18 +173,6 @@ export function suggestForToday({
     )
     .slice(0, limit);
 
-  if (capacityMinutes != null) {
-    let running = 0;
-    candidates.forEach((suggestion) => {
-      // An unestimated ticket can't push the total, but it can't prove the
-      // day is free either — once we're over, everything after stays over.
-      running += suggestion.minutes ?? 0;
-      // A day with nothing left in it makes every suggestion an overflow,
-      // including one we can't size. Bailing out at zero was worse: the
-      // fullest days were the ones that showed no warning at all.
-      suggestion.beyondCapacity = capacityMinutes <= 0 || running > capacityMinutes;
-    });
-  }
 
   return candidates;
 }

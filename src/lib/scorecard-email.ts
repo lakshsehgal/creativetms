@@ -1,4 +1,4 @@
-import type { DailyScorecard, FormatBenchmark } from "@/lib/types";
+import type { DailyScorecard } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 
 type CardWithDesigner = DailyScorecard & {
@@ -23,11 +23,9 @@ function minutes(seconds: number): string {
 export function buildScorecardEmail({
   day,
   cards,
-  benchmarks,
 }: {
   day: string;
   cards: CardWithDesigner[];
-  benchmarks: FormatBenchmark[];
 }): string {
   const rows = [...cards].sort((a, b) => b.active_seconds - a.active_seconds);
 
@@ -41,14 +39,9 @@ export function buildScorecardEmail({
     { seconds: 0, units: 0, tickets: 0, firstPass: 0 },
   );
 
-  const benchmarkLine = FORMAT_ORDER.map((format) => {
-    const target = benchmarks.find((row) => row.format === format)?.target_minutes_per_unit;
-    return `${FORMATS[format].label} ${target ? `${target}m` : "—"}`;
-  }).join(" &middot; ");
-
   const body =
     rows.length === 0
-      ? `<tr><td colspan="6" style="padding:18px;text-align:center;color:#6b7280;font-size:13px">
+      ? `<tr><td colspan="5" style="padding:18px;text-align:center;color:#6b7280;font-size:13px">
            Nothing tracked on this day.
          </td></tr>`
       : rows
@@ -62,9 +55,6 @@ export function buildScorecardEmail({
               .filter(Boolean)
               .join(" &middot; ");
 
-            const pace = card.efficiency_pct;
-            const paceColour = pace == null ? "#9ca3af" : pace >= 100 ? "#2f9e44" : "#e8590c";
-
             return `<tr style="border-top:1px solid #e5e7eb">
               <td style="padding:10px 12px;font-size:13px;color:#111827">
                 <strong>${card.designer?.full_name || card.designer?.email || "Unknown"}</strong>
@@ -75,9 +65,6 @@ export function buildScorecardEmail({
               <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">${card.tickets_completed}</td>
               <td style="padding:10px 12px;font-size:13px;text-align:right;color:#111827">
                 ${card.tickets_completed ? `${Math.round((card.first_pass_count / card.tickets_completed) * 100)}%` : "—"}
-              </td>
-              <td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;color:${paceColour}">
-                ${pace ?? "—"}
               </td>
             </tr>`;
           })
@@ -117,15 +104,12 @@ export function buildScorecardEmail({
         <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Units</th>
         <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Tickets</th>
         <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">1st pass</th>
-        <th align="right" style="padding:8px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Pace</th>
       </tr>
       ${body}
     </table>
 
     <div style="padding:14px 24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11.5px;line-height:1.6">
-      Pace compares benchmark minutes earned against minutes tracked; 100 is on the bar.
-      <br/>Benchmarks: ${benchmarkLine}
-      <br/>Breaks are excluded — time only accrues while a ticket is In Progress.
+      Breaks are excluded — time only accrues while a ticket is In Progress.
     </div>
   </div>
 </body></html>`;

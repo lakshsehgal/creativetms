@@ -143,39 +143,6 @@ export async function setCapacity(userId: string, minutes: number): Promise<Acti
   }
 }
 
-export async function setBenchmark(
-  format: string,
-  minutes: number | null,
-): Promise<ActionResult> {
-  try {
-    const admin = await requireAdmin();
-
-    // null clears it. A format nobody has measured yet is better left blank
-    // than pinned to a guess — the scorecard just sits the pace figure out.
-    if (minutes !== null && (!Number.isFinite(minutes) || minutes < 1)) {
-      return { ok: false, error: "Benchmark has to be at least a minute" };
-    }
-
-    const supabase = await supabaseServer();
-    const { error } = await supabase
-      .from("format_benchmarks")
-      .update({
-        target_minutes_per_unit: minutes === null ? null : Math.round(minutes),
-        updated_by: admin.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("format", format);
-
-    if (error) return { ok: false, error: error.message };
-
-    revalidatePath("/team");
-    revalidatePath("/analytics");
-    return { ok: true, message: minutes === null ? "Benchmark cleared" : "Benchmark updated" };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
-  }
-}
-
 /**
  * Shoot ops — the Shoot section and the ability to block someone's bandwidth,
  * handed to a strategist who runs production without making them an operator.
@@ -225,49 +192,6 @@ export async function setShootOps(userId: string, granted: boolean): Promise<Act
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
   }
 }
-
-/**
- * The generation allowance — minutes on top, per unit, when a creative has to
- * be generated before it can be built.
- *
- * Separate from the base on purpose. The base is what the format costs; this
- * is what the generator costs, and the two get measured from different things
- * and move at different times.
- */
-export async function setAiExtra(
-  format: string,
-  minutes: number | null,
-): Promise<ActionResult> {
-  try {
-    const admin = await requireAdmin();
-
-    if (minutes !== null && (!Number.isFinite(minutes) || minutes < 1)) {
-      return { ok: false, error: "The allowance has to be at least a minute" };
-    }
-
-    const supabase = await supabaseServer();
-    const { error } = await supabase
-      .from("format_benchmarks")
-      .update({
-        ai_extra_minutes_per_unit: minutes === null ? null : Math.round(minutes),
-        updated_by: admin.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("format", format);
-
-    if (error) return { ok: false, error: error.message };
-
-    revalidatePath("/team");
-    revalidatePath("/analytics");
-    return {
-      ok: true,
-      message: minutes === null ? "Generation allowance cleared" : "Generation allowance updated",
-    };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
-  }
-}
-
 
 /**
  * What deleting somebody would take with them. Shown before the click.

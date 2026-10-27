@@ -167,18 +167,6 @@ export function secondsPerUnit(totalSeconds: number, quantity: number): number {
   return quantity > 0 ? Math.round(totalSeconds / quantity) : totalSeconds;
 }
 
-/**
- * How a designer tracked against the benchmark. Below 100 means faster than
- * the bar. Returned as a plain ratio so callers choose their own wording.
- */
-export function paceRatio(
-  actualSecondsPerUnit: number,
-  benchmarkMinutes: number,
-): number | null {
-  if (!benchmarkMinutes || !actualSecondsPerUnit) return null;
-  return Math.round((actualSecondsPerUnit / (benchmarkMinutes * 60)) * 100);
-}
-
 export function formatCount(units: Partial<Record<CreativeFormat, number>>): number {
   return Object.values(units).reduce<number>((sum, n) => sum + (n ?? 0), 0);
 }

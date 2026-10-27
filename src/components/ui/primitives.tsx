@@ -185,7 +185,7 @@ export function AiFlag({ on }: { on: boolean }) {
   if (!on) return null;
   return (
     <span
-      title="Has to be generated before it can be built — its expected time allows for that"
+      title="Has to be generated before it can be built"
       className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
       style={{
         background: "color-mix(in srgb, var(--color-series-6) 16%, transparent)",

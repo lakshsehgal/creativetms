@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
-import type { DailyScorecard, FormatBenchmark, Profile, Ticket, WorkSession } from "@/lib/types";
+import type { DailyScorecard, Profile, Ticket, WorkSession } from "@/lib/types";
 import { canSeeAllTime } from "@/lib/types";
 import { dayLabel, isoDay } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -15,11 +15,9 @@ import { computeLiveScorecards } from "./compute";
 export function ScorecardsClient({
   profile,
   designers,
-  benchmarks,
 }: {
   profile: Profile;
   designers: Profile[];
-  benchmarks: FormatBenchmark[];
 }) {
   const supabase = supabaseBrowser();
   const [day, setDay] = useState(() => isoDay());
@@ -78,7 +76,6 @@ export function ScorecardsClient({
           Ticket,
           "id" | "assigned_to" | "format" | "quantity" | "revision_count" | "due_at" | "approved_at"
         >[],
-        benchmarks,
       });
     },
   });
@@ -152,7 +149,6 @@ export function ScorecardsClient({
                       key={card.id}
                       card={card}
                       designer={designer}
-                      benchmarks={benchmarks}
                       live={isToday}
                     />
                   );

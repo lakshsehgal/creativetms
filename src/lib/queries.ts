@@ -22,7 +22,6 @@ export const queryKeys = {
   attachments: (id: string) => ["attachments", id] as const,
   team: ["team"] as const,
   brands: ["brands"] as const,
-  benchmarks: ["benchmarks"] as const,
   scorecards: (scope: string) => ["scorecards", scope] as const,
   tasks: ["tasks"] as const,
   analytics: (range: string) => ["analytics", range] as const,
@@ -90,12 +89,6 @@ export async function fetchTeam(supabase: SupabaseClient) {
 
 export async function fetchBrands(supabase: SupabaseClient) {
   const { data, error } = await supabase.from("brands").select("*").order("name");
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function fetchBenchmarks(supabase: SupabaseClient) {
-  const { data, error } = await supabase.from("format_benchmarks").select("*");
   if (error) throw error;
   return data ?? [];
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, Maximize2, RotateCcw, X } from "lucide-react";
-import type { Brand, FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
+import type { Brand, Profile, TicketWithRefs } from "@/lib/types";
 import {
   canAssignWork,
   canSeeAllTime,
@@ -36,7 +36,6 @@ import { BrandPanel } from "./brand-panel";
 export function TicketDetail({
   profile,
   initialTicket,
-  benchmarks,
   designers,
   brands,
   variant = "page",
@@ -44,7 +43,6 @@ export function TicketDetail({
 }: {
   profile: Profile;
   initialTicket: TicketWithRefs;
-  benchmarks: FormatBenchmark[];
   designers: Profile[];
   brands: Brand[];
   /** "modal" drops the page chrome and offers expand/close instead. */
@@ -329,7 +327,6 @@ export function TicketDetail({
               <TimePanel
                 ticket={data}
                 sessions={sessions.data ?? []}
-                benchmarks={benchmarks}
                 canSeeDetail={isOwner || canSeeAllTime(profile.role)}
                 viewerRole={profile.role}
               />

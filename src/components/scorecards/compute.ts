@@ -1,7 +1,6 @@
 import type {
   CreativeFormat,
   DailyScorecard,
-  FormatBenchmark,
   Profile,
   Ticket,
   WorkSession,
@@ -18,7 +17,6 @@ export function computeLiveScorecards({
   designers,
   sessions,
   tickets,
-  benchmarks,
 }: {
   day: string;
   designers: Profile[];
@@ -27,10 +25,7 @@ export function computeLiveScorecards({
     Ticket,
     "id" | "assigned_to" | "format" | "quantity" | "revision_count" | "due_at" | "approved_at"
   >[];
-  benchmarks: FormatBenchmark[];
 }): DailyScorecard[] {
-  const target = new Map(benchmarks.map((row) => [row.format, row.target_minutes_per_unit]));
-
   return designers
     .map((designer) => {
       const mine = sessions.filter((session) => session.designer_id === designer.id);
@@ -63,7 +58,6 @@ export function computeLiveScorecards({
       let revisionRounds = 0;
       let onTime = 0;
       let late = 0;
-      let earnedMinutes = 0;
 
       done.forEach((ticket) => {
         units += ticket.quantity;
@@ -74,7 +68,6 @@ export function computeLiveScorecards({
           if (new Date(ticket.approved_at) <= new Date(ticket.due_at)) onTime += 1;
           else late += 1;
         }
-        earnedMinutes += ticket.quantity * (target.get(ticket.format) ?? 0);
       });
 
       return {
@@ -91,10 +84,9 @@ export function computeLiveScorecards({
         revision_rounds: revisionRounds,
         on_time_count: onTime,
         late_count: late,
-        efficiency_pct:
-          activeSeconds > 0 && earnedMinutes > 0
-            ? Math.round((earnedMinutes * 60 * 100) / activeSeconds)
-            : null,
+        // There is no bar to measure against any more; the column stays in
+        // the table for the rows the nightly job wrote before, and reads null.
+        efficiency_pct: null,
         generated_at: new Date().toISOString(),
       } satisfies DailyScorecard;
     })

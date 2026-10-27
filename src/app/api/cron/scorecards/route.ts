@@ -74,12 +74,9 @@ async function sendDigest(
     .select("*, designer:profiles!daily_scorecards_designer_id_fkey ( full_name, email )")
     .eq("day", target);
 
-  const { data: benchmarks } = await supabase.from("format_benchmarks").select("*");
-
   const html = buildScorecardEmail({
     day: target,
     cards: cards ?? [],
-    benchmarks: benchmarks ?? [],
   });
 
   const result = await sendScorecardEmail({

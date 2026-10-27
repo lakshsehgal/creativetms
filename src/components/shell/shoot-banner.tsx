@@ -138,7 +138,7 @@ export function ShootBanner({ profile }: { profile: Profile }) {
 
       {live.length > 2 && (
         <div className="border-b border-[var(--color-line)] bg-[var(--color-surface-2)] px-4 py-1 text-[11.5px] text-[var(--color-ink-3)]">
-          and {live.length - 2} more booked out — check Workload before you brief.
+          and {live.length - 2} more booked out — worth knowing before you brief.
         </div>
       )}
     </div>

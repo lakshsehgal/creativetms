@@ -1,6 +1,6 @@
 "use client";
 
-import type { DailyScorecard, FormatBenchmark, Profile } from "@/lib/types";
+import type { DailyScorecard, Profile } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 import { humanDuration, pct } from "@/lib/format";
 import { Avatar } from "@/components/ui/primitives";
@@ -9,19 +9,17 @@ import { totalUnits } from "./compute";
 /**
  * One designer, one day.
  *
- * Written to be readable by the person it describes: the capacity bar is the
- * headline, the format breakdown explains it, and pace is shown against the
- * benchmark with the benchmark spelled out — no bare score, no ranking.
+ * For the admin and the operator. The hours bar is the headline and the
+ * format breakdown explains it — what was made and what it actually took.
+ * No bar it is measured against, no score, no ranking.
  */
 export function ScorecardCard({
   card,
   designer,
-  benchmarks,
   live,
 }: {
   card: DailyScorecard;
   designer: Profile;
-  benchmarks: FormatBenchmark[];
   live?: boolean;
 }) {
   const capacitySeconds = designer.daily_capacity_minutes * 60;
@@ -89,17 +87,10 @@ export function ScorecardCard({
             if (!count) return null;
             const seconds = card.seconds_by_format?.[format] ?? 0;
             const perUnit = count > 0 && seconds > 0 ? Math.round(seconds / count) : null;
-            const target = benchmarks.find((row) => row.format === format);
             return (
               <li
                 key={format}
-                title={
-                  perUnit
-                    ? `${humanDuration(perUnit)} per unit · benchmark ${humanDuration(
-                        (target?.target_minutes_per_unit ?? 0) * 60,
-                      )}`
-                    : undefined
-                }
+                title={perUnit ? `${humanDuration(perUnit)} per unit` : undefined}
                 className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[11px]"
                 style={{
                   background: `color-mix(in srgb, ${FORMATS[format].series} 14%, transparent)`,
@@ -117,19 +108,7 @@ export function ScorecardCard({
         </ul>
       )}
 
-      <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-[var(--color-line)] pt-3">
-        <Metric
-          label="Pace"
-          value={card.efficiency_pct == null ? "—" : String(card.efficiency_pct)}
-          tone={
-            card.efficiency_pct == null
-              ? undefined
-              : card.efficiency_pct >= 100
-                ? "var(--color-good)"
-                : "var(--color-serious)"
-          }
-          hint="vs benchmark"
-        />
+      <dl className="mt-4 grid grid-cols-2 gap-2 border-t border-[var(--color-line)] pt-3">
         <Metric
           label="1st pass"
           value={card.tickets_completed ? `${pct(card.first_pass_count, card.tickets_completed)}%` : "—"}

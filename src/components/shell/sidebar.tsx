@@ -40,7 +40,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/tickets", label: "Tickets", icon: KanbanSquare, roles: ["admin", "operator", "strategist", "designer"] },
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
-  { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator", "strategist"] },
+  { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator"] },
   { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator"] },
   // The strategists' own to-do list. Admins see it so nothing a strategist
   // leaves behind is invisible to whoever covers for them.

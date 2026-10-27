@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { DailyScorecard, FormatBenchmark, Profile } from "@/lib/types";
+import type { DailyScorecard, Profile } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS, canSeeAllTime } from "@/lib/types";
-import { humanDuration, isoDay, minutesToHuman, pct } from "@/lib/format";
+import { humanDuration, isoDay, pct } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Card, PageHeader, StatTile } from "@/components/ui/primitives";
@@ -33,11 +33,9 @@ interface FormatStat {
 
 export function AnalyticsClient({
   profile,
-  benchmarks,
   designers,
 }: {
   profile: Profile;
-  benchmarks: FormatBenchmark[];
   designers: Profile[];
 }) {
   const supabase = supabaseBrowser();
@@ -106,16 +104,11 @@ export function AnalyticsClient({
 
   const paceBars: BarDatum[] = FORMAT_ORDER.map((format) => {
     const row = rows.find((item) => item.format === format);
-    const benchmark = benchmarks.find((item) => item.format === format);
     return {
       key: format,
       label: FORMATS[format].label,
       value: row?.seconds_per_unit ?? 0,
       color: FORMATS[format].series,
-      // An unmeasured format shows its real time with no target line.
-      benchmark: benchmark?.target_minutes_per_unit
-        ? benchmark.target_minutes_per_unit * 60
-        : null,
       note: row ? `${row.units} unit${row.units === 1 ? "" : "s"}` : "—",
     };
   });
@@ -205,7 +198,7 @@ export function AnalyticsClient({
             <Card>
               <h2 className="text-[13px] font-semibold tracking-tight">Time per unit</h2>
               <p className="mb-4 mt-0.5 text-[11.5px] text-[var(--color-ink-3)]">
-                Actual against the benchmark line. Shorter is faster.
+                What one unit of each format actually took, on average.
               </p>
               <BarChart
                 data={paceBars}
@@ -241,33 +234,12 @@ export function AnalyticsClient({
             <PhasePanel from={from} to={to} range={range} designers={designers} />
           )}
 
-          {isAdmin ? (
+          {isAdmin && (
             <DesignerTable
               designers={designers}
               scorecards={scorecards.data ?? []}
-              benchmarks={benchmarks}
               loading={scorecards.isLoading}
             />
-          ) : (
-            <Card>
-              <p className="text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
-                Per-designer timing is for admins and operators. These team figures are the
-                planning numbers — what a{" "}
-                {FORMATS.static.label.toLowerCase()} or{" "}
-                {FORMATS.video.label.toLowerCase()} actually costs in hours, so
-                you can quote a deadline you can keep.
-              </p>
-              <p className="mt-2 text-[12px] text-[var(--color-ink-3)]">
-                Current benchmarks:{" "}
-                {FORMAT_ORDER.map((format) => {
-                  const target = benchmarks.find((item) => item.format === format)
-                    ?.target_minutes_per_unit;
-                  return `${FORMATS[format].label} ${
-                    target ? minutesToHuman(target) : "not set"
-                  }`;
-                }).join(" · ")}
-              </p>
-            </Card>
           )}
         </div>
       </div>

@@ -7,7 +7,7 @@ import { CalendarOff, Camera, Plus, Trash2 } from "lucide-react";
 import type { AvailabilityBlock, BlockKind, Profile } from "@/lib/types";
 import { BLOCK_KINDS, blockKindMeta } from "@/lib/types";
 import { isoDay, minutesToHuman } from "@/lib/format";
-import { addDays, dayCapacity } from "@/lib/planning";
+import { addDays } from "@/lib/planning";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { Card, Avatar } from "@/components/ui/primitives";
@@ -17,10 +17,9 @@ import { Dialog, DialogFooter } from "@/components/ui/dialog";
 /**
  * Days somebody isn't at a desk.
  *
- * Several of the designers shoot as well, and a day on set is a day gone. The
- * workload grid used to show them with a full eight hours while they were
- * standing in a warehouse — a confident wrong number, which is worse than no
- * number, because it's the one a deadline gets promised against.
+ * Several of the designers shoot as well, and a day on set is a day gone.
+ * Without this, a strategist briefs them for a Thursday they are spending in
+ * a warehouse, and finds out from the Slack reply the next morning.
  *
  * Marked by an operator or an admin, never by the designer: this is capacity
  * other people plan against, so it isn't a thing to edit unilaterally.
@@ -70,7 +69,7 @@ export function ShootBlocks({ designers }: { designers: Profile[] }) {
           <Camera size={13} className="text-[var(--color-ink-3)]" />
           <h2 className="text-[12.5px] font-semibold tracking-tight">Shoots &amp; time off</h2>
           <span className="text-[11.5px] text-[var(--color-ink-3)]">
-            next 60 days · comes straight out of Workload
+            next 60 days
           </span>
           <span className="ml-auto">
             <Button size="sm" variant="secondary" onClick={() => setAdding(true)}>
@@ -83,9 +82,8 @@ export function ShootBlocks({ designers }: { designers: Profile[] }) {
           <div className="skeleton m-4 h-16" />
         ) : rows.length === 0 ? (
           <p className="px-4 py-8 text-center text-[12.5px] leading-relaxed text-[var(--color-ink-3)]">
-            Nobody is booked out. Mark a shoot here and that person&apos;s hours
-            disappear from the workload grid, with a warning to any strategist
-            briefing them for that day.
+            Nobody is booked out. Mark a shoot here and any strategist briefing
+            that person for the day gets warned before they promise it.
           </p>
         ) : (
           <ul>
@@ -218,9 +216,7 @@ export function AddBlockDialog({
   const person = designers.find((row) => row.id === designerId);
   const preview =
     span === "whole"
-      ? person
-        ? `all ${minutesToHuman(dayCapacity(person.daily_capacity_minutes, day))} of that day`
-        : "the whole day"
+      ? "the whole day"
       : minutesToHuman(minutesBetween(startTime, endTime));
 
   async function submit(event: React.FormEvent) {
@@ -271,7 +267,7 @@ export function AddBlockDialog({
       open
       onClose={onClose}
       title="Block someone's time"
-      description="Their hours come out of the workload grid, and strategists get warned before briefing them for it."
+      description="Strategists get warned before briefing them for that day."
       width={480}
     >
       <form onSubmit={submit}>

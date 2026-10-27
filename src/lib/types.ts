@@ -103,8 +103,8 @@ export interface Ticket {
    * This one has to be generated before it can be built.
    *
    * It is still a static or still a film when it ships — the format is right —
-   * but it costs materially more, and measured against the plain benchmark the
-   * designer looks slow when they were doing more work.
+   * but it costs materially more, and everyone reading the ticket should know
+   * that before they wonder why it is taking a while.
    */
   needs_ai: boolean;
   format: CreativeFormat;
@@ -290,20 +290,6 @@ export interface TicketEvent {
   actor: PersonRef | null;
 }
 
-export interface FormatBenchmark {
-  format: CreativeFormat;
-  /** null = not measured yet. Pace comparisons sit out until it's set. */
-  target_minutes_per_unit: number | null;
-  /**
-   * Minutes ON TOP of the base, per unit, when a ticket has to be generated
-   * before it can be built. Additive rather than a multiplier because that is
-   * the shape of the real cost: prompting, waiting on the render, throwing
-   * most of it away — and it repeats for every output.
-   */
-  ai_extra_minutes_per_unit: number | null;
-  updated_at: string;
-}
-
 export interface DailyScorecard {
   id: string;
   designer_id: string;
@@ -340,11 +326,9 @@ export const FORMATS: Record<
     /**
      * What actually drives the time, in the designers' own words.
      *
-     * It sits beside the benchmark input, because whoever sets that number is
-     * usually not the person who does the work — and the four sentences below
-     * are the difference between a bar the floor recognises and one it
-     * quietly ignores. Only the formats the studio has actually spoken about
-     * carry a line; inventing the others would be worse than the gap.
+     * Kept as the studio's own account of each format — the words came from
+     * the floor. Only the formats the studio has actually spoken about carry
+     * a line; inventing the others would be worse than the gap.
      */
     drives?: string;
   }
@@ -603,25 +587,13 @@ export function canSeeAllTime(role: UserRole): boolean {
  * Whether a person sees any tracked time at all.
  *
  * Designers used to see their own — never a live clock, but the total a piece
- * of work had taken, and the benchmark it was measured against. Even that was
+ * of work had taken. Even that was
  * enough to make the tool feel like it was watching. The time is still
  * derived from the board exactly as before and still reaches Analytics; it
  * just never appears on a screen a designer is looking at.
  */
 export function canSeeOwnTime(role: UserRole): boolean {
   return canSeeAllTime(role);
-}
-
-/**
- * Whether a person sees how long a ticket is EXPECTED to take.
- *
- * Planning numbers — the benchmark times the quantity — are for the people
- * doing the planning. Shown to the designer they stop being a plan and start
- * being a deadline nobody agreed to, which is the opposite of what a bar the
- * floor recognises is for.
- */
-export function canSeeEffortEstimates(role: UserRole): boolean {
-  return role !== "designer";
 }
 
 /** Only admins and operators watch a clock move. */
@@ -806,6 +778,10 @@ export interface SavedView {
   owner_id: string;
   name: string;
   filters: Record<string, string>;
+  /**
+   * Rows written before the Workload layout was removed may still say
+   * "workload"; the client opens those as the list.
+   */
   layout: "board" | "list" | "workload" | "timeline";
   is_shared: boolean;
   created_at: string;

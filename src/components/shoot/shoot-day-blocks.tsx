@@ -15,8 +15,8 @@ import { AddBlockDialog } from "./shoot-blocks";
 /**
  * Taking the crew off the board, from inside the call sheet.
  *
- * The same blocks as the Bandwidth tab — same table, same rows, same effect on
- * the workload grid — but reachable at the moment somebody is actually deciding
+ * The same blocks as the Bandwidth tab — same table, same rows, same warning
+ * to strategists — but reachable at the moment somebody is actually deciding
  * who is coming. Writing "Abhay — Frame team" into the crew list and then
  * remembering, in another tab, to also mark Abhay as gone that day is a step
  * that gets skipped, and the cost of skipping it is a designer promised out for
@@ -57,7 +57,7 @@ export function ShootDayBlocks({
   const rows = blocks.data ?? [];
 
   // Anyone typed onto the crew who is also a designer here — those are the
-  // people whose hours the workload grid is still counting on.
+  // people a strategist might still brief for that day.
   const crewNames = useMemo(
     () =>
       new Set(
@@ -106,7 +106,7 @@ export function ShootDayBlocks({
           <CalendarOff size={13} className="text-[var(--color-ink-3)]" />
           <h2 className="text-[12.5px] font-semibold tracking-tight">Bandwidth for this day</h2>
           <span className="text-[11.5px] text-[var(--color-ink-3)]">
-            {day ? dayLabel : "set a shoot date first"} · comes straight out of Workload
+            {day ? dayLabel : "set a shoot date first"}
           </span>
           <span className="ml-auto">
             <Button
@@ -130,8 +130,8 @@ export function ShootDayBlocks({
         ) : rows.length === 0 ? (
           <p className="px-4 py-6 text-center text-[12.5px] leading-relaxed text-[var(--color-ink-3)]">
             Nobody is booked out on this day yet. Anyone on this crew who also
-            takes briefs should be blocked, or the workload grid will keep
-            promising hours they&apos;ll be spending on set.
+            takes briefs should be blocked, so nobody briefs them for hours
+            they&apos;ll be spending on set.
           </p>
         ) : (
           <ul>

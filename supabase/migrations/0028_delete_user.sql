@@ -28,7 +28,7 @@
  * admin should know that deleting a designer rewrites last quarter.
  */
 create or replace function user_footprint(p_user uuid)
-returns jsonb language plpgsql stable security definer set search_path = public as $$
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
 declare
   v jsonb;
 begin
@@ -37,13 +37,13 @@ begin
   end if;
 
   select jsonb_build_object(
-    'tickets_raised',   (select count(*) from tickets where created_by = p_user),
-    'comments',         (select count(*) from comments where author_id = p_user),
-    'revision_notes',   (select count(*) from ticket_revisions where requested_by = p_user),
-    'attachments',      (select count(*) from attachments where uploaded_by = p_user),
-    'work_sessions',    (select count(*) from work_sessions where designer_id = p_user),
-    'work_seconds',     (select coalesce(sum(duration_seconds), 0) from work_sessions where designer_id = p_user),
-    'tickets_assigned', (select count(*) from tickets where assigned_to = p_user and deleted_at is null)
+    'tickets_raised',   (select count(*) from public.tickets where created_by = p_user),
+    'comments',         (select count(*) from public.comments where author_id = p_user),
+    'revision_notes',   (select count(*) from public.ticket_revisions where requested_by = p_user),
+    'attachments',      (select count(*) from public.attachments where uploaded_by = p_user),
+    'work_sessions',    (select count(*) from public.work_sessions where designer_id = p_user),
+    'work_seconds',     (select coalesce(sum(duration_seconds), 0) from public.work_sessions where designer_id = p_user),
+    'tickets_assigned', (select count(*) from public.tickets where assigned_to = p_user and deleted_at is null)
   ) into v;
 
   return v;
@@ -58,10 +58,10 @@ grant execute on function user_footprint(uuid) to authenticated;
  * succeeded, so a refusal here leaves everything exactly as it was.
  */
 create or replace function delete_user(p_user uuid)
-returns void language plpgsql security definer set search_path = public as $$
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
 declare
   v_me     uuid := auth.uid();
-  v_target profiles%rowtype;
+  v_target public.profiles%rowtype;
   v_print  jsonb;
   v_block  text[] := '{}';
 begin
@@ -72,7 +72,7 @@ begin
     raise exception 'You cannot delete yourself';
   end if;
 
-  select * into v_target from profiles where id = p_user;
+  select * into v_target from public.profiles where id = p_user;
   if not found then
     raise exception 'That person is already gone';
   end if;
@@ -80,7 +80,7 @@ begin
   -- Never remove the last working admin: a studio with nobody who can grant
   -- access is a studio that is locked out of its own tool.
   if v_target.role::text = 'admin'
-     and (select count(*) from profiles where role::text = 'admin' and is_active and id <> p_user) = 0 then
+     and (select count(*) from public.profiles where role::text = 'admin' and is_active and id <> p_user) = 0 then
     raise exception 'That is the only other admin. Make somebody else an admin first';
   end if;
 
@@ -109,9 +109,9 @@ begin
   end if;
 
   -- Anything still on them goes back to the pool rather than vanishing.
-  update tickets set assigned_to = null where assigned_to = p_user and deleted_at is null;
+  update public.tickets set assigned_to = null where assigned_to = p_user and deleted_at is null;
 
-  delete from profiles where id = p_user;
+  delete from public.profiles where id = p_user;
 end;
 $$;
 

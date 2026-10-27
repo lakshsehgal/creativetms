@@ -326,7 +326,7 @@ export function NewTicketDialog({
             <span className="font-medium">Needs AI generation</span>
             <span className="mt-0.5 block text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
               The imagery or footage has to be generated before it can be built.
-              It takes longer, and this is what makes the expected time say so.
+              Generation comes before the build, so everyone knows to allow for it.
             </span>
           </span>
         </label>

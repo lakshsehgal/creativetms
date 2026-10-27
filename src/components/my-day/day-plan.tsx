@@ -20,9 +20,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarPlus, GripVertical, Lightbulb, Play, X } from "lucide-react";
-import type { FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
+import type { Profile, TicketWithRefs } from "@/lib/types";
 import { dueLabel, dueState, isoDay } from "@/lib/format";
-import { benchmarkMap, dayCapacity } from "@/lib/planning";
 import { suggestForToday } from "@/lib/suggest";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { positionBetween, queryKeys } from "@/lib/queries";
@@ -47,12 +46,10 @@ import { Button } from "@/components/ui/form";
 export function DayPlan({
   profile,
   tickets,
-  benchmarks,
   onStart,
 }: {
   profile: Profile;
   tickets: TicketWithRefs[];
-  benchmarks: FormatBenchmark[];
   onStart: (ticket: TicketWithRefs) => void;
 }) {
   const supabase = supabaseBrowser();
@@ -60,7 +57,6 @@ export function DayPlan({
   const [showAll, setShowAll] = useState(false);
 
   const today = isoDay();
-  const lookup = useMemo(() => benchmarkMap(benchmarks), [benchmarks]);
 
   const mine = useMemo(
     () => tickets.filter((ticket) => ticket.assigned_to === profile.id),
@@ -76,21 +72,15 @@ export function DayPlan({
     [mine, today],
   );
 
-  // Capacity still shapes which suggestions come first; it is never shown.
-  const capacity = dayCapacity(profile.daily_capacity_minutes, today);
 
   const suggestions = useMemo(
     () =>
       suggestForToday({
         tickets: mine,
         today,
-        benchmarks: lookup,
-        // Zero is a real answer, not a missing one — a full day flags
-        // every suggestion rather than silently flagging none.
-        capacityMinutes: capacity > 0 ? capacity : null,
         limit: 4,
       }),
-    [mine, today, lookup, capacity],
+    [mine, today],
   );
 
   const suggestedIds = new Set(suggestions.map((row) => row.ticket.id));

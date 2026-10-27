@@ -52,7 +52,6 @@ export type Anchor =
   | "view-list"
   | "view-board"
   | "view-today"
-  | "view-workload"
   | "view-timeline"
   | "new-ticket"
   | "filters"
@@ -272,7 +271,7 @@ const STRATEGIST: Track = {
       target: "brief-format",
       title: "Raising a brief",
       body:
-        "Format and quantity are the two fields that matter most — together they're how the tool works out what this will cost somebody in hours, which is what makes the workload view mean anything.",
+        "Format and quantity are the two fields that matter most — they are what the designer picks the work up by, and what every report is counted in.",
     },
     {
       id: "assign",
@@ -303,14 +302,6 @@ const STRATEGIST: Track = {
       target: "new-ticket",
       title: "That's the brief",
       body: "Raise one whenever you need to — it's the only way work enters the studio.",
-    },
-    {
-      id: "workload",
-      click: "view-workload",
-      target: "layouts",
-      title: "Who has room",
-      body:
-        "Hours already promised against hours each person actually has, day by day. Shoot days and time off are already taken out, so a full bar means full. Check this before you promise a client a date.",
     },
     {
       id: "timeline",
@@ -375,7 +366,7 @@ const STRATEGIST: Track = {
       id: "done",
       title: "That's the whole tool",
       body:
-        "Raise briefs, check workload before you promise, ask for an ETA when it matters. Everything else the tool does — the timing, the reporting, the notifying — falls out of that. The guide is in the sidebar whenever you want it again.",
+        "Raise briefs, check the timeline before you promise, ask for an ETA when it matters. Everything else the tool does — the timing, the reporting, the notifying — falls out of that. The guide is in the sidebar whenever you want it again.",
     },
   ],
 };

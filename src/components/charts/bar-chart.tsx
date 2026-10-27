@@ -14,7 +14,6 @@ export interface BarDatum {
   value: number;
   color: string;
   /** Optional target line drawn across the track. */
-  benchmark?: number | null;
   /** Right-hand caption, e.g. "12 units". */
   note?: string;
 }
@@ -35,16 +34,12 @@ export function BarChart({
     return <p className="py-6 text-center text-[12px] text-[var(--color-ink-3)]">{emptyLabel}</p>;
   }
 
-  const ceiling = Math.max(
-    ...rows.map((row) => Math.max(row.value, row.benchmark ?? 0)),
-  );
+  const ceiling = Math.max(...rows.map((row) => row.value));
 
   return (
     <ul className="space-y-3">
       {rows.map((row) => {
         const width = ceiling > 0 ? (row.value / ceiling) * 100 : 0;
-        const mark = row.benchmark && ceiling > 0 ? (row.benchmark / ceiling) * 100 : null;
-        const over = row.benchmark != null && row.value > row.benchmark;
 
         return (
           <li key={row.key}>
@@ -71,26 +66,12 @@ export function BarChart({
               className="relative w-full overflow-hidden rounded-full"
               style={{ height: barHeight, background: "var(--color-surface-3)" }}
               role="img"
-              aria-label={`${row.label}: ${formatValue(row.value)}${
-                row.benchmark ? `, benchmark ${formatValue(row.benchmark)}` : ""
-              }`}
+              aria-label={`${row.label}: ${formatValue(row.value)}`}
             >
               <div
                 className="h-full rounded-full transition-[width] duration-500 ease-[var(--ease-out-quick)]"
                 style={{ width: `${width}%`, background: row.color }}
               />
-              {mark != null && (
-                <span
-                  className="absolute top-0 h-full"
-                  style={{
-                    left: `${Math.min(100, mark)}%`,
-                    width: 2,
-                    background: over ? "var(--color-critical)" : "var(--color-ink-3)",
-                    opacity: 0.85,
-                  }}
-                  title={`Benchmark ${formatValue(row.benchmark!)}`}
-                />
-              )}
             </div>
           </li>
         );

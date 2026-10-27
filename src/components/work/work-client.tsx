@@ -3,16 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarCheck, GanttChart, KanbanSquare, Plus, Rows3, Scale } from "lucide-react";
+import { CalendarCheck, GanttChart, KanbanSquare, Plus, Rows3 } from "lucide-react";
 import type {
   Brand,
-  FormatBenchmark,
   Profile,
   SavedView,
   TicketStatus,
   TicketWithRefs,
 } from "@/lib/types";
-import { benchmarkMap } from "@/lib/planning";
 import { GROUPINGS, groupTickets, isDraggable, type GroupKey } from "@/lib/grouping";
 import { positionBetween, queryKeys } from "@/lib/queries";
 import {
@@ -34,10 +32,17 @@ import { SavedViews } from "./saved-views";
 import { BoardView } from "./board-view";
 import { ListView } from "./list-view";
 import { TodayView } from "./today-view";
-import { WorkloadView } from "./workload-view";
 import { TimelineView } from "./timeline-view";
 
-type Layout = "board" | "list" | "today" | "workload" | "timeline";
+type Layout = "board" | "list" | "today" | "timeline";
+
+/**
+ * Old links and saved views may still name a layout that has since gone
+ * (Workload did). Those open as the list rather than as a blank page.
+ */
+function asLayout(value: string | null | undefined): Layout {
+  return value === "board" || value === "today" || value === "timeline" ? value : "list";
+}
 
 // List first: it's the view that answers "what's the state of everything"
 // fastest, which is the question most people open the tool with.
@@ -45,7 +50,6 @@ const LAYOUTS: { key: Layout; label: string; icon: typeof Rows3 }[] = [
   { key: "list", label: "List", icon: Rows3 },
   { key: "board", label: "Board", icon: KanbanSquare },
   { key: "today", label: "Today", icon: CalendarCheck },
-  { key: "workload", label: "Workload", icon: Scale },
   { key: "timeline", label: "Timeline", icon: GanttChart },
 ];
 
@@ -58,14 +62,12 @@ export function WorkClient({
   brands,
   designers,
   strategists,
-  benchmarks,
 }: {
   profile: Profile;
   initialTickets: TicketWithRefs[];
   brands: Brand[];
   designers: Profile[];
   strategists: Profile[];
-  benchmarks: FormatBenchmark[];
 }) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
@@ -86,7 +88,7 @@ export function WorkClient({
    * Next to navigate anywhere.
    */
   const [filters, setLocalFilters] = useState<TicketFilters>(() => filtersFromParams(params));
-  const [layout, setLayout] = useState<Layout>(() => (params.get("view") as Layout) || "list");
+  const [layout, setLayout] = useState<Layout>(() => asLayout(params.get("view")));
 
   /**
    * How the work is stacked. Status is the default because it's the shape of
@@ -121,8 +123,6 @@ export function WorkClient({
     () => applyFilters(tickets, filters, profile),
     [tickets, filters, profile],
   );
-
-  const benchmarkLookup = useMemo(() => benchmarkMap(benchmarks), [benchmarks]);
 
   /* One arrangement, shared by the board and the list, so they can't disagree. */
   const groups = useMemo(
@@ -191,7 +191,7 @@ export function WorkClient({
   );
 
   function applyView(view: SavedView) {
-    setFilters(filtersFromStored(view.filters), view.layout);
+    setFilters(filtersFromStored(view.filters), asLayout(view.layout));
   }
 
   const live = tickets.filter((ticket) => ticket.status === "in_progress").length;
@@ -238,8 +238,8 @@ export function WorkClient({
           })}
         </div>
 
-        {/* Only where a heading exists to change — Workload, Timeline and Today
-            have arrangements of their own that a grouping would fight with. */}
+        {/* Only where a heading exists to change — Timeline and Today have
+            arrangements of their own that a grouping would fight with. */}
         {(layout === "board" || layout === "list") && (
           <label
             data-tour="group-by"
@@ -313,16 +313,6 @@ export function WorkClient({
             viewer={profile}
             designers={designers}
             onPatch={(ticket, fields) => void patch(ticket, fields)}
-          />
-        )}
-        {layout === "workload" && (
-          <WorkloadView
-            tickets={visible}
-            viewer={profile}
-            designers={designers}
-            benchmarks={benchmarkLookup}
-            onPatch={(ticket, fields) => void patch(ticket, fields)}
-            onOpen={setOpenTicketId}
           />
         )}
         {layout === "timeline" && (
