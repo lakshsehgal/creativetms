@@ -15,11 +15,11 @@ import {
   moveLabel,
   toLocalInput,
 } from "@/lib/eta";
-import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { reportWriteFailure, withRetry } from "@/lib/write";
 import { Button, TextInput } from "@/components/ui/form";
+import { Stamp } from "@/components/ui/stamp";
 
 /**
  * Expected delivery.
@@ -325,7 +325,7 @@ export function EtaPanel({
                   )}
                   <span className="text-[var(--color-ink-3)]">
                     {" · "}
-                    {row.setter?.full_name?.split(" ")[0] ?? "Someone"}, {relativeTime(row.created_at)}
+                    {row.setter?.full_name?.split(" ")[0] ?? "Someone"}, <Stamp at={row.created_at} />
                   </span>
                 </span>
               </li>

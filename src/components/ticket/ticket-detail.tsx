@@ -14,13 +14,14 @@ import {
   PRIORITIES,
   STATUSES,
 } from "@/lib/types";
-import { dueLabel, dueState, relativeTime } from "@/lib/format";
+import { dueLabel, dueState } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { withRetry, reportWriteFailure } from "@/lib/write";
 import { fetchTeam, queryKeys } from "@/lib/queries";
 import { useHeartbeat } from "@/hooks/use-heartbeat";
 import { Avatar, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { Select } from "@/components/ui/form";
+import { Stamp } from "@/components/ui/stamp";
 import { useTicketData } from "./use-ticket-data";
 import { TicketActions } from "./ticket-actions";
 import { DeleteTicket } from "./delete-ticket";
@@ -207,7 +208,7 @@ export function TicketDetail({
                   </span>
                   <span className="text-[var(--color-ink-3)]">
                     {" · "}
-                    {relativeTime(data.created_at)}
+                    <Stamp at={data.created_at} />
                   </span>
                 </span>
               </p>
@@ -241,7 +242,7 @@ export function TicketDetail({
                   {latestRevision.notes}
                 </p>
                 <p className="mt-2 text-[11px] text-[var(--color-ink-3)]">
-                  {latestRevision.requester?.full_name} · {relativeTime(latestRevision.created_at)}
+                  {latestRevision.requester?.full_name} · <Stamp at={latestRevision.created_at} />
                 </p>
               </div>
             )}
@@ -299,7 +300,7 @@ export function TicketDetail({
                         <span className="font-semibold text-[var(--color-ink-2)]">
                           Round {revision.round}
                         </span>
-                        {revision.requester?.full_name} · {relativeTime(revision.created_at)}
+                        {revision.requester?.full_name} · <Stamp at={revision.created_at} />
                       </p>
                       {revision.notes && (
                         <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed">

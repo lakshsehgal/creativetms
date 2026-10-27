@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Check, ExternalLink, Link2, Pencil } from "lucide-react";
 import type { Deliverable, Profile, TicketWithRefs } from "@/lib/types";
 import { phaseMeta } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
+import { exactTime, relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Button, TextInput } from "@/components/ui/form";
@@ -87,9 +87,9 @@ export function ReviewLink({
             {ticket.review_url_edited_at && (
               <span
                 suppressHydrationWarning
-                title={`This link was changed ${relativeTime(
+                title={`This link was changed ${relativeTime(ticket.review_url_edited_at)} (${exactTime(
                   ticket.review_url_edited_at,
-                )} — the one it replaced is in the activity feed`}
+                )}) — the one it replaced is in the activity feed`}
                 className="rounded-[3px] px-1 py-px text-[10px] font-normal"
                 style={{
                   background: "var(--color-surface-3)",

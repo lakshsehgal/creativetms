@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import { Check, Flame, X } from "lucide-react";
 import type { Profile, TicketWithRefs } from "@/lib/types";
 import { RUSH_STATES, canDecideRush } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { reportWriteFailure, withRetry } from "@/lib/write";
 import { Button, TextInput } from "@/components/ui/form";
+import { Stamp } from "@/components/ui/stamp";
 
 /**
  * The exception, on the brief it was made for.
@@ -83,12 +83,17 @@ export function RushPanel({
 
       <p className="mt-1.5 text-[11.5px] text-[var(--color-ink-3)]">
         Asked for by {ticket.author?.full_name?.split(" ")[0] ?? "someone"}
-        {ticket.rush_requested_at && <> · {relativeTime(ticket.rush_requested_at)}</>}
+        {ticket.rush_requested_at && (
+          <>
+            {" · "}
+            <Stamp at={ticket.rush_requested_at} />
+          </>
+        )}
         {ticket.rush_decided_at && ticket.rush_state !== "pending" && (
           <>
             {" · "}
             {ticket.rush_state === "approved" ? "approved" : "declined"}{" "}
-            {relativeTime(ticket.rush_decided_at)}
+            <Stamp at={ticket.rush_decided_at} />
             {ticket.rush_note && ` — ${ticket.rush_note}`}
           </>
         )}

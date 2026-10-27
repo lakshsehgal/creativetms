@@ -5,10 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, ExternalLink, Link2, Plus, Trash2 } from "lucide-react";
 import type { Attachment, Profile } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries";
 import { Button, TextInput } from "@/components/ui/form";
+import { Stamp } from "@/components/ui/stamp";
 
 const BUCKET = "creative-assets";
 
@@ -187,7 +187,7 @@ export function AttachmentsPanel({
                   )}
                   <span className="truncate text-[10.5px] text-[var(--color-ink-3)]">
                     {parsed ? describeHost(parsed) : formatBytes(item.size_bytes)} ·{" "}
-                    {relativeTime(item.created_at)}
+                    <Stamp at={item.created_at} />
                     {item.round > 0 && ` · round ${item.round}`}
                   </span>
                 </span>

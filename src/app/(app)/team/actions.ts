@@ -268,27 +268,57 @@ export async function setAiExtra(
   }
 }
 
+
 /**
- * The design lead.
- *
- * One power: they can hand work to other designers. Granted by an admin, and
- * only meaningful on a designer — the database clears it if somebody moves off
- * the design floor.
+ * What deleting somebody would take with them. Shown before the click.
  */
-export async function setDesignLead(userId: string, on: boolean): Promise<ActionResult> {
+export async function userFootprint(userId: string): Promise<
+  | { ok: true; footprint: Record<string, number> }
+  | { ok: false; error: string }
+> {
   try {
     await requireAdmin();
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase.rpc("user_footprint", { p_user: userId });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, footprint: (data ?? {}) as Record<string, number> };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
+  }
+}
+
+/**
+ * Remove a person for good.
+ *
+ * The database function does every check and removes the profile; only once
+ * that has succeeded is the sign-in account removed. If the function refuses
+ * — the person has history the record keeps, or they are the last admin —
+ * nothing has changed and the reason comes straight back.
+ */
+export async function deleteUser(userId: string): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+    if (admin.id === userId) {
+      return { ok: false, error: "You can't delete yourself" };
+    }
 
     const supabase = await supabaseServer();
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_design_lead: on })
-      .eq("id", userId);
+    const { error } = await supabase.rpc("delete_user", { p_user: userId });
+    if (error) return { ok: false, error: error.message.replace(/^.*?:\s*/, "") };
 
-    if (error) return { ok: false, error: error.message };
+    // The profile is gone; now the account. A failure here leaves a sign-in
+    // with no profile behind it, which the app treats as "pending approval",
+    // so it is reported rather than hidden.
+    const { error: authError } = await supabaseAdmin().auth.admin.deleteUser(userId);
+    if (authError) {
+      return {
+        ok: false,
+        error: `Profile removed, but their sign-in could not be: ${authError.message}`,
+      };
+    }
 
     revalidatePath("/team");
-    return { ok: true, message: on ? "Design lead granted" : "Design lead removed" };
+    return { ok: true, message: "Removed" };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
   }

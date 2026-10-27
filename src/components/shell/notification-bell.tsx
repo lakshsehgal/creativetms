@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check } from "lucide-react";
 import type { AppNotification } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { Stamp } from "@/components/ui/stamp";
 
 /**
  * The handoff inbox.
@@ -139,7 +139,7 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
                     <p className="flex items-baseline gap-2">
                       <span className="text-[12.5px] font-medium">{row.title}</span>
                       <span className="ml-auto shrink-0 text-[10.5px] text-[var(--color-ink-3)]">
-                        {relativeTime(row.created_at)}
+                        <Stamp at={row.created_at} />
                       </span>
                     </p>
                     {/* Bodies now carry the ticket line and, under it, whatever

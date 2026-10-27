@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { TicketWithRefs } from "@/lib/types";
+import type { StrategistTask, TicketWithRefs } from "@/lib/types";
 
 /**
  * Both `assigned_to` and `created_by` point at `profiles`, so PostgREST needs
@@ -24,6 +24,7 @@ export const queryKeys = {
   brands: ["brands"] as const,
   benchmarks: ["benchmarks"] as const,
   scorecards: (scope: string) => ["scorecards", scope] as const,
+  tasks: ["tasks"] as const,
   analytics: (range: string) => ["analytics", range] as const,
 };
 
@@ -108,4 +109,23 @@ export function positionBetween(before?: number, after?: number): number {
   if (before == null) return after! - 1000;
   if (after == null) return before + 1000;
   return (before + after) / 2;
+}
+
+/* ------------------------------------------------------------ tasks */
+
+export const TASK_SELECT = `
+  *,
+  assignee:profiles!strategist_tasks_assigned_to_fkey ( id, full_name, email, avatar_url ),
+  author:profiles!strategist_tasks_created_by_fkey ( id, full_name, email, avatar_url )
+`;
+
+/** Every strategist's task — the policy already scopes who can ask. */
+export async function fetchTasks(supabase: SupabaseClient): Promise<StrategistTask[]> {
+  const { data, error } = await supabase
+    .from("strategist_tasks")
+    .select(TASK_SELECT)
+    .order("position", { ascending: true })
+    .limit(1000);
+  if (error) throw error;
+  return (data ?? []) as unknown as StrategistTask[];
 }

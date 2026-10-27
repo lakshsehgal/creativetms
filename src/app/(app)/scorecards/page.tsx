@@ -10,8 +10,11 @@ export const dynamic = "force-dynamic";
 export default async function ScorecardsPage() {
   const profile = await currentProfile();
   if (!profile) redirect("/login");
-  // Strategists get delivery status, never timing data.
+  // Strategists get delivery status, never timing data. Designers used to see
+  // their own card here; they no longer see any time figure about their own
+  // work, so for them this page doesn't exist.
   if (profile.role === "strategist") redirect("/analytics");
+  if (profile.role === "designer") redirect("/my-day");
 
   const supabase = await supabaseServer();
   const [designers, benchmarks] = await Promise.all([

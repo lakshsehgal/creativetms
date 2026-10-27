@@ -121,7 +121,7 @@ export function MyDayClient({
     queryClient.invalidateQueries({ queryKey: queryKeys.tickets });
     queryClient.invalidateQueries({ queryKey: queryKeys.ticketTime });
     queryClient.invalidateQueries({ queryKey: ["my-day", isoDay()] });
-    toast.success("Clock started");
+    toast.success("Started");
   }
 
   const firstName = (profile.full_name || profile.email).split(/[\s@]/)[0];
@@ -181,7 +181,7 @@ export function MyDayClient({
                       className="breathe h-1.5 w-1.5 rounded-full"
                       style={{ background: "var(--color-accent)" }}
                     />
-                    Clock running
+                    In progress
                   </p>
                 )}
               </div>
@@ -189,7 +189,7 @@ export function MyDayClient({
           ) : (
             <Card>
               <p className="text-[13px] text-[var(--color-ink-2)]">
-                Nothing running. Starting a ticket below starts the clock — you
+                Nothing in progress. Start a ticket below — you
                 don&apos;t have to log anything by hand.
               </p>
             </Card>

@@ -46,12 +46,6 @@ export interface Profile {
    * being handed the whole floor.
    */
   has_shoot_ops: boolean;
-  /**
-   * The design lead. One designer who can hand work to other designers,
-   * because they are the person who actually knows who has capacity for what.
-   * Everything else about being a designer is unchanged.
-   */
-  is_design_lead: boolean;
 }
 
 export interface Brand {
@@ -605,8 +599,29 @@ export function canSeeAllTime(role: UserRole): boolean {
   return role === "admin" || role === "operator";
 }
 
+/**
+ * Whether a person sees any tracked time at all.
+ *
+ * Designers used to see their own — never a live clock, but the total a piece
+ * of work had taken, and the benchmark it was measured against. Even that was
+ * enough to make the tool feel like it was watching. The time is still
+ * derived from the board exactly as before and still reaches Analytics; it
+ * just never appears on a screen a designer is looking at.
+ */
 export function canSeeOwnTime(role: UserRole): boolean {
-  return role === "designer" || canSeeAllTime(role);
+  return canSeeAllTime(role);
+}
+
+/**
+ * Whether a person sees how long a ticket is EXPECTED to take.
+ *
+ * Planning numbers — the benchmark times the quantity — are for the people
+ * doing the planning. Shown to the designer they stop being a plan and start
+ * being a deadline nobody agreed to, which is the opposite of what a bar the
+ * floor recognises is for.
+ */
+export function canSeeEffortEstimates(role: UserRole): boolean {
+  return role !== "designer";
 }
 
 /** Only admins and operators watch a clock move. */
@@ -799,9 +814,47 @@ export interface SavedView {
 /**
  * Who may put a ticket on somebody other than themselves.
  *
- * Staff by role, plus the one designer an admin has made the design lead.
- * Operators read the numbers; they don't hand work out.
+ * Everyone who works the board. Designers hand work to each other all day —
+ * "you're quicker at motion, take this one" — and routing that through a
+ * strategist, or through one anointed lead, was friction with no upside.
+ * Operators read the numbers; they don't move work.
  */
 export function canAssignWork(viewer: Profile): boolean {
-  return viewer.role === "admin" || viewer.role === "strategist" || viewer.is_design_lead;
+  return viewer.role !== "operator";
+}
+
+/* ------------------------------------------------------------ tasks */
+
+export type TaskStatus = "todo" | "doing" | "done";
+
+export const TASK_STATUSES: Record<TaskStatus, { label: string; tone: string }> = {
+  todo: { label: "To do", tone: "var(--color-ink-3)" },
+  doing: { label: "Doing", tone: "var(--color-accent)" },
+  done: { label: "Done", tone: "var(--color-good)" },
+};
+
+export const TASK_STATUS_ORDER: TaskStatus[] = ["todo", "doing", "done"];
+
+/**
+ * A strategist's own to-do.
+ *
+ * Not a ticket. Tickets are work a designer does; these are the things a
+ * strategist does around them — chase the client for assets, write the brief,
+ * send the deck — and until now they lived in somebody's notes app where
+ * nobody else could pick one up when they were out.
+ */
+export interface StrategistTask {
+  id: string;
+  title: string;
+  notes: string;
+  status: TaskStatus;
+  due_on: string | null;
+  assigned_to: string | null;
+  created_by: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  assignee: PersonRef | null;
+  author: PersonRef | null;
 }

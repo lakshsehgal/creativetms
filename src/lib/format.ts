@@ -48,6 +48,62 @@ export function avatarTint(id: string): string {
   return slots[hash % slots.length];
 }
 
+/**
+ * The clock time something happened — "2:05 pm", or "23 Aug, 2:05 pm" once it
+ * isn't today.
+ *
+ * "23m ago" answers how long, and that is the right first answer, but it stops
+ * being useful the moment somebody wants to line two things up: whether the
+ * brief came in before or after the call, which of two edits landed first,
+ * what time a designer actually picked something up. Both, side by side, and
+ * neither question needs a hover.
+ *
+ * Rendered in the reader's own clock, like every other time in the app, so a
+ * designer and a strategist sitting next to each other see the same thing.
+ */
+export function exactTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+
+  const now = new Date();
+  const sameDay =
+    at.getDate() === now.getDate() &&
+    at.getMonth() === now.getMonth() &&
+    at.getFullYear() === now.getFullYear();
+
+  const time = at
+    .toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    .toLowerCase();
+
+  if (sameDay) return time;
+
+  const day = at.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    // Only say the year when it isn't this one. "23 Aug 2026" on everything
+    // is noise for eleven months of the year.
+    ...(at.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+  });
+
+  return `${day}, ${time}`;
+}
+
+/** The unabbreviated version, for a title attribute. */
+export function fullTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  return at.toLocaleString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function relativeTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const then = new Date(iso).getTime();

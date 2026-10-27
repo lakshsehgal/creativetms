@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clapperboard, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Clapperboard, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import type { FormatBenchmark, Profile, UserRole } from "@/lib/types";
 import { FORMAT_ORDER, FORMATS } from "@/lib/types";
 import { humanDuration, isoDay, minutesToHuman } from "@/lib/format";
@@ -14,14 +14,15 @@ import { Button, Field, Select, TextInput } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { RemovedTickets } from "./removed-tickets";
 import {
+  deleteUser,
   inviteTeammate,
   setActive,
   setAiExtra,
   setBenchmark,
   setCapacity,
-  setDesignLead,
   setRole,
   setShootOps,
+  userFootprint,
   type ActionResult,
 } from "@/app/(app)/team/actions";
 
@@ -29,7 +30,7 @@ const ROLE_BLURB: Record<UserRole, string> = {
   admin: "Everything, including timing data and this page",
   operator: "Reads all analytics, scorecards and timing — doesn't run the board",
   strategist: "Raises tickets, reviews work, sees team analytics — plus shoots, with shoot ops",
-  designer: "Works tickets, sees their own scorecard",
+  designer: "Works tickets — never shown a clock",
 };
 
 export function TeamClient({
@@ -44,6 +45,7 @@ export function TeamClient({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [inviting, setInviting] = useState(false);
+  const [deleting, setDeleting] = useState<Profile | null>(null);
 
   /**
    * What each format has actually cost over the last 90 days. Shown beside the
@@ -159,41 +161,6 @@ export function TeamClient({
                         </label>
                       )}
 
-                      {/* The design lead. Only offered to designers — a
-                          strategist can already assign, so the flag would be a
-                          power that does nothing, which is the sort of thing
-                          somebody eventually reads the wrong way. */}
-                      {role === "designer" && (
-                        <label
-                          title="Lets this designer hand work to other designers. Nothing else changes."
-                          className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[11.5px] ${
-                            person.is_design_lead
-                              ? "font-medium text-[var(--color-ink)]"
-                              : "text-[var(--color-ink-3)]"
-                          }`}
-                          style={
-                            person.is_design_lead
-                              ? {
-                                  background:
-                                    "color-mix(in srgb, var(--color-series-1) 14%, transparent)",
-                                }
-                              : undefined
-                          }
-                        >
-                          <input
-                            type="checkbox"
-                            checked={person.is_design_lead}
-                            disabled={pending}
-                            onChange={(event) =>
-                              run(() => setDesignLead(person.id, event.target.checked))
-                            }
-                            aria-label={`Design lead for ${person.full_name || person.email}`}
-                          />
-                          <UsersRound size={12} />
-                          Design lead
-                        </label>
-                      )}
-
                       {/* Shoot ops. Only offered to strategists: admins and
                           operators already run shoots by virtue of the role,
                           and a flag they never read is a flag that surprises
@@ -252,6 +219,22 @@ export function TeamClient({
                       >
                         {person.is_active ? "Revoke" : "Restore"}
                       </Button>
+
+                      {/* Gone for good, as opposed to revoked. Only offered
+                          once access is already off — a two-step on purpose,
+                          and the dialog says what goes with them before the
+                          second step is possible. */}
+                      {profile.role === "admin" && !person.is_active && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={pending}
+                          onClick={() => setDeleting(person)}
+                          aria-label={`Delete ${person.full_name || person.email}`}
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -388,6 +371,16 @@ export function TeamClient({
       </div>
 
       <InviteDialog open={inviting} onClose={() => setInviting(false)} onDone={() => router.refresh()} />
+      {deleting && (
+        <DeleteUserDialog
+          person={deleting}
+          onClose={() => setDeleting(null)}
+          onDone={() => {
+            setDeleting(null);
+            router.refresh();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -457,6 +450,157 @@ function InviteDialog({
           </Button>
         </DialogFooter>
       </form>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------ deleting */
+
+/**
+ * What goes if this person goes — said before the button is live.
+ *
+ * Two kinds of consequence. History the record keeps (briefs they raised,
+ * comments, notes, files) blocks the delete outright: the database refuses
+ * it, and this dialog says so rather than letting the click fail. History
+ * that would go with them (logged time, scorecards) does not block, but an
+ * admin deleting a designer should know they are rewriting last quarter's
+ * Analytics before they do it.
+ */
+function DeleteUserDialog({
+  person,
+  onClose,
+  onDone,
+}: {
+  person: Profile;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [footprint, setFootprint] = useState<Record<string, number> | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const name = person.full_name || person.email;
+
+  useEffect(() => {
+    let live = true;
+    void userFootprint(person.id).then((result) => {
+      if (!live) return;
+      if (result.ok) setFootprint(result.footprint);
+      else setProblem(result.error);
+    });
+    return () => {
+      live = false;
+    };
+  }, [person.id]);
+
+  const keeps: string[] = [];
+  const goes: string[] = [];
+  if (footprint) {
+    const n = (key: string) => Number(footprint[key] ?? 0);
+    const plural = (count: number, one: string, many = `${one}s`) =>
+      `${count} ${count === 1 ? one : many}`;
+    if (n("tickets_raised")) keeps.push(plural(n("tickets_raised"), "brief") + " raised");
+    if (n("comments")) keeps.push(plural(n("comments"), "comment"));
+    if (n("revision_notes")) keeps.push(plural(n("revision_notes"), "round of notes", "rounds of notes"));
+    if (n("attachments")) keeps.push(plural(n("attachments"), "attachment"));
+    if (n("work_sessions")) {
+      goes.push(
+        `${humanDuration(n("work_seconds"))} of logged time across ${plural(n("work_sessions"), "session")}`,
+      );
+    }
+    if (n("tickets_assigned")) {
+      goes.push(`${plural(n("tickets_assigned"), "open ticket")} — back to the pool, not lost`);
+    }
+  }
+
+  const blocked = keeps.length > 0;
+  const armed = typed.trim().toLowerCase() === "delete";
+
+  return (
+    <Dialog open onClose={onClose} title={`Delete ${name}?`} width={460}>
+      {problem ? (
+        <p className="text-[12.5px] text-[var(--color-critical)]">{problem}</p>
+      ) : !footprint ? (
+        <p className="text-[12.5px] text-[var(--color-ink-3)]">Checking what they leave behind…</p>
+      ) : blocked ? (
+        <>
+          <p className="text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
+            {name} has history the record keeps, so they can&apos;t be deleted — only
+            revoked, which they already are. Deleting them would mean rewriting who
+            raised those briefs, and that is the one thing this tool never does.
+          </p>
+          <ul className="mt-2.5 space-y-1 text-[12.5px]">
+            {keeps.map((line) => (
+              <li key={line} className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-[var(--color-ink-3)]" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <>
+          <p className="text-[12.5px] leading-relaxed text-[var(--color-ink-2)]">
+            This removes {name}&apos;s account and profile. There is no undo.
+          </p>
+          {goes.length > 0 && (
+            <div
+              className="mt-2.5 rounded-[var(--radius-md)] border px-3 py-2.5 text-[12.5px]"
+              style={{
+                borderColor: "color-mix(in srgb, var(--color-warning) 45%, transparent)",
+                background: "color-mix(in srgb, var(--color-warning) 8%, transparent)",
+              }}
+            >
+              <p className="font-medium">Goes with them:</p>
+              <ul className="mt-1 space-y-1">
+                {goes.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              <p className="mt-1.5 text-[11.5px] text-[var(--color-ink-3)]">
+                Logged time feeds Analytics. Deleting it changes past numbers.
+              </p>
+            </div>
+          )}
+          <Field label='Type "delete" to confirm' htmlFor="confirm-delete" className="mt-3.5">
+            <TextInput
+              id="confirm-delete"
+              autoFocus
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              placeholder="delete"
+            />
+          </Field>
+        </>
+      )}
+
+      <DialogFooter>
+        <Button type="button" variant="ghost" onClick={onClose}>
+          {blocked || problem ? "Close" : "Cancel"}
+        </Button>
+        {!blocked && !problem && footprint && (
+          <Button
+            type="button"
+            variant="danger"
+            loading={pending}
+            disabled={!armed}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await deleteUser(person.id);
+                if (result.ok) {
+                  toast.success(`${name} removed`);
+                  onDone();
+                } else {
+                  toast.error(result.error);
+                }
+              })
+            }
+          >
+            <Trash2 size={13} /> Delete for good
+          </Button>
+        )}
+      </DialogFooter>
     </Dialog>
   );
 }

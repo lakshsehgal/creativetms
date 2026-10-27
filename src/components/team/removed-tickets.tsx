@@ -4,11 +4,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw, Trash2 } from "lucide-react";
 import type { TicketWithRefs } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { queryKeys, TICKET_SELECT } from "@/lib/queries";
 import { Card, FormatBadge, StatusPill } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/form";
+import { Stamp } from "@/components/ui/stamp";
 
 /**
  * The bin.
@@ -83,7 +83,7 @@ export function RemovedTickets() {
                 suppressHydrationWarning
                 className="shrink-0 text-[11px] text-[var(--color-ink-3)]"
               >
-                removed {relativeTime(ticket.deleted_at)}
+                removed <Stamp at={ticket.deleted_at} />
               </span>
               <Button size="sm" variant="ghost" onClick={() => void restore(ticket)}>
                 <RotateCcw size={12} /> Restore

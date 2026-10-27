@@ -183,7 +183,7 @@ function TicketCardInner({
             <button
               onPointerDown={(event) => event.stopPropagation()}
               onClick={() => onStart(ticket)}
-              title="Start working — this starts the clock"
+              title="Start working"
               aria-label={`Start working on ${ticket.title}`}
               className="grid h-6 w-6 place-items-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] opacity-0 transition-[opacity,color,background-color] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-accent)] focus-visible:opacity-100 group-hover:opacity-100"
             >

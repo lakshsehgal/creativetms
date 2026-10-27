@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import { Check, Send, Users } from "lucide-react";
 import type { Profile, Shoot } from "@/lib/types";
 import { SHEET_ROLES, callSheetRecipients, crewCount } from "@/lib/shoot";
-import { relativeTime } from "@/lib/format";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { sendCallSheet } from "@/app/(app)/shoot/actions";
 import { Button } from "@/components/ui/form";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
+import { Stamp } from "@/components/ui/stamp";
 
 /**
  * Sending the sheet out.
@@ -86,7 +86,7 @@ export function SendCallSheet({ shoot }: { shoot: Shoot }) {
       >
         {shoot.sent_at && (
           <p className="mb-3 rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2.5 py-2 text-[11.5px] leading-relaxed text-[var(--color-ink-2)]">
-            Already sent {relativeTime(shoot.sent_at)} to {shoot.sent_to.length}{" "}
+            Already sent <Stamp at={shoot.sent_at} /> to {shoot.sent_to.length}{" "}
             {shoot.sent_to.length === 1 ? "address" : "addresses"}. Sending again
             delivers the current version — useful when something moved, noise
             when it hasn&apos;t.

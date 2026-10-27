@@ -208,9 +208,14 @@ export function TodayView({
       )}
 
       <p className="mt-6 text-[11.5px] leading-relaxed text-[var(--color-ink-3)]">
-        A ticket lands here when a designer adds it or starts working on it.{" "}
-        {STATUSES.in_progress.label} is the only status where the clock runs, so
-        the timings above are hands-on minutes, not elapsed time.
+        A ticket lands here when a designer adds it or starts working on it.
+        {canSeeOwnTime(viewer.role) && (
+          <>
+            {" "}
+            {STATUSES.in_progress.label} is the only status where the clock runs,
+            so the timings above are hands-on minutes, not elapsed time.
+          </>
+        )}
       </p>
     </div>
   );

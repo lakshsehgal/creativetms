@@ -21,8 +21,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarPlus, GripVertical, Lightbulb, Play, X } from "lucide-react";
 import type { FormatBenchmark, Profile, TicketWithRefs } from "@/lib/types";
-import { dueLabel, dueState, isoDay, minutesToHuman } from "@/lib/format";
-import { benchmarkMap, dayCapacity, estimateMinutes } from "@/lib/planning";
+import { dueLabel, dueState, isoDay } from "@/lib/format";
+import { benchmarkMap, dayCapacity } from "@/lib/planning";
 import { suggestForToday } from "@/lib/suggest";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { positionBetween, queryKeys } from "@/lib/queries";
@@ -76,14 +76,8 @@ export function DayPlan({
     [mine, today],
   );
 
-  const plannedMinutes = useMemo(
-    () =>
-      plan.reduce((sum, ticket) => sum + (estimateMinutes(ticket, lookup) ?? 0), 0),
-    [plan, lookup],
-  );
-
+  // Capacity still shapes which suggestions come first; it is never shown.
   const capacity = dayCapacity(profile.daily_capacity_minutes, today);
-  const remaining = Math.max(0, capacity - plannedMinutes);
 
   const suggestions = useMemo(
     () =>
@@ -93,10 +87,10 @@ export function DayPlan({
         benchmarks: lookup,
         // Zero is a real answer, not a missing one — a full day flags
         // every suggestion rather than silently flagging none.
-        capacityMinutes: capacity > 0 ? remaining : null,
+        capacityMinutes: capacity > 0 ? capacity : null,
         limit: 4,
       }),
-    [mine, today, lookup, remaining],
+    [mine, today, lookup, capacity],
   );
 
   const suggestedIds = new Set(suggestions.map((row) => row.ticket.id));
@@ -192,23 +186,8 @@ export function DayPlan({
           <span className="tabular text-[11.5px] text-[var(--color-ink-3)]">
             {plan.length === 0
               ? "nothing picked yet"
-              : `${plan.length} picked · about ${minutesToHuman(plannedMinutes)}`}
+              : `${plan.length} picked`}
           </span>
-          {plan.length > 0 && capacity > 0 && (
-            <span
-              className="tabular ml-auto text-[11.5px] font-medium"
-              style={{
-                color:
-                  plannedMinutes > capacity
-                    ? "var(--color-critical)"
-                    : "var(--color-ink-3)",
-              }}
-            >
-              {plannedMinutes > capacity
-                ? `${minutesToHuman(plannedMinutes - capacity)} over your day`
-                : `${minutesToHuman(remaining)} left`}
-            </span>
-          )}
         </div>
 
         {plan.length === 0 ? (
@@ -234,7 +213,6 @@ export function DayPlan({
                     key={ticket.id}
                     ticket={ticket}
                     index={index}
-                    minutes={estimateMinutes(ticket, lookup)}
                     onStart={() => onStart(ticket)}
                     onRemove={() => void patch(ticket, { planned_for: null })}
                   />
@@ -282,21 +260,6 @@ export function DayPlan({
                   {suggestion.reason}
                 </span>
 
-                {suggestion.minutes != null && (
-                  <span className="tabular hidden shrink-0 text-[11px] text-[var(--color-ink-3)] sm:block">
-                    ~{minutesToHuman(suggestion.minutes)}
-                  </span>
-                )}
-
-                {suggestion.beyondCapacity && (
-                  <span
-                    className="shrink-0 text-[10.5px] font-medium"
-                    title="Adding this would take you past your day"
-                    style={{ color: "var(--color-warning)" }}
-                  >
-                    over
-                  </span>
-                )}
 
                 <Button
                   size="sm"
@@ -372,13 +335,11 @@ export function DayPlan({
 function PlanRow({
   ticket,
   index,
-  minutes,
   onStart,
   onRemove,
 }: {
   ticket: TicketWithRefs;
   index: number;
-  minutes: number | null;
   onStart: () => void;
   onRemove: () => void;
 }) {
@@ -423,12 +384,6 @@ function PlanRow({
       {ticket.brand && (
         <span className="hidden shrink-0 text-[11.5px] text-[var(--color-ink-3)] md:block">
           {ticket.brand.name}
-        </span>
-      )}
-
-      {minutes != null && (
-        <span className="tabular hidden shrink-0 text-[11px] text-[var(--color-ink-3)] sm:block">
-          ~{minutesToHuman(minutes)}
         </span>
       )}
 

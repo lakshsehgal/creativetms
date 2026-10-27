@@ -9,8 +9,9 @@ import type {
   WorkSession,
 } from "@/lib/types";
 import { formatMeta, PHASE_ORDER, canSeeLiveTimer, phaseMeta } from "@/lib/types";
-import { humanDuration, minutesToHuman, relativeTime, stopwatch } from "@/lib/format";
+import { humanDuration, minutesToHuman, stopwatch } from "@/lib/format";
 import { secondsSince, useTicking } from "@/hooks/use-ticking";
+import { Stamp } from "@/components/ui/stamp";
 
 /**
  * The time story for one ticket.
@@ -191,7 +192,7 @@ export function TimePanel({
             {sessions.slice(0, 12).map((session) => (
               <li key={session.id} className="flex items-baseline justify-between gap-3 text-[11.5px]">
                 <span className="text-[var(--color-ink-3)]">
-                  {relativeTime(session.started_at)}
+                  <Stamp at={session.started_at} />
                   {session.end_reason === "idle" && (
                     <span
                       className="ml-1.5"

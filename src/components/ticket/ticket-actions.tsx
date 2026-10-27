@@ -191,7 +191,7 @@ export function TicketActions({
           variant="primary"
           size="sm"
           loading={busy === "start"}
-          onClick={() => move("in_progress", "Clock started", "start")}
+          onClick={() => move("in_progress", "Started", "start")}
         >
           <Play size={13} fill="currentColor" />
           {ticket.status === "new_request" ? "Start working" : "Pick back up"}
@@ -205,8 +205,8 @@ export function TicketActions({
           key="hold"
           size="sm"
           loading={busy === "hold"}
-          onClick={() => move("on_hold", "Paused — clock stopped", "hold")}
-          title="Stops the clock and keeps the ticket yours"
+          onClick={() => move("on_hold", "Paused", "hold")}
+          title="Parks it — the ticket stays yours"
         >
           <Pause size={13} /> Pause
         </Button>,
@@ -215,7 +215,7 @@ export function TicketActions({
           size="sm"
           loading={busy === "blocked"}
           onClick={() => move("awaiting_assets", "Flagged as waiting on assets", "blocked")}
-          title="Stops the clock — you're blocked on someone else"
+          title="You're blocked on someone else"
         >
           Awaiting assets
         </Button>,

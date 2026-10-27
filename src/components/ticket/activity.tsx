@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import type { Profile, TicketComment, TicketEvent, TicketStatus } from "@/lib/types";
 import { STATUSES } from "@/lib/types";
-import { relativeTime } from "@/lib/format";
 import { Avatar } from "@/components/ui/primitives";
+import { Stamp } from "@/components/ui/stamp";
 import { CommentBox } from "./comment-box";
 
 type Entry =
@@ -63,7 +63,7 @@ export function Activity({
                     {entry.data.author?.full_name || entry.data.author?.email || "Someone"}
                   </span>
                   <span className="text-[11px] text-[var(--color-ink-3)]">
-                    {relativeTime(entry.at)}
+                    <Stamp at={entry.at} />
                   </span>
                 </p>
                 <div className="mt-1 whitespace-pre-wrap rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2 text-[13px] leading-relaxed">
@@ -98,7 +98,7 @@ export function Activity({
                   </>
                 )}
               </span>
-              <span className="ml-auto shrink-0">{relativeTime(entry.at)}</span>
+              <span className="ml-auto shrink-0"><Stamp at={entry.at} /></span>
             </li>
           ),
         )}

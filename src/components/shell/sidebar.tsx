@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   Clapperboard,
   KanbanSquare,
+  ListTodo,
   Moon,
   Sun,
   Sunrise,
@@ -40,7 +41,10 @@ const NAV: NavItem[] = [
   { href: "/tickets", label: "Tickets", icon: KanbanSquare, roles: ["admin", "operator", "strategist", "designer"] },
   { href: "/my-day", label: "My Day", icon: Sunrise, roles: ["designer"] },
   { href: "/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "operator", "strategist"] },
-  { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator", "designer"] },
+  { href: "/scorecards", label: "Scorecards", icon: Trophy, roles: ["admin", "operator"] },
+  // The strategists' own to-do list. Admins see it so nothing a strategist
+  // leaves behind is invisible to whoever covers for them.
+  { href: "/tasks", label: "Tasks", icon: ListTodo, roles: ["admin", "strategist"] },
   {
     href: "/shoot",
     label: "Shoot",
